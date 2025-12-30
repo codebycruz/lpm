@@ -46,6 +46,8 @@ function clap.parse(rawArgs)
 	---@type table<string, any>
 	local kvs = {}
 
+	local ptr, len = 1, #rawArgs
+
 	---@param val string
 	local function parseValue(val)
 		if val == "true" then
@@ -67,10 +69,16 @@ function clap.parse(rawArgs)
 				local key = string.sub(arg, 3, eq - 1)
 				local value = string.sub(arg, eq + 1)
 
-				kvs[key] = parseArg(value)
+				kvs[key] = parseValue(value)
 			else
 				local key = string.sub(arg, 3)
-				kvs[key] = true
+				local nextArg = rawArgs[ptr]
+				if nextArg ~= nil and string.sub(nextArg, 1, 1) ~= "-" then
+					ptr = ptr + 1
+					kvs[key] = parseValue(nextArg)
+				else
+					kvs[key] = true
+				end
 			end
 
 			return nil
@@ -80,7 +88,10 @@ function clap.parse(rawArgs)
 	end
 
 	local args = {}
-	for _, rawArg in ipairs(rawArgs) do
+	while ptr <= len do
+		local rawArg = rawArgs[ptr]
+		ptr = ptr + 1
+
 		local parsed = parseArg(rawArg)
 		if parsed ~= nil then
 			args[#args + 1] = parsed
