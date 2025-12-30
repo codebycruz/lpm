@@ -21,6 +21,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Setup luajit
+        uses: leafo/gh-actions-lua@v12
+        with:
+          luaVersion: "luajit-2.1.0-beta3"
+
       - name: Bundle new lpm
         run: |
           cd packages/lpm
