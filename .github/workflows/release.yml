@@ -1,9 +1,8 @@
-name: Nightly Build
+name: Release
 
 on:
-  push:
-    branches:
-      - master
+  release:
+    types: [created]
   workflow_dispatch:
 
 jobs:
@@ -30,10 +29,11 @@ jobs:
         run: |
           cd packages/lpm
           $GITHUB_WORKSPACE/lpm-linux-x86_64 install
-          $GITHUB_WORKSPACE/lpm-linux-x86_64 bundle --outfile ./lpm-linux-x86_64
+          $GITHUB_WORKSPACE/lpm-linux-x86_64 bundle ./lpm-linux-x86_64
 
-      - name: Upload artifact
-        uses: actions/upload-artifact@v6
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
         with:
-          name: lpm-linux-x86_64
-          path: packages/lpm/lpm-linux-x86_64
+          files: packages/lpm/lpm-linux-x86_64
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
