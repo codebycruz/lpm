@@ -6,13 +6,10 @@ local args = clap.parse({ ... })
 local commands = {}
 commands.help = require("lpm.commands.help")
 commands.init = require("lpm.commands.init")
-
 commands.new = require("lpm.commands.new")
 commands.add = require("lpm.commands.add")
-
 commands.install = require("lpm.commands.install")
 commands.i = commands.install
-
 commands.bundle = require("lpm.commands.bundle")
 
 if args:count() == 0 then

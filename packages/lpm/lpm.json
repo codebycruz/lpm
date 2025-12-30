@@ -1,6 +1,7 @@
 {
 	"name": "lpm",
 	"version": "0.1.0",
+	"$schema": "./lpm.schema.json",
 	"dependencies": {
 		"ansi": { "path": "../ansi" },
 		"json": { "path": "../json" },
