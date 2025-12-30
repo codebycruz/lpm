@@ -1,5 +1,16 @@
 local fs = {}
 
+local isWindows = package.config:sub(1, 1) == "\\"
+
+---@param arg string
+local function escape(arg)
+	if isWindows then
+		return '"' .. string.gsub(arg, '"', '\\"') .. '"'
+	else
+		return "'" .. string.gsub(arg, "'", "'\\''") .. "'"
+	end
+end
+
 ---@param path string
 function fs.exists(path)
 	local file = io.open(path, "r")
@@ -13,13 +24,21 @@ end
 
 ---@param path string
 function fs.mkdir(path)
-	os.execute("mkdir -p " .. path)
+	if isWindows then
+		os.execute("mkdir " .. escape(path))
+	else
+		os.execute("mkdir -p " .. escape(path))
+	end
 end
 
 ---@param src string
 ---@param dest string
 function fs.mklink(src, dest)
-	os.execute("ln -s " .. src .. " " .. dest)
+	if isWindows then
+		os.execute("mklink /D " .. escape(dest) .. " " .. escape(src))
+	else
+		os.execute("ln -s " .. escape(src) .. " " .. escape(dest))
+	end
 end
 
 function fs.cwd()
@@ -31,13 +50,13 @@ end
 
 ---@param path string
 function fs.basename(path)
-	return path:match("([^/]+)$") or path
+	return string.match(path, "([^/]+)$") or path
 end
 
 ---@param path string
 function fs.listdir(path)
 	local files = {}
-	local handle = io.popen("ls -1 " .. path .. " 2>/dev/null")
+	local handle = io.popen("ls -1 " .. escape(path) .. " 2>/dev/null")
 	if handle then
 		for line in handle:lines() do
 			table.insert(files, line)
@@ -49,19 +68,56 @@ end
 
 ---@param path string
 function fs.isdir(path)
-	local handle = io.popen("test -d " .. path .. " && echo true || echo false")
-	if handle then
-		local result = handle:read("*line")
-		handle:close()
-		return result == "true"
+	local ok, _, code = os.rename(path, path)
+	if not ok and code == 13 then
+		return true
 	end
+
 	return false
 end
 
 ---@param src string
 ---@param dest string
 function fs.copy(src, dest)
-	os.execute("cp " .. src .. " " .. dest)
+	os.execute("cp -r " .. escape(src) .. " " .. escape(dest))
+end
+
+---@param base string
+---@param relative string
+function fs.resolve(base, relative)
+	if string.sub(relative, 1, 1) == "/" then
+		return relative
+	end
+
+	local path
+	if string.sub(base, -1) == "/" then
+		path = base .. relative
+	else
+		path = base .. "/" .. relative
+	end
+
+	-- Normalize the path by resolving .. and . components
+	local parts = {}
+	for part in string.gmatch(path, "[^/]+") do
+		if part == ".." then
+			if #parts > 0 then
+				table.remove(parts)
+			end
+		elseif part ~= "." then
+			table.insert(parts, part)
+		end
+	end
+
+	local result = "/" .. table.concat(parts, "/")
+	-- Handle relative paths that don't start with /
+	if string.sub(path, 1, 1) ~= "/" then
+		result = table.concat(parts, "/")
+		if #parts == 0 then
+			result = "."
+		end
+	end
+
+	return result
 end
 
 return fs

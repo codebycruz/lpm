@@ -74,8 +74,10 @@ local function bundle(args)
 		error("Please specify an output file using --outfile")
 	end
 
-	local p = Package.openCwd()
-	if not p.config.name then
+	local p = Package.open()
+
+	local packageName = p:getName()
+	if not packageName then
 		error("Package must have a name in lpm.json")
 	end
 
@@ -89,7 +91,7 @@ local function bundle(args)
 		error("Project src directory must contain init.lua")
 	end
 
-	local files = scanProjectSrc(p.config.name, srcDir)
+	local files = scanProjectSrc(packageName, srcDir)
 
 	if #files == 0 then
 		error("No Lua files found in src directory")
@@ -104,7 +106,7 @@ local function bundle(args)
 		print(ansi.colorize(ansi.cyan, "Including " .. #depFiles .. " dependency files in bundle"))
 	end
 
-	local executable = sea.compile(p.config.name, files)
+	local executable = sea.compile(packageName, files)
 
 	fs.copy(executable, outFile)
 	os.execute("rm " .. executable)

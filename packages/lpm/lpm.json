@@ -7,6 +7,7 @@
 		"json": { "path": "../json" },
 		"fs": { "path": "../fs" },
 		"sea": { "path": "../sea" },
-		"clap": { "path": "../clap" }
+		"clap": { "path": "../clap" },
+		"path": { "path": "../path" }
 	}
 }

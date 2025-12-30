@@ -20,7 +20,7 @@ local function add(args)
 		error("You must specify either --path <path> or --git <url>")
 	end
 
-	local p = Package.openCwd()
+	local p = Package.open()
 	local configPath = p.dir .. "/lpm.json"
 
 	local file = io.open(configPath, "r")
