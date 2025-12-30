@@ -5,6 +5,7 @@
 		"ansi": { "path": "../ansi" },
 		"json": { "path": "../json" },
 		"fs": { "path": "../fs" },
-		"sea": { "path": "../sea" }
+		"sea": { "path": "../sea" },
+		"clap": { "path": "../clap" }
 	}
 }

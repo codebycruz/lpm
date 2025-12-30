@@ -2,12 +2,16 @@ local fs = require("fs")
 local json = require("json")
 local ansi = require("ansi")
 local bundle = require("sea")
+local clap = require("clap")
 
 local Project = require("lpm.project")
 
+local args = clap.parse({ ... })
+
 local commands = {}
 
-function commands.help()
+---@param args clap.Args
+function commands.help(args)
 	print("Available commands:")
 	print("  " .. ansi.colorize(ansi.red, "new <name>") .. "      Create a new lpm project")
 	print("  " .. ansi.colorize(ansi.red, "init") .. "            Initialize current directory as lpm project")
@@ -48,10 +52,9 @@ local function initProject(dir, name)
 	end
 end
 
-function commands.new(name)
-	if not name then
-		error("Usage: lpm new <name>")
-	end
+---@param args clap.Args
+function commands.new(args)
+	local name = assert(args:pop("string"), "Usage: lpm new <name>")
 
 	if fs.exists(name) then
 		error("Directory " .. name .. " already exists")
@@ -62,34 +65,28 @@ function commands.new(name)
 	initProject(name, name)
 end
 
-function commands.init()
+---@param args clap.Args
+function commands.init(args)
 	local cwd = "."
 	local name = fs.basename(fs.cwd())
 	initProject(cwd, name)
 end
 
-function commands.add(name, ...)
-	if not name then
-		error("Usage: lpm add <name> --path <path> | --git <url>")
-	end
+---@param args clap.Args
+function commands.add(args)
+	local name = assert(args:pop("string"), "Usage: lpm add <name> --path <path> | --git <url>")
 
-	local args = { ... }
 	local depType, depValue
-
-	for i = 1, #args do
-		if args[i] == "--path" and args[i + 1] then
-			depType = "path"
-			depValue = args[i + 1]
-			break
-		elseif args[i] == "--git" and args[i + 1] then
-			depType = "git"
-			depValue = args[i + 1]
-			break
-		end
+	if args:has("git") then
+		depType = "git"
+		depValue = args:key("git")
+	elseif args:has("path") then
+		depType = "path"
+		depValue = args:key("path")
 	end
 
 	if not depType then
-		error("Must specify either --path <path> or --git <url>")
+		error("You must specify either --path <path> or --git <url>")
 	end
 
 	local p = Project.fromCwd()
@@ -243,7 +240,9 @@ end
 
 commands.i = commands.install
 
-function commands.run(path)
+---@param args clap.Args
+function commands.run(args)
+	local path = assert(args:pop("string"), "Usage: lpm run whatever.lua")
 	local p = Project.fromCwd()
 
 	local lpmModulesPath = p.dir .. "/lpm_modules"
@@ -317,9 +316,11 @@ local function scanDependencies(projectDir)
 	return files
 end
 
-function commands.bundle(outfile)
-	local p = Project.fromCwd()
+---@param args clap.Args
+function commands.bundle(args)
+	local outfile = args:pop("string")
 
+	local p = Project.fromCwd()
 	if not p.config.name then
 		error("Project must have a name in lpm.json")
 	end
@@ -360,17 +361,13 @@ function commands.bundle(outfile)
 	end
 end
 
-local args = { ... }
-local arg1 = args[1]
-
-if commands[arg1] then
-	local cmdArgs = {}
-	for i = 2, #args do
-		cmdArgs[i - 1] = args[i]
-	end
-	commands[arg1](table.unpack(cmdArgs))
-elseif arg1 then
-	print(ansi.colorize(ansi.red, "Unknown command: " .. tostring(arg1)))
+if args:count() == 0 then
+	commands.help()
 else
-	commands["help"]()
+	local command = args:pop("string")
+	if commands[command] then
+		commands[command](args)
+	else
+		print(ansi.colorize(ansi.red, "Unknown command: " .. tostring(command)))
+	end
 end
