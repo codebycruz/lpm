@@ -1,7 +1,7 @@
 local fs = require("fs")
 local ansi = require("ansi")
 
-local Project = require("lpm.project")
+local Package = require("lpm.package")
 
 ---@param args clap.Args
 local function new(args)
@@ -14,7 +14,7 @@ local function new(args)
 	fs.mkdir(name)
 	print(ansi.colorize(ansi.green, "Created directory: " .. name))
 
-	Project.initPath(fs.cwd() .. "/" .. name)
+	Package.initPath(fs.cwd() .. "/" .. name)
 end
 
 return new

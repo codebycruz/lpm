@@ -2,7 +2,7 @@ local ansi = require("ansi")
 local fs = require("fs")
 local sea = require("sea")
 
-local Project = require("lpm.project")
+local Package = require("lpm.package")
 
 local function scanProjectSrc(projectName, srcDir)
 	local files = {}
@@ -74,9 +74,9 @@ local function bundle(args)
 		error("Please specify an output file using --outfile")
 	end
 
-	local p = Project.openCwd()
+	local p = Package.openCwd()
 	if not p.config.name then
-		error("Project must have a name in lpm.json")
+		error("Package must have a name in lpm.json")
 	end
 
 	local srcDir = p.dir .. "/src"

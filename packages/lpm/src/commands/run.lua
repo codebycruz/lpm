@@ -1,9 +1,9 @@
-local Project = require("lpm.project")
+local Package = require("lpm.package")
 
 ---@param args clap.Args
 local function run(args)
 	local path = assert(args:pop("string"), "Usage: lpm run whatever.lua")
-	local p = Project.openCwd()
+	local p = Package.openCwd()
 
 	local lpmModulesPath = p.dir .. "/lpm_modules"
 	local luaPath = lpmModulesPath .. "/?.lua;" .. lpmModulesPath .. "/?/init.lua;"

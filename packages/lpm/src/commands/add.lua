@@ -1,7 +1,7 @@
 local json = require("json")
 local ansi = require("ansi")
 
-local Project = require("lpm.project")
+local Package = require("lpm.package")
 
 ---@param args clap.Args
 local function add(args)
@@ -20,7 +20,7 @@ local function add(args)
 		error("You must specify either --path <path> or --git <url>")
 	end
 
-	local p = Project.openCwd()
+	local p = Package.openCwd()
 	local configPath = p.dir .. "/lpm.json"
 
 	local file = io.open(configPath, "r")

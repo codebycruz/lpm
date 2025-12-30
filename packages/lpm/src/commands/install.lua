@@ -2,7 +2,7 @@ local fs = require("fs")
 local ansi = require("ansi")
 local json = require("json")
 
-local Project = require("lpm.project")
+local Package = require("lpm.package")
 
 local function installDependency(rootDir, depName, dep, luarcConfig, installed, projectDir)
 	if installed[depName] then
@@ -72,9 +72,9 @@ local function installDependency(rootDir, depName, dep, luarcConfig, installed, 
 			table.insert(luarcConfig["runtime"]["path"], runtimeInitPath)
 		end
 
-		local depProject = Project.openPath(resolvedPath)
-		if depProject.config.dependencies then
-			for subDepName, subDep in pairs(depProject.config.dependencies) do
+		local depPackage = Package.openPath(resolvedPath)
+		if depPackage.config.dependencies then
+			for subDepName, subDep in pairs(depPackage.config.dependencies) do
 				installDependency(rootDir, subDepName, subDep, luarcConfig, installed, resolvedPath)
 			end
 		end
@@ -85,7 +85,7 @@ end
 
 ---@param args clap.Args
 local function install(args)
-	local p = Project.openCwd()
+	local p = Package.openCwd()
 	fs.mkdir(p.dir .. "/lpm_modules")
 
 	local luarcPath = p.dir .. "/.luarc.json"

@@ -2,14 +2,14 @@ local Config = require("lpm.config")
 local fs = require("fs")
 local json = require("json")
 
----@class lpm.Project
+---@class lpm.Package
 ---@field dir string
 ---@field config lpm.Config
-local Project = {}
-Project.__index = Project
+local Package = {}
+Package.__index = Package
 
 ---@param path string
-function Project.openPath(path)
+function Package.openPath(path)
 	local configPath = path .. "/lpm.json"
 	if not fs.exists(configPath) then
 		error("No lpm.json found in directory: " .. path)
@@ -24,15 +24,15 @@ function Project.openPath(path)
 	file:close()
 
 	local rawConfig = json.decode(content)
-	return setmetatable({ dir = path, config = Config.new(rawConfig) }, Project)
+	return setmetatable({ dir = path, config = Config.new(rawConfig) }, Package)
 end
 
-function Project.openCwd()
-	return Project.openPath(".")
+function Package.openCwd()
+	return Package.openPath(".")
 end
 
 ---@param path string
-function Project.initPath(path)
+function Package.initPath(path)
 	local configPath = path .. "/lpm.json"
 	if fs.exists(configPath) then
 		error("Directory already contains lpm.json: " .. path)
@@ -63,11 +63,11 @@ function Project.initPath(path)
 		mainFile:close()
 	end
 
-	return Project.openPath(path)
+	return Package.openPath(path)
 end
 
-function Project:__tostring()
+function Package:__tostring()
 	return "lpm.Project(" .. self.dir .. ")"
 end
 
-return Project
+return Package
