@@ -2,7 +2,7 @@
 
 local fs = require("lpm.fs")
 local json = require("lpm.json")
-local ansi = require("lpm.ansi")
+local ansi = require("ansi")
 local bundle = require("lpm.bundle")
 
 local Project = require("lpm.project")
@@ -142,11 +142,17 @@ local function installDependency(rootDir, depName, dep, luarcConfig, installed, 
 
 		local destPath = rootDir .. "/lpm_modules/" .. depName
 		local libraryPath = "./lpm_modules/" .. depName
+		local depSrcPath = resolvedPath .. "/src"
 
 		if not fs.exists(destPath) then
-			fs.mklink(resolvedPath, destPath)
-			print(ansi.colorize(ansi.green, "Installed dependency: " .. depName) ..
-				" from " .. ansi.colorize(ansi.cyan, resolvedPath))
+			fs.mkdir(destPath)
+			if fs.exists(depSrcPath) then
+				os.execute("cp -r " .. depSrcPath .. "/* " .. destPath .. "/ 2>/dev/null")
+				print(ansi.colorize(ansi.green, "Installed dependency: " .. depName) ..
+					" from " .. ansi.colorize(ansi.cyan, resolvedPath))
+			else
+				error("Dependency " .. depName .. " has no src directory")
+			end
 		else
 			print(ansi.colorize(ansi.yellow, "Dependency already installed: " .. depName))
 		end
@@ -260,6 +266,31 @@ local function scanProjectSrc(projectName, srcDir)
 	return files
 end
 
+local function scanDependencies(projectDir)
+	local files = {}
+	local lpmModulesDir = projectDir .. "/lpm_modules"
+
+	if not fs.exists(lpmModulesDir) then
+		return files
+	end
+
+	local handle = io.popen("find '" .. lpmModulesDir .. "' -maxdepth 1 -mindepth 1 -type d 2>/dev/null")
+	if not handle then
+		return files
+	end
+
+	for depDir in handle:lines() do
+		local depName = fs.basename(depDir)
+		local depFiles = scanProjectSrc(depName, depDir)
+		for _, depFile in ipairs(depFiles) do
+			table.insert(files, depFile)
+		end
+	end
+	handle:close()
+
+	return files
+end
+
 function commands.bundle(outfile)
 	local p = Project.fromCwd()
 
@@ -283,6 +314,15 @@ function commands.bundle(outfile)
 		error("No Lua files found in src directory")
 	end
 
+	local depFiles = scanDependencies(p.dir)
+	for _, depFile in ipairs(depFiles) do
+		table.insert(files, depFile)
+	end
+
+	if #depFiles > 0 then
+		print(ansi.colorize(ansi.cyan, "Including " .. #depFiles .. " dependency files in bundle"))
+	end
+
 	local executable = bundle.compile(p.config.name, files)
 
 	if outfile then
@@ -303,7 +343,8 @@ if commands[arg1] then
 		cmdArgs[i - 1] = args[i]
 	end
 	commands[arg1](table.unpack(cmdArgs))
-else
+elseif arg1 then
 	print(ansi.colorize(ansi.red, "Unknown command: " .. tostring(arg1)))
+else
 	commands["help"]()
 end
