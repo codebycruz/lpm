@@ -7,37 +7,27 @@ local Package = require("lpm.package")
 local function scanProjectSrc(projectName, srcDir)
 	local files = {}
 
-	local handle = io.popen("find '" .. srcDir .. "' -name '*.lua' -type f 2>/dev/null")
-	if not handle then
-		error("Failed to scan src directory: " .. srcDir)
-	end
-
-	for line in handle:lines() do
-		local filePath = line:gsub("^" .. srcDir .. "/?", "")
+	for _, filePath in ipairs(fs.scan(srcDir, "*.lua")) do
 		local moduleName
 
 		if filePath == "init.lua" then
 			moduleName = projectName
 		else
-			moduleName = projectName .. "." .. filePath:gsub("/", "."):gsub("%.lua$", "")
+			moduleName = projectName .. "." .. filePath:gsub(fs.separator, "."):gsub("%.lua$", "")
 		end
 
 		if moduleName ~= "" then
-			local file = io.open(line, "r")
-			if file then
-				local content = file:read("*all")
-				file:close()
-
+			local content = fs.read(filePath)
+			if content then
 				table.insert(files, {
 					path = moduleName,
 					content = content
 				})
 			else
-				print(ansi.colorize(ansi.yellow, "Warning: Could not read file: " .. line))
+				print(ansi.colorize(ansi.yellow, "Warning: Could not read file: " .. filePath))
 			end
 		end
 	end
-	handle:close()
 
 	return files
 end
@@ -50,19 +40,14 @@ local function scanDependencies(projectDir)
 		return files
 	end
 
-	local handle = io.popen("find '" .. lpmModulesDir .. "' -maxdepth 1 -mindepth 1 -type d 2>/dev/null")
-	if not handle then
-		return files
-	end
-
-	for depDir in handle:lines() do
+	for _, depDir in ipairs(fs.listdir(lpmModulesDir)) do
 		local depName = fs.basename(depDir)
 		local depFiles = scanProjectSrc(depName, depDir)
+
 		for _, depFile in ipairs(depFiles) do
-			table.insert(files, depFile)
+			files[#files + 1] = depFile
 		end
 	end
-	handle:close()
 
 	return files
 end
@@ -99,7 +84,7 @@ local function bundle(args)
 
 	local depFiles = scanDependencies(p.dir)
 	for _, depFile in ipairs(depFiles) do
-		table.insert(files, depFile)
+		files[#files + 1] = depFile
 	end
 
 	if #depFiles > 0 then

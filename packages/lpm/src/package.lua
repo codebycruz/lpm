@@ -144,4 +144,8 @@ function Package:installDependencies(dependencies, installed)
 	end
 end
 
+function Package:bundle()
+
+end
+
 return Package

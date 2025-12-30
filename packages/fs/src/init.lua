@@ -1,6 +1,8 @@
 local fs = {}
 
-local isWindows = package.config:sub(1, 1) == "\\"
+fs.separator = package.config:sub(1, 1)
+
+local isWindows = fs.separator == "\\"
 
 ---@param arg string
 local function escape(arg)
@@ -9,6 +11,66 @@ local function escape(arg)
 	else
 		return "'" .. string.gsub(arg, "'", "'\\''") .. "'"
 	end
+end
+
+function fs.globToPattern(glob)
+	return "^" .. glob
+		:gsub("([%^%$%(%)%%%.%[%]%+%-])", "%%%1")
+		:gsub("%*", ".*")
+		:gsub("%?", ".") .. "$"
+end
+
+---@param path string
+---@param glob string
+function fs.scan(path, glob)
+	local results = {}
+	local pattern = fs.globToPattern(glob)
+
+	local function scanRecursive(currentPath)
+		local items = fs.listdir(currentPath)
+		for _, item in ipairs(items) do
+			local fullPath = fs.resolve(currentPath, item)
+
+			if fs.isdir(fullPath) then
+				scanRecursive(fullPath)
+			elseif string.find(item, pattern) then
+				results[#results + 1] = fullPath
+			end
+		end
+	end
+
+	if fs.exists(path) and fs.isdir(path) then
+		scanRecursive(path)
+	end
+
+	return results
+end
+
+---@param path string
+function fs.read(path)
+	local file = io.open(path, "r")
+	if not file then
+		return nil
+	end
+
+	local content = file:read("*all")
+	file:close()
+
+	return content
+end
+
+---@param path string
+---@param content string
+function fs.write(path, content)
+	local file = io.open(path, "w")
+	if not file then
+		return false
+	end
+
+	file:write(content)
+	file:close()
+
+	return true
 end
 
 ---@param path string
