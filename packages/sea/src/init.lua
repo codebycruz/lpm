@@ -47,8 +47,6 @@ function bundler.compile(main, files)
 		)
 	end
 
-	local mainScript = ('package.preload[%q](...)'):format(main)
-
 	local code = [[
 		#include <stdio.h>
 		#include "lauxlib.h"

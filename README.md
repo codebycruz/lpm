@@ -1,6 +1,6 @@
 # lpm
 
-`lpm` is a simple and lightweight package manager for Lua, written in Lua.
+`lpm` is a package manager for Lua, written in Lua.
 
 It was created due to my frustration with the current status quo of package management in the Lua ecosystem.
 

@@ -69,7 +69,10 @@ end
 
 ---@param args clap.Args
 local function bundle(args)
-	local outfile = args:pop("string")
+	local outFile = args:key("outfile", "string")
+	if not outFile then
+		error("Please specify an output file using --outfile")
+	end
 
 	local p = Project.openCwd()
 	if not p.config.name then
@@ -103,13 +106,9 @@ local function bundle(args)
 
 	local executable = sea.compile(p.config.name, files)
 
-	if outfile then
-		fs.copy(executable, outfile)
-		os.execute("rm " .. executable)
-		print(ansi.colorize(ansi.green, "Bundle created: " .. outfile))
-	else
-		print(ansi.colorize(ansi.green, "Bundle created: " .. executable))
-	end
+	fs.copy(executable, outFile)
+	os.execute("rm " .. executable)
+	print(ansi.colorize(ansi.green, "Bundle created: " .. outFile))
 end
 
 return bundle

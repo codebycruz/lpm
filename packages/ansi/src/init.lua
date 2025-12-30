@@ -11,7 +11,7 @@ ansi.blue = "\27[34m"
 ansi.magenta = "\27[35m"
 ansi.cyan = "\27[36m"
 ansi.white = "\27[37m"
-ansi.orange = "\27[38;5;208m"
+ansi.gray = "\27[90m"
 
 -- Bright colors
 ansi.bright_red = "\27[91m"
