@@ -2,6 +2,9 @@
 	"name": "lpm",
 	"version": "0.1.0",
 	"dependencies": {
-		"ansi": { "path": "../ansi" }
+		"ansi": { "path": "../ansi" },
+		"json": { "path": "../json" },
+		"fs": { "path": "../fs" },
+		"sea": { "path": "../sea" }
 	}
 }

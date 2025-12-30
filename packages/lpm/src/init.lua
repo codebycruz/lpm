@@ -1,9 +1,7 @@
-#!/usr/bin/env lua
-
-local fs = require("lpm.fs")
-local json = require("lpm.json")
+local fs = require("fs")
+local json = require("json")
 local ansi = require("ansi")
-local bundle = require("lpm.bundle")
+local bundle = require("sea")
 
 local Project = require("lpm.project")
 
@@ -169,6 +167,27 @@ local function installDependency(rootDir, depName, dep, luarcConfig, installed, 
 			table.insert(luarcConfig["workspace.library"], libraryPath)
 		end
 
+		local runtimePath = "./lpm_modules/?.lua"
+		local runtimeInitPath = "./lpm_modules/?/init.lua"
+
+		local foundRuntime = false
+		local foundRuntimeInit = false
+		for _, path in ipairs(luarcConfig["runtime"]["path"]) do
+			if path == runtimePath then
+				foundRuntime = true
+			end
+			if path == runtimeInitPath then
+				foundRuntimeInit = true
+			end
+		end
+
+		if not foundRuntime then
+			table.insert(luarcConfig["runtime"]["path"], runtimePath)
+		end
+		if not foundRuntimeInit then
+			table.insert(luarcConfig["runtime"]["path"], runtimeInitPath)
+		end
+
 		local depProject = Project.new(resolvedPath)
 		if depProject.config.dependencies then
 			for subDepName, subDep in pairs(depProject.config.dependencies) do
@@ -198,6 +217,13 @@ function commands.install()
 
 	if not luarcConfig["workspace.library"] then
 		luarcConfig["workspace.library"] = {}
+	end
+
+	if not luarcConfig["runtime"] then
+		luarcConfig["runtime"] = {}
+	end
+	if not luarcConfig["runtime"]["path"] then
+		luarcConfig["runtime"]["path"] = {}
 	end
 
 	local installed = {}

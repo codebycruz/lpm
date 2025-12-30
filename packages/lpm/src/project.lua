@@ -1,6 +1,6 @@
 local Config = require("lpm.config")
-local fs = require("lpm.fs")
-local json = require("lpm.json")
+local fs = require("fs")
+local json = require("json")
 
 ---@class lpm.Project
 ---@field dir string
