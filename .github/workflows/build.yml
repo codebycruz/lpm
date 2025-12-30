@@ -29,6 +29,7 @@ jobs:
       - name: Bundle new lpm
         run: |
           cd packages/lpm
+          $GITHUB_WORKSPACE/lpm-linux-x86_64 install
           $GITHUB_WORKSPACE/lpm-linux-x86_64 bundle ./newlpm
 
       - name: Upload artifact
