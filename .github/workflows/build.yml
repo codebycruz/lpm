@@ -22,11 +22,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Bundle new lpm
-        working-directory: lpm/packages/lpm
-        run: ../../../lpm-linux-x86_64 bundle
+        run: |
+          cd packages/lpm
+          $GITHUB_WORKSPACE/lpm-linux-x86_64 bundle ./newlpm
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6
         with:
           name: lpm-linux-x86_64
-          path: lpm/packages/lpm/lpm
+          path: packages/lpm/newlpm
