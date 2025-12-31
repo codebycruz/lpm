@@ -1,6 +1,7 @@
 local fs = {}
 
 local path = require("path")
+local process = require("process")
 
 local isWindows = path.separator == "\\"
 
@@ -91,9 +92,9 @@ end
 ---@param p string
 function fs.mkdir(p)
 	if isWindows then
-		os.execute("mkdir " .. escape(p))
+		process.spawn("mkdir", { p })
 	else
-		os.execute("mkdir -p " .. escape(p))
+		process.spawn("mkdir", { "-p", p })
 	end
 end
 
@@ -101,57 +102,64 @@ end
 ---@param dest string
 function fs.mklink(src, dest)
 	if isWindows then
-		os.execute("mklink /D " .. escape(dest) .. " " .. escape(src))
+		process.spawn("mklink", { "/D", dest, src })
 	else
-		os.execute("ln -s " .. escape(src) .. " " .. escape(dest))
+		process.spawn("ln", { "-s", src, dest })
 	end
 end
 
 function fs.cwd()
-	local handle = io.popen("pwd")
-	local cwd = handle:read("*all"):gsub("\n$", "")
-	handle:close()
-	return cwd
+	local ok, out = process.exec("pwd")
+	if not ok then
+		error("Failed to get current working directory")
+	end
+
+	return out:gsub("\n$", "")
 end
 
 ---@param path string
 function fs.listdir(path)
-	local files = {}
-	local handle = io.popen("ls -1 " .. escape(path) .. " 2>/dev/null")
-	if handle then
-		for line in handle:lines() do
+	local success, output = process.exec("ls", { "-1", path })
+	if success then
+		local files = {}
+		for line in output:gmatch("[^\n]+") do
 			table.insert(files, line)
 		end
-		handle:close()
+		return files
+	else
+		return {}
 	end
-	return files
 end
 
 ---@param path string
 function fs.isdir(path)
 	if isWindows then
-		local handle = io.popen('if exist "' .. path .. '\\*" (echo yes) else (echo no)')
-		local result = handle:read("*a")
-		handle:close()
-		return result:match("yes") ~= nil
+		local _, output = process.exec("cmd", { "/c", 'if exist "' .. path .. '\\*" (echo yes) else (echo no)' })
+		return output:match("yes") ~= nil
 	else
-		local handle = io.popen("test -d " .. escape(path) .. " && echo yes || echo no")
-		local result = handle:read("*a")
-		handle:close()
-		return result:match("yes") ~= nil
+		local success, _ = process.exec("test", { "-d", path })
+		return success == true
 	end
 end
 
 ---@param src string
 ---@param dest string
 function fs.copy(src, dest)
-	os.execute("cp -r " .. escape(src) .. " " .. escape(dest))
+	if isWindows then
+		process.spawn("xcopy", { "/E", "/I", src, dest })
+	else
+		process.spawn("cp", { "-r", src, dest })
+	end
 end
 
 ---@param src string
 ---@param dest string
 function fs.move(src, dest)
-	os.execute("mv " .. escape(src) .. " " .. escape(dest))
+	if isWindows then
+		process.spawn("move", { src, dest })
+	else
+		process.spawn("mv", { src, dest })
+	end
 end
 
 return fs

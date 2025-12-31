@@ -18,14 +18,20 @@ end
 ---@field env table<string, string>?
 
 ---@param name string
----@param args string[]
+---@param args string[]?
 ---@param options process.SpawnOptions?
 local function formatCommand(name, args, options)
-	local parts = { escape(name) }
-	for i, arg in ipairs(args) do
-		parts[i + 1] = escape(arg)
+	local command
+	if args then
+		local parts = { escape(name) }
+		for i, arg in ipairs(args) do
+			parts[i + 1] = escape(arg)
+		end
+
+		command = table.concat(parts, " ")
+	else
+		command = escape(name)
 	end
-	local command = table.concat(parts, " ")
 
 	if options and options.cwd then
 		command = "cd " .. escape(options.cwd) .. " && " .. command
