@@ -13,13 +13,18 @@ local function escape(arg)
 	end
 end
 
----@class process.SpawnOptions
+---@class process.CommandOptions
 ---@field cwd string?
 ---@field env table<string, string>?
 
+---@class process.ExecOptions: process.CommandOptions
+---@field stdin string?
+
+---@class process.SpawnOptions: process.CommandOptions
+
 ---@param name string
 ---@param args string[]?
----@param options process.SpawnOptions?
+---@param options process.CommandOptions?
 local function formatCommand(name, args, options)
 	local command
 	if args then
@@ -55,12 +60,23 @@ end
 
 ---@param name string
 ---@param args string[]
----@param options process.SpawnOptions?
+---@param options process.ExecOptions?
 ---@return boolean? # Success
 ---@return string # Output
 function process.exec(name, args, options)
 	local command = formatCommand(name, args, options)
 	command = command .. " 2>&1" -- Redirect stderr to stdout
+
+	local tmpfile = nil
+	if options and options.stdin then
+		tmpfile = os.tmpname()
+		local f = io.open(tmpfile, "w")
+		if f then
+			f:write(options.stdin)
+			f:close()
+			command = command .. " < " .. escape(tmpfile)
+		end
+	end
 
 	local handle = io.popen(command, "r")
 	if not handle then
@@ -69,6 +85,10 @@ function process.exec(name, args, options)
 
 	local output = handle:read("*a")
 	local success = handle:close()
+
+	if tmpfile then
+		os.remove(tmpfile)
+	end
 
 	return success, output
 end

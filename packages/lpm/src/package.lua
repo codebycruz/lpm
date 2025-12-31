@@ -115,7 +115,7 @@ function Package:installDependency(dependency)
 		return
 	end
 
-	fs.mklink(dependency:getDir(), destinationPath)
+	fs.mklink(dependency:getSrcDir(), destinationPath)
 end
 
 --- TODO: Add luarc changing stuff again

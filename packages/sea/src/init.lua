@@ -1,4 +1,7 @@
-local bundler = {}
+local sea = {}
+
+local fs = require("fs")
+local process = require("process")
 
 function read(cmd)
 	local handle = io.popen(cmd, "r")
@@ -28,20 +31,38 @@ local CEscapes = {
 	["\\"] = "\\\\",
 }
 
+function sea.bytecode(content)
+	local success, bytecode = process.exec("luajit", { "-b", "-", "-" }, { stdin = content })
+
+	if not success then
+		error("Failed to compile bytecode: " .. bytecode)
+	end
+
+	return bytecode
+end
+
 ---@param main string
 ---@param files { path: string, content: string }[]
 ---@return string
-function bundler.compile(main, files)
+function sea.compile(main, files)
 	local outPath = os.tmpname()
 
 	local filePreloads = {}
 	for i, file in ipairs(files) do
-		local escapedCode = file.content:gsub(".", CEscapes)
+		local bytecode = sea.bytecode(file.content)
+		local hexArray = {}
+		for j = 1, #bytecode do
+			hexArray[j] = string.format("0x%02x", string.byte(bytecode, j))
+		end
+		local hexString = table.concat(hexArray, ",")
 		local escapedName = file.path:gsub(".", CEscapes)
 
-		filePreloads[i] = ('luaL_loadbuffer(L, "%s", %d, "%s"); lua_setfield(L, -2, "%s");'):format(
-			escapedCode,
-			#file.content,
+		filePreloads[i] = ('const unsigned char data_%d[] = {%s}; luaL_loadbuffer(L, (const char*)data_%d, %d, "%s"); lua_setfield(L, -2, "%s");')
+		:format(
+			i,
+			hexString,
+			i,
+			#bytecode,
 			escapedName,
 			escapedName
 		)
@@ -93,4 +114,4 @@ function bundler.compile(main, files)
 	return outPath
 end
 
-return bundler
+return sea

@@ -70,6 +70,11 @@ function fs.write(p, content)
 end
 
 ---@param p string
+function fs.delete(p)
+	os.remove(p)
+end
+
+---@param p string
 function fs.exists(p)
 	local file = io.open(p, "r")
 	if file then
