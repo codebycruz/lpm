@@ -6,6 +6,11 @@ global.init()
 
 local args = clap.parse({ ... })
 
+if args:has("version") then
+	print(global.currentVersion)
+	return
+end
+
 local commands = {}
 commands.help = require("lpm.commands.help")
 commands.init = require("lpm.commands.init")

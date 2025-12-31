@@ -27,13 +27,23 @@ local function test(args)
 		end
 	end
 
+	local didGetPackageError = false
 	if #failures > 0 then
 		print(ansi.colorize(ansi.red, "\nTest Failures:"))
 		for _, failure in ipairs(failures) do
+			if string.find(failure.msg, "no field package.preload", 1, true) then
+				didGetPackageError = true
+			end
+
 			print("- " .. failure.relativePath .. ": " .. failure.msg)
 		end
 
 		print(ansi.colorize(ansi.red, #failures .. " out of " .. #testFiles .. " test(s) failed."))
+
+		if didGetPackageError then
+			print(ansi.colorize(ansi.yellow,
+				"\nIt looks like some tests are failing due to missing dependencies. Do you need to run lpm install?"))
+		end
 	else
 		print(ansi.colorize(ansi.green, "All " .. #testFiles .. " tests passed!"))
 	end
