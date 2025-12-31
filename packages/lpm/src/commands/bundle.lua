@@ -7,7 +7,7 @@ local Package = require("lpm.package")
 local function scanProjectSrc(projectName, srcDir)
 	local files = {}
 
-	for _, filePath in ipairs(fs.scan(srcDir, "*.lua")) do
+	for _, filePath in ipairs(fs.scan(srcDir, "**/*.lua")) do
 		local moduleName
 
 		if filePath == "init.lua" then

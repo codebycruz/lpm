@@ -52,6 +52,11 @@ function bundler.compile(main, files)
 		#include "lauxlib.h"
 		#include "lualib.h"
 
+		int traceback(lua_State* L) {
+			luaL_traceback(L, L, lua_tostring(L, 1), 1);
+			return 1;
+		}
+
 		int main(int argc, char** argv) {
 			lua_State* L = luaL_newstate();
 			luaL_openlibs(L);
@@ -67,9 +72,12 @@ function bundler.compile(main, files)
 				lua_pushstring(L, argv[i]);
 			}
 
-			int result = lua_pcall(L, argc - 1, 0, 0);
+			lua_pushcfunction(L, traceback);
+			lua_insert(L, -(argc));
+
+			int result = lua_pcall(L, argc - 1, 0, -(argc) - 1);
 			if (result != LUA_OK) {
-				fprintf(stderr, "Error: %s\n", lua_tostring(L, -1));
+				fprintf(stderr, "%s\n", lua_tostring(L, -1));
 				lua_close(L);
 				return 1;
 			}

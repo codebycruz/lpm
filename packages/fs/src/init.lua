@@ -14,10 +14,14 @@ local function escape(arg)
 end
 
 function fs.globToPattern(glob)
-	return "^" .. glob
+	local pattern = glob
 		:gsub("([%^%$%(%)%%%.%[%]%+%-])", "%%%1")
-		:gsub("%*", ".*")
-		:gsub("%?", ".") .. "$"
+		:gsub("%*%*", "\001")
+		:gsub("%*", "[^/]*")
+		:gsub("%?", "[^/]")
+		:gsub("\001", ".*")
+
+	return "^" .. pattern .. "$"
 end
 
 ---@param path string
@@ -33,7 +37,7 @@ function fs.scan(path, glob)
 
 			if fs.isdir(fullPath) then
 				scanRecursive(fullPath)
-			elseif string.find(item, pattern) then
+			elseif string.find(fullPath, pattern) then
 				results[#results + 1] = fullPath
 			end
 		end
@@ -130,12 +134,17 @@ end
 
 ---@param path string
 function fs.isdir(path)
-	local ok, _, code = os.rename(path, path)
-	if not ok and code == 13 then
-		return true
+	if isWindows then
+		local handle = io.popen('if exist "' .. path .. '\\*" (echo yes) else (echo no)')
+		local result = handle:read("*a")
+		handle:close()
+		return result:match("yes") ~= nil
+	else
+		local handle = io.popen("test -d " .. escape(path) .. " && echo yes || echo no")
+		local result = handle:read("*a")
+		handle:close()
+		return result:match("yes") ~= nil
 	end
-
-	return false
 end
 
 ---@param src string
