@@ -20,8 +20,6 @@ function fs.tmpfile()
 	return os.tmpname()
 end
 
-math.randomseed(os.time())
-
 ---@param prefix string?
 function fs.tmpdir(prefix)
 	prefix = prefix or "lua"
