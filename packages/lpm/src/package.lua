@@ -17,6 +17,10 @@ function Package:getDir()
 	return self.dir
 end
 
+function Package:getBuildScriptPath()
+	return path.join(self.dir, "build.lua")
+end
+
 function Package:getLuarcPath()
 	return path.join(self.dir, ".luarc.json")
 end
@@ -107,6 +111,19 @@ function Package:getName()
 	return self:readConfig().name
 end
 
+---@param destinationPath string
+function Package:build(destinationPath)
+	local buildScriptPath = self:getBuildScriptPath()
+	if fs.exists(buildScriptPath) then
+		fs.copy(self:getSrcDir(), destinationPath)
+
+		local engine = self:readConfig().engine or "lua"
+		process.spawn(engine, { buildScriptPath }, { cwd = destinationPath, env = { LPM_OUTPUT_DIR = destinationPath } })
+	else
+		fs.mklink(self:getSrcDir(), destinationPath)
+	end
+end
+
 ---@param dependency lpm.Package
 function Package:installDependency(dependency)
 	self:installDependencies(dependency:getDependencies(), dependency:getDir())
@@ -121,7 +138,7 @@ function Package:installDependency(dependency)
 		return
 	end
 
-	fs.mklink(dependency:getSrcDir(), destinationPath)
+	dependency:build(destinationPath)
 end
 
 --- TODO: Add luarc changing stuff again
