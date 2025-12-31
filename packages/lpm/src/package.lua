@@ -6,11 +6,16 @@ local json = require("json")
 local path = require("path")
 local sea = require("sea")
 local process = require("process")
+local util = require("util")
 
 ---@class lpm.Package
 ---@field dir string
 local Package = {}
 Package.__index = Package
+
+function Package:getDir()
+	return self.dir
+end
 
 function Package:getLuarcPath()
 	return path.join(self.dir, ".luarc.json")
@@ -66,30 +71,21 @@ function Package.init(dir)
 		error("Directory already contains lpm.json: " .. dir)
 	end
 
-	---@type lpm.Config
-	local config = {
-		name = fs.basename(dir),
-		version = "0.1.0",
-		engine = "lua"
-	}
-
-	local file = io.open(configPath, "w")
-	if file then
-		file:write(json.encode(config))
-		file:close()
-	end
+	fs.write(configPath, util.dedent [[
+		{
+			"name": "]] .. fs.basename(dir) .. [[",
+			"version": "0.1.0",
+			"engine": "lua",
+			"main": "src/init.lua"
+		}
+	]])
 
 	local package = Package.open(dir)
 
 	local src = package:getSrcDir()
 	if not fs.exists(src) then
 		fs.mkdir(src)
-
-		local initHandle = io.open(path.join(src, "init.lua"), "w")
-		if initHandle then
-			initHandle:write('print("Hello, world!")')
-			initHandle:close()
-		end
+		fs.write(path.join(src, "init.lua"), "print('Hello, world!')")
 	end
 
 	return package
@@ -107,12 +103,25 @@ function Package:getName()
 	return self:readConfig().name
 end
 
+---@param dependency lpm.Package
+function Package:installDependency(dependency)
+	local modulesDir = self:getModulesDir()
+	if not fs.exists(modulesDir) then
+		fs.mkdir(modulesDir)
+	end
+
+	local destinationPath = path.join(modulesDir, dependency:getName())
+	if fs.exists(destinationPath) then
+		return
+	end
+
+	fs.mklink(dependency:getDir(), destinationPath)
+end
+
 --- TODO: Add luarc changing stuff again
 ---@param dependencies table<string, lpm.Config.Dependency>?
----@param installed table<string, boolean>?
-function Package:installDependencies(dependencies, installed)
+function Package:installDependencies(dependencies)
 	dependencies = dependencies or self:getDependencies()
-	installed = installed or {}
 
 	local modulesDir = self:getModulesDir()
 	if not fs.exists(modulesDir) then
@@ -120,10 +129,6 @@ function Package:installDependencies(dependencies, installed)
 	end
 
 	for name, depInfo in pairs(dependencies) do
-		if installed and installed[name] then
-			goto skip
-		end
-
 		local destinationPath = path.join(modulesDir, name)
 		if fs.exists(destinationPath) then
 			goto skip
@@ -137,29 +142,11 @@ function Package:installDependencies(dependencies, installed)
 				local package = Package.open(parentDir)
 
 				if package:getName() == name then
-					self:installDependencies(package:getDependencies(), installed)
-
-					local packageSrcPath = package:getSrcDir()
-					if not fs.exists(packageSrcPath) then
-						error("Dependency " .. name .. " has no src directory")
-					end
-
-					installed[name] = true
-					fs.mklink(packageSrcPath, destinationPath)
+					self:installDependency(package)
 				end
 			end
 		elseif depInfo.path then
-			local dependency = Package.open(path.resolve(self.dir, depInfo.path))
-			self:installDependencies(dependency:getDependencies(), installed)
-
-			local dependencySrcPath = path.resolve(self.dir, dependency:getSrcDir())
-			if not fs.exists(dependencySrcPath) then
-				error("Dependency " .. name .. " has no src directory")
-			end
-
-			installed[dependency:getName()] = true
-
-			fs.mklink(dependencySrcPath, destinationPath)
+			self:installDependency(Package.open(path.resolve(self.dir, depInfo.path)))
 		else
 			error("Unsupported dependency type for: " .. name)
 		end
