@@ -2,6 +2,8 @@ local path = {}
 
 path.separator = string.sub(package.config, 1, 1)
 
+local isWindows = path.separator == "\\"
+
 ---@param p string
 function path.basename(p)
 	return string.match(p, "([^" .. path.separator .. "]+)$") or ""
@@ -12,10 +14,13 @@ function path.dirname(p)
 	return p:match("^(.*)" .. path.separator) or "."
 end
 
---- TODO: Handle windows paths
 ---@param p string
 function path.isAbsolute(p)
-	return string.sub(p, 1, 1) == path.separator
+	if isWindows then
+		return string.match(p, "^%a:\\") ~= nil or string.sub(p, 1, 1) == path.separator
+	else
+		return string.sub(p, 1, 1) == path.separator
+	end
 end
 
 ---@param p string
