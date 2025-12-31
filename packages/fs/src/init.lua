@@ -41,13 +41,16 @@ function fs.scan(cwd, glob)
 	local results = {}
 	local pattern = fs.globToPattern(glob)
 
-	local function scanRecursive(currentPath)
+	local function scanRecursive(currentPath, visited)
+		if visited[currentPath] then return end
+		visited[currentPath] = true
+
 		local items = fs.listdir(currentPath)
 		for _, item in ipairs(items) do
 			local fullPath = path.resolve(currentPath, item)
 
 			if fs.isdir(fullPath) then
-				scanRecursive(fullPath)
+				scanRecursive(fullPath, visited)
 			elseif string.find(fullPath, pattern) then
 				results[#results + 1] = path.relative(cwd, fullPath)
 			end
@@ -55,7 +58,7 @@ function fs.scan(cwd, glob)
 	end
 
 	if fs.exists(cwd) and fs.isdir(cwd) then
-		scanRecursive(cwd)
+		scanRecursive(cwd, {})
 	end
 
 	return results
