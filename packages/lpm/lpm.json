@@ -10,7 +10,9 @@
 		"process": { "path": "../process" },
 		"clap": { "path": "../clap" },
 		"fs": { "path": "../fs" },
-		"util": { "path": "../util" }
+		"util": { "path": "../util" },
+		"http": { "path": "../http" },
+		"semver": { "path": "../semver" }
 	},
 	"devDependencies": {
 		"busted": { "git": "https://github.com/codebycruz/busted.git" }

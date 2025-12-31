@@ -19,13 +19,13 @@ busted.wrap(cb)
 cb()
 
 local fails, errors = 0, 0
-busted.subscribe({ 'error' }, function(element, parent, message)
+busted.subscribe({ "error" }, function(_, _, message)
 	errors = errors + 1
 	io.stderr:write(message)
 	return nil, true
 end)
 
-busted.subscribe({ 'failure' }, function(element, parent, message)
+busted.subscribe({ "failure" }, function(_, _, message)
 	fails = fails + 1
 	io.stderr:write(message)
 	return nil, true

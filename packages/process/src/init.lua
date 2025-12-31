@@ -101,4 +101,21 @@ function process.spawn(name, args, options)
 	return os.execute(command)
 end
 
+if isWindows then
+	process.platform = "win32"
+else
+	local ok, out = process.exec("uname", { "-s" })
+	if ok then
+		if string.match(out, "^Linux") then
+			process.platform = "linux"
+		elseif string.match(out, "^Darwin") then
+			process.platform = "darwin"
+		else
+			process.platform = "unix"
+		end
+	else
+		process.platform = "unix"
+	end
+end
+
 return process

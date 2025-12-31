@@ -1,0 +1,7 @@
+{
+	"name": "http",
+	"version": "0.1.0",
+	"dependencies": {
+		"process": { "path": "../process" }
+	}
+}

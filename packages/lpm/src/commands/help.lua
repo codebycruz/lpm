@@ -8,6 +8,7 @@ local function help(args)
 		{},
 		{ cmd = "new",     ex = "myproject", color = ansi.red,     desc = "Create a new lpm project" },
 		{ cmd = "init",    ex = nil,         color = ansi.red,     desc = "Initialize current directory as lpm project" },
+		{ cmd = "upgrade", ex = nil,         color = ansi.red,     desc = "Upgrade lpm to the latest version" },
 		{},
 		{ cmd = "install", ex = nil,         color = ansi.yellow,  desc = "Install project dependencies" },
 		{ cmd = "add",     ex = "gfx",       color = ansi.yellow,  desc = "Add a dependency (--path <path> or --git <url>)" },

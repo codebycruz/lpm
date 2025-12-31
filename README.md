@@ -17,6 +17,21 @@ It was created due to my frustration with the current status quo of package mana
 
 ## Requirements
 
-You'll need LuaJIT installed on your system to use `lpm` as it is currently dynamically linked as a `lpm bundle` executable.
+- You'll need LuaJIT 2.1+ to use `lpm` as it is currently a dynamically linked `lpm compile`'d executable.
+- Git is required for git repository installations.
 
-Currently, `lpm` is Lua version agnostic. But it is written with LuaJIT in mind, so there may be some incompatibilities with PUC Lua. Feel free to report any issues you find.
+## Installation
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/codebycruz/lpm/master/install.sh | sh
+```
+
+Windows
+
+```powershell
+irm https://raw.githubusercontent.com/codebycruz/lpm/master/install.ps1 | iex
+```
+
+## Development
+
+To build with `lpm compile`, you'll need `cc` and `luajit` development libraries installed.
