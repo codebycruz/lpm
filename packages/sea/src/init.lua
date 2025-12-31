@@ -58,14 +58,14 @@ function sea.compile(main, files)
 		local escapedName = file.path:gsub(".", CEscapes)
 
 		filePreloads[i] = ('const unsigned char data_%d[] = {%s}; luaL_loadbuffer(L, (const char*)data_%d, %d, "%s"); lua_setfield(L, -2, "%s");')
-		:format(
-			i,
-			hexString,
-			i,
-			#bytecode,
-			escapedName,
-			escapedName
-		)
+			:format(
+				i,
+				hexString,
+				i,
+				#bytecode,
+				escapedName,
+				escapedName
+			)
 	end
 
 	local code = [[
