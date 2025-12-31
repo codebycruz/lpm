@@ -11,5 +11,8 @@
 		"clap": { "path": "../clap" },
 		"fs": { "path": "../fs" },
 		"util": { "path": "../util" }
+	},
+	"devDependencies": {
+		"busted": { "path": "../../../busted" }
 	}
 }

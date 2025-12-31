@@ -1,6 +1,9 @@
 local fs = require("fs")
 local path = require("path")
 
+require("busted.runner")()
+
+error("stop" .. tostring(describe))
 assert(string.match("foo/whatever.lua", fs.globToPattern("**.lua")))
 
 local base = "/home/user/project"

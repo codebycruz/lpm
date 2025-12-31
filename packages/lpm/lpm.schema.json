@@ -2,17 +2,8 @@
 	"$schema": "http://json-schema.org/draft-07/schema#",
 	"type": "object",
 	"required": ["name", "version", "dependencies"],
-	"properties": {
-		"name": {
-			"type": "string",
-			"description": "Package name"
-		},
-		"version": {
-			"type": "string",
-			"pattern": "^\\d+\\.\\d+\\.\\d+$",
-			"description": "Semantic version number"
-		},
-		"dependencies": {
+	"definitions": {
+		"dependencyObject": {
 			"type": "object",
 			"additionalProperties": {
 				"type": "object",
@@ -38,8 +29,38 @@
 						"additionalProperties": false
 					}
 				]
-			},
-			"description": "Package dependencies with source locations"
+			}
+		}
+	},
+	"properties": {
+		"name": {
+			"type": "string",
+			"description": "Package name"
+		},
+		"version": {
+			"type": "string",
+			"pattern": "^\\d+\\.\\d+\\.\\d+$",
+			"description": "Semantic version number"
+		},
+		"dependencies": {
+			"allOf": [
+				{
+					"$ref": "#/definitions/dependencyObject"
+				},
+				{
+					"description": "Package dependencies with source locations"
+				}
+			]
+		},
+		"devDependencies": {
+			"allOf": [
+				{
+					"$ref": "#/definitions/dependencyObject"
+				},
+				{
+					"description": "Development dependencies with source locations"
+				}
+			]
 		}
 	},
 	"additionalProperties": false

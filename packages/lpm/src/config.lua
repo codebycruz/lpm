@@ -3,6 +3,7 @@
 ---@field version string
 ---@field engine? string
 ---@field dependencies? table<string, lpm.Config.Dependency>
+---@field devDependencies? table<string, lpm.Config.Dependency>
 local Config = {}
 Config.__index = Config
 

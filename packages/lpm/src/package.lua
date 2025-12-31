@@ -99,12 +99,18 @@ function Package:getDependencies()
 	return self:readConfig().dependencies or {}
 end
 
+function Package:getDevDependencies()
+	return self:readConfig().devDependencies or {}
+end
+
 function Package:getName()
 	return self:readConfig().name
 end
 
 ---@param dependency lpm.Package
 function Package:installDependency(dependency)
+	self:installDependencies(dependency:getDependencies(), dependency:getDir())
+
 	local modulesDir = self:getModulesDir()
 	if not fs.exists(modulesDir) then
 		fs.mkdir(modulesDir)
@@ -120,8 +126,10 @@ end
 
 --- TODO: Add luarc changing stuff again
 ---@param dependencies table<string, lpm.Config.Dependency>?
-function Package:installDependencies(dependencies)
+---@param relativeTo string? # Directory to resolve relative paths from
+function Package:installDependencies(dependencies, relativeTo)
 	dependencies = dependencies or self:getDependencies()
+	relativeTo = relativeTo or self.dir
 
 	local modulesDir = self:getModulesDir()
 	if not fs.exists(modulesDir) then
@@ -146,13 +154,17 @@ function Package:installDependencies(dependencies)
 				end
 			end
 		elseif depInfo.path then
-			self:installDependency(Package.open(path.resolve(self.dir, depInfo.path)))
+			self:installDependency(Package.open(path.resolve(relativeTo, depInfo.path)))
 		else
 			error("Unsupported dependency type for: " .. name)
 		end
 
 		::skip::
 	end
+end
+
+function Package:installDevDependencies()
+	self:installDependencies(self:getDevDependencies())
 end
 
 function Package:compile()
