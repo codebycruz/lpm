@@ -13,6 +13,6 @@
 		"util": { "path": "../util" }
 	},
 	"devDependencies": {
-		"busted": { "path": "../../../busted" }
+		"busted": { "git": "https://github.com/codebycruz/busted.git" }
 	}
 }
