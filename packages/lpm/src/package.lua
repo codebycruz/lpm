@@ -4,6 +4,7 @@ local fs = require("fs")
 local json = require("json")
 local path = require("path")
 local sea = require("sea")
+local process = require("process")
 
 ---@class lpm.Package
 ---@field dir string
@@ -20,6 +21,10 @@ end
 
 function Package:getSrcDir()
 	return path.join(self.dir, "src")
+end
+
+function Package:getTestDir()
+	return path.join(self.dir, "tests")
 end
 
 function Package:getConfigPath()
@@ -180,6 +185,20 @@ function Package:bundle()
 	end
 
 	return sea.compile(self:getName(), files)
+end
+
+--- Runs a script within the package context
+--- This will use the package's engine and set up the LUA_PATH accordingly
+---@param scriptPath string
+---@return boolean? # Success
+---@return string # Output
+function Package:runScript(scriptPath)
+	local modulesDir = self:getModulesDir()
+
+	local luaPath = path.join(modulesDir, "?.lua") .. ";" .. path.join(modulesDir, "?", "init.lua") .. ";"
+	local engine = self:readConfig().engine or "lua"
+
+	return process.exec(engine, { scriptPath }, { env = { LUA_PATH = luaPath } })
 end
 
 return Package

@@ -12,6 +12,7 @@ commands.run = require("lpm.commands.run")
 commands.install = require("lpm.commands.install")
 commands.i = commands.install
 commands.bundle = require("lpm.commands.bundle")
+commands.test = require("lpm.commands.test")
 
 if args:count() == 0 then
 	commands.help()

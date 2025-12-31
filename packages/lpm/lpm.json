@@ -8,6 +8,7 @@
 		"fs": { "path": "../fs" },
 		"sea": { "path": "../sea" },
 		"clap": { "path": "../clap" },
-		"path": { "path": "../path" }
+		"path": { "path": "../path" },
+		"process": { "path": "../process" }
 	}
 }

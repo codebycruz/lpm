@@ -2,6 +2,7 @@
 	"name": "fs",
 	"version": "0.1.0",
 	"dependencies": {
-		"path": { "path": "../path" }
+		"path": { "path": "../path" },
+		"process": { "path": "../process" }
 	}
 }
