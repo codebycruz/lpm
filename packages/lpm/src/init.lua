@@ -1,6 +1,9 @@
 local ansi = require("ansi")
 local clap = require("clap")
 
+local global = require("lpm.global")
+global.init()
+
 local args = clap.parse({ ... })
 
 local commands = {}

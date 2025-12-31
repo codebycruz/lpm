@@ -7,6 +7,11 @@ function path.basename(p)
 	return string.match(p, "([^" .. path.separator .. "]+)$") or ""
 end
 
+---@param p string
+function path.dirname(p)
+	return p:match("^(.*)" .. path.separator) or "."
+end
+
 --- TODO: Handle windows paths
 ---@param p string
 function path.isAbsolute(p)

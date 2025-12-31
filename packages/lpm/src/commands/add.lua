@@ -1,5 +1,6 @@
 local json = require("json")
 local ansi = require("ansi")
+local fs = require("fs")
 
 local Package = require("lpm.package")
 
@@ -17,24 +18,21 @@ local function add(args)
 	end
 
 	if not depType then
-		error("You must specify either --path <path> or --git <url>")
+		print(ansi.colorize(ansi.red, "You must specify either --path <path> or --git <url>"))
+		return
 	end
 
 	local p = Package.open()
 	local configPath = p:getConfigPath()
 
-	local file = io.open(configPath, "r")
-	if not file then
-		error("Could not read lpm.json")
-	end
-
-	local content = file:read("*all")
-	file:close()
-
-	local config = json.decode(content)
-
+	local config = json.decode(fs.read(p:getConfigPath()))
 	if not config.dependencies then
 		config.dependencies = {}
+	end
+
+	if config.dependencies[name] then
+		print(ansi.colorize(ansi.yellow, "Dependency already exists: " .. name))
+		return
 	end
 
 	config.dependencies[name] = { [depType] = depValue }

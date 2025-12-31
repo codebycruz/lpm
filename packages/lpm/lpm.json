@@ -3,12 +3,12 @@
 	"version": "0.1.0",
 	"$schema": "./lpm.schema.json",
 	"dependencies": {
-		"ansi": { "path": "../ansi" },
 		"json": { "path": "../json" },
-		"fs": { "path": "../fs" },
+		"ansi": { "path": "../ansi" },
 		"sea": { "path": "../sea" },
-		"clap": { "path": "../clap" },
 		"path": { "path": "../path" },
-		"process": { "path": "../process" }
+		"process": { "path": "../process" },
+		"clap": { "path": "../clap" },
+		"fs": { "path": "../fs" }
 	}
 }

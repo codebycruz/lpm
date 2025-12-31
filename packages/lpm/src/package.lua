@@ -1,4 +1,5 @@
 local Config = require("lpm.config")
+local global = require("lpm.global")
 
 local fs = require("fs")
 local json = require("json")
@@ -123,14 +124,31 @@ function Package:installDependencies(dependencies, installed)
 			goto skip
 		end
 
-		if depInfo.git then
-			error("Git dependencies are not yet supported: " .. name)
-		elseif depInfo.path then
-			local destinationPath = path.join(modulesDir, name)
-			if fs.exists(destinationPath) then
-				goto skip
-			end
+		local destinationPath = path.join(modulesDir, name)
+		if fs.exists(destinationPath) then
+			goto skip
+		end
 
+		if depInfo.git then
+			local repoDir = global.getOrInitGitRepo(name, depInfo.git)
+
+			for _, config in ipairs(fs.scan(repoDir, "**/lpm.json")) do
+				local parentDir = path.join(repoDir, path.dirname(config))
+				local package = Package.open(parentDir)
+
+				if package:getName() == name then
+					self:installDependencies(package:getDependencies(), installed)
+
+					local packageSrcPath = package:getSrcDir()
+					if not fs.exists(packageSrcPath) then
+						error("Dependency " .. name .. " has no src directory")
+					end
+
+					installed[name] = true
+					fs.mklink(packageSrcPath, destinationPath)
+				end
+			end
+		elseif depInfo.path then
 			local dependency = Package.open(path.resolve(self.dir, depInfo.path))
 			self:installDependencies(dependency:getDependencies(), installed)
 

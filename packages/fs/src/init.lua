@@ -5,15 +5,6 @@ local process = require("process")
 
 local isWindows = path.separator == "\\"
 
----@param arg string
-local function escape(arg)
-	if isWindows then
-		return '"' .. string.gsub(arg, '"', '\\"') .. '"'
-	else
-		return "'" .. string.gsub(arg, "'", "'\\''") .. "'"
-	end
-end
-
 function fs.globToPattern(glob)
 	local pattern = glob
 		:gsub("([%^%$%(%)%%%.%[%]%+%-])", "%%%1")
