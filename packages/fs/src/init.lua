@@ -35,6 +35,16 @@ function fs.tmpdir(prefix)
 	return dir
 end
 
+---@param p string
+function fs.realpath(p)
+	local ok, out = process.exec("realpath", { p })
+	if not ok then
+		error("Failed to get real path for " .. p)
+	end
+
+	return out:gsub("\n$", "")
+end
+
 ---@param cwd string
 ---@param glob string
 function fs.scan(cwd, glob)
@@ -42,8 +52,10 @@ function fs.scan(cwd, glob)
 	local pattern = fs.globToPattern(glob)
 
 	local function scanRecursive(currentPath, visited)
-		if visited[currentPath] then return end
-		visited[currentPath] = true
+		local real = fs.realpath(currentPath)
+
+		if visited[real] then return end
+		visited[real] = true
 
 		local items = fs.listdir(currentPath)
 		for _, item in ipairs(items) do
@@ -156,6 +168,17 @@ function fs.isdir(path)
 		return output:match("yes") ~= nil
 	else
 		local success, _ = process.exec("test", { "-d", path })
+		return success == true
+	end
+end
+
+---@param p string
+function fs.islink(p)
+	if isWindows then
+		local _, output = process.exec("cmd", { "/c", 'dir "' .. p .. '" | find "SYMLINK"' })
+		return output ~= ""
+	else
+		local success, _ = process.exec("test", { "-L", p })
 		return success == true
 	end
 end
