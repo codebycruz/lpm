@@ -30,7 +30,7 @@ jobs:
         run: |
           cd packages/lpm
           $GITHUB_WORKSPACE/lpm-linux-x86_64 install
-          $GITHUB_WORKSPACE/lpm-linux-x86_64 bundle --outfile ./lpm-linux-x86_64
+          $GITHUB_WORKSPACE/lpm-linux-x86_64 compile --outfile ./lpm-linux-x86_64
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6
