@@ -3,7 +3,7 @@
 	"version": "0.1.0",
 	"$schema": "./lpm.schema.json",
 	"dependencies": {
-		"json": { "git": "git@github.com:codebycruz/json.lua.git" },
+		"json": { "git": "https://github.com/codebycruz/json.lua.git" },
 		"ansi": { "path": "../ansi" },
 		"sea": { "path": "../sea" },
 		"path": { "path": "../path" },
