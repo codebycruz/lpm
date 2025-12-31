@@ -55,7 +55,6 @@ local function formatCommand(name, args, options)
 		command = table.concat(parts, " ") .. " " .. command
 	end
 
-	print(command)
 	return command
 end
 
