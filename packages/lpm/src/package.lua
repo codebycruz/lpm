@@ -118,7 +118,7 @@ function Package:build(destinationPath)
 		fs.copy(self:getSrcDir(), destinationPath)
 
 		local engine = self:readConfig().engine or "lua"
-		process.spawn(engine, { buildScriptPath }, { cwd = destinationPath, env = { LPM_OUTPUT_DIR = destinationPath } })
+		process.spawn(engine, { buildScriptPath }, { cwd = fs.tmpdir(), env = { LPM_OUTPUT_DIR = destinationPath } })
 	else
 		fs.mklink(self:getSrcDir(), destinationPath)
 	end
@@ -184,6 +184,7 @@ function Package:installDevDependencies()
 	self:installDependencies(self:getDevDependencies())
 end
 
+-- TODO: Support build step? Hmm.
 function Package:compile()
 	self:installDependencies()
 

@@ -48,13 +48,14 @@ local function formatCommand(name, args, options)
 			if isWindows then
 				parts[#parts + 1] = "set " .. k:match("^[%w_]+$") .. "=" .. escape(v) .. "&&"
 			else
-				parts[#parts + 1] = k:match("^[%w_]+$") .. "=" .. escape(v)
+				parts[#parts + 1] = "export " .. k:match("^[%w_]+$") .. "=" .. escape(v) .. ";"
 			end
 		end
 
 		command = table.concat(parts, " ") .. " " .. command
 	end
 
+	print(command)
 	return command
 end
 

@@ -16,6 +16,25 @@ function fs.globToPattern(glob)
 	return "^" .. pattern .. "$"
 end
 
+function fs.tmpfile()
+	return os.tmpname()
+end
+
+math.randomseed(os.time())
+
+---@param prefix string?
+function fs.tmpdir(prefix)
+	prefix = prefix or "lua"
+
+	local tmp = os.getenv("TMPDIR") or os.getenv("TEMP") or os.getenv("TMP") or "/tmp"
+	local rnd = math.random(100000, 999999)
+
+	local dir = path.join(tmp, prefix .. "_" .. tostring(os.time()) .. "_" .. rnd)
+	fs.mkdir(dir)
+
+	return dir
+end
+
 ---@param cwd string
 ---@param glob string
 function fs.scan(cwd, glob)
