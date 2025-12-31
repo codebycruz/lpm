@@ -4,16 +4,21 @@ local fs = require("fs")
 local process = require("process")
 
 function read(cmd)
-	local handle = io.popen(cmd, "r")
-	local output = handle:read("*a")
-	handle:close()
+	local success, output = process.exec("sh", { "-c", cmd })
+	if not success then
+		error("Command failed: " .. cmd)
+	end
+
 	return output
 end
 
 function write(cmd, data)
-	local handle = io.popen(cmd, "w")
-	handle:write(data)
-	return handle:close()
+	local success, _ = process.exec("sh", { "-c", cmd }, { stdin = data })
+	if not success then
+		error("Command failed: " .. cmd)
+	end
+
+	return true
 end
 
 local libs = read("pkg-config --libs luajit"):gsub("\n", "")
@@ -45,7 +50,7 @@ end
 ---@param files { path: string, content: string }[]
 ---@return string
 function sea.compile(main, files)
-	local outPath = os.tmpname()
+	local outPath = fs.tmpfile()
 
 	local filePreloads = {}
 	for i, file in ipairs(files) do
@@ -109,7 +114,10 @@ function sea.compile(main, files)
 		}
 	]]
 
-	assert(write(("cc %s -xc - -o %s %s"):format(cflags, outPath, libs), code), "Compilation failed")
+	local success = write(("cc %s -xc - -o %s %s"):format(cflags, outPath, libs), code)
+	if not success then
+		error("Compilation failed")
+	end
 
 	return outPath
 end
