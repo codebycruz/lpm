@@ -1,8 +1,8 @@
 local fs = {}
 
-fs.separator = package.config:sub(1, 1)
+local path = require("path")
 
-local isWindows = fs.separator == "\\"
+local isWindows = path.separator == "\\"
 
 ---@param arg string
 local function escape(arg)
@@ -24,35 +24,35 @@ function fs.globToPattern(glob)
 	return "^" .. pattern .. "$"
 end
 
----@param path string
+---@param cwd string
 ---@param glob string
-function fs.scan(path, glob)
+function fs.scan(cwd, glob)
 	local results = {}
 	local pattern = fs.globToPattern(glob)
 
 	local function scanRecursive(currentPath)
 		local items = fs.listdir(currentPath)
 		for _, item in ipairs(items) do
-			local fullPath = fs.resolve(currentPath, item)
+			local fullPath = path.resolve(currentPath, item)
 
 			if fs.isdir(fullPath) then
 				scanRecursive(fullPath)
 			elseif string.find(fullPath, pattern) then
-				results[#results + 1] = fullPath
+				results[#results + 1] = path.relative(cwd, fullPath)
 			end
 		end
 	end
 
-	if fs.exists(path) and fs.isdir(path) then
-		scanRecursive(path)
+	if fs.exists(cwd) and fs.isdir(cwd) then
+		scanRecursive(cwd)
 	end
 
 	return results
 end
 
----@param path string
-function fs.read(path)
-	local file = io.open(path, "r")
+---@param p string
+function fs.read(p)
+	local file = io.open(p, "r")
 	if not file then
 		return nil
 	end
@@ -63,10 +63,10 @@ function fs.read(path)
 	return content
 end
 
----@param path string
+---@param p string
 ---@param content string
-function fs.write(path, content)
-	local file = io.open(path, "w")
+function fs.write(p, content)
+	local file = io.open(p, "w")
 	if not file then
 		return false
 	end
@@ -77,9 +77,9 @@ function fs.write(path, content)
 	return true
 end
 
----@param path string
-function fs.exists(path)
-	local file = io.open(path, "r")
+---@param p string
+function fs.exists(p)
+	local file = io.open(p, "r")
 	if file then
 		file:close()
 		return true
@@ -88,12 +88,12 @@ function fs.exists(path)
 	end
 end
 
----@param path string
-function fs.mkdir(path)
+---@param p string
+function fs.mkdir(p)
 	if isWindows then
-		os.execute("mkdir " .. escape(path))
+		os.execute("mkdir " .. escape(p))
 	else
-		os.execute("mkdir -p " .. escape(path))
+		os.execute("mkdir -p " .. escape(p))
 	end
 end
 
@@ -112,11 +112,6 @@ function fs.cwd()
 	local cwd = handle:read("*all"):gsub("\n$", "")
 	handle:close()
 	return cwd
-end
-
----@param path string
-function fs.basename(path)
-	return string.match(path, "([^/]+)$") or path
 end
 
 ---@param path string
@@ -153,42 +148,10 @@ function fs.copy(src, dest)
 	os.execute("cp -r " .. escape(src) .. " " .. escape(dest))
 end
 
----@param base string
----@param relative string
-function fs.resolve(base, relative)
-	if string.sub(relative, 1, 1) == "/" then
-		return relative
-	end
-
-	local path
-	if string.sub(base, -1) == "/" then
-		path = base .. relative
-	else
-		path = base .. "/" .. relative
-	end
-
-	-- Normalize the path by resolving .. and . components
-	local parts = {}
-	for part in string.gmatch(path, "[^/]+") do
-		if part == ".." then
-			if #parts > 0 then
-				table.remove(parts)
-			end
-		elseif part ~= "." then
-			table.insert(parts, part)
-		end
-	end
-
-	local result = "/" .. table.concat(parts, "/")
-	-- Handle relative paths that don't start with /
-	if string.sub(path, 1, 1) ~= "/" then
-		result = table.concat(parts, "/")
-		if #parts == 0 then
-			result = "."
-		end
-	end
-
-	return result
+---@param src string
+---@param dest string
+function fs.move(src, dest)
+	os.execute("mv " .. escape(src) .. " " .. escape(dest))
 end
 
 return fs

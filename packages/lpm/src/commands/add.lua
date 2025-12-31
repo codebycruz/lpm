@@ -21,7 +21,7 @@ local function add(args)
 	end
 
 	local p = Package.open()
-	local configPath = p.dir .. "/lpm.json"
+	local configPath = p:getConfigPath()
 
 	local file = io.open(configPath, "r")
 	if not file then

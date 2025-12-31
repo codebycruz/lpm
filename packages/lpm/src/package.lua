@@ -3,6 +3,7 @@ local Config = require("lpm.config")
 local fs = require("fs")
 local json = require("json")
 local path = require("path")
+local sea = require("sea")
 
 ---@class lpm.Package
 ---@field dir string
@@ -78,7 +79,7 @@ function Package.init(dir)
 	if not fs.exists(src) then
 		fs.mkdir(src)
 
-		local initHandle = io.open(src .. "/init.lua", "w")
+		local initHandle = io.open(path.join(src, "init.lua"), "w")
 		if initHandle then
 			initHandle:write('print("Hello, world!")')
 			initHandle:close()
@@ -125,10 +126,10 @@ function Package:installDependencies(dependencies, installed)
 				goto skip
 			end
 
-			local dependency = Package.open(fs.resolve(self.dir, depInfo.path))
+			local dependency = Package.open(path.resolve(self.dir, depInfo.path))
 			self:installDependencies(dependency:getDependencies(), installed)
 
-			local dependencySrcPath = fs.resolve(self.dir, dependency:getSrcDir())
+			local dependencySrcPath = path.resolve(self.dir, dependency:getSrcDir())
 			if not fs.exists(dependencySrcPath) then
 				error("Dependency " .. name .. " has no src directory")
 			end
@@ -145,7 +146,40 @@ function Package:installDependencies(dependencies, installed)
 end
 
 function Package:bundle()
+	self:installDependencies()
 
+	---@type table<{path: string, content: string}>
+	local files = {}
+
+	---@param dir string
+	local function bundleDir(projectName, dir)
+		for _, relativePath in ipairs(fs.scan(dir, "**/*.lua")) do
+			local absPath = path.join(dir, relativePath)
+			local content = fs.read(absPath)
+			if not content then
+				error("Could not read file: " .. absPath)
+			end
+
+			local moduleName = projectName
+			if relativePath ~= "init.lua" then
+				moduleName = projectName .. "." .. relativePath:gsub(path.separator, "."):gsub("%.lua$", "")
+			end
+
+			table.insert(files, { path = moduleName, content = content })
+		end
+	end
+
+	bundleDir(self:getName(), self:getSrcDir())
+
+	-- Use the lpm_modules directory for the build artifacts rather than src,
+	-- since in the future build scripts will be added that may modify src contents.
+	local modulesDir = self:getModulesDir()
+	for depName in pairs(self:getDependencies()) do
+		local buildFolder = path.join(modulesDir, depName)
+		bundleDir(depName, buildFolder)
+	end
+
+	return sea.compile(self:getName(), files)
 end
 
 return Package

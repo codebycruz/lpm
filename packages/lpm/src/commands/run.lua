@@ -8,11 +8,10 @@ local function run(args)
 
 	local p = Package.open()
 	local modulesDir = p:getModulesDir()
-	local luaPath = modulesDir .. "/?.lua;" .. modulesDir .. "/?/init.lua;"
+	local luaPath = path.join(modulesDir, "?.lua") .. ";" .. path.join(modulesDir, "?", "init.lua") .. ";"
 
 	local engine = p:readConfig().engine or "lua"
-	local cmd = string.format("LUA_PATH=%q %s %q", luaPath, engine, file)
-	os.execute(cmd)
+	os.execute(("LUA_PATH=%q %s %q"):format(luaPath, engine, file))
 end
 
 return run

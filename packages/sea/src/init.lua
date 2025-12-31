@@ -72,10 +72,11 @@ function bundler.compile(main, files)
 				lua_pushstring(L, argv[i]);
 			}
 
+			int base = lua_gettop(L) - (argc - 1);
 			lua_pushcfunction(L, traceback);
-			lua_insert(L, -(argc));
+			lua_insert(L, base);
 
-			int result = lua_pcall(L, argc - 1, 0, -(argc) - 1);
+			int result = lua_pcall(L, argc - 1, 0, base);
 			if (result != LUA_OK) {
 				fprintf(stderr, "%s\n", lua_tostring(L, -1));
 				lua_close(L);
