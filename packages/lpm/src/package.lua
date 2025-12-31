@@ -117,8 +117,10 @@ function Package:build(destinationPath)
 	if fs.exists(buildScriptPath) then
 		fs.copy(self:getSrcDir(), destinationPath)
 
-		local engine = self:readConfig().engine or "lua"
-		process.spawn(engine, { buildScriptPath }, { cwd = fs.tmpdir(), env = { LPM_OUTPUT_DIR = destinationPath } })
+		local ok, err = self:runScript(buildScriptPath, { LPM_OUTPUT_DIR = destinationPath })
+		if not ok then
+			error("Build script failed: " .. err)
+		end
 	else
 		fs.mklink(self:getSrcDir(), destinationPath)
 	end
@@ -225,15 +227,30 @@ end
 --- Runs a script within the package context
 --- This will use the package's engine and set up the LUA_PATH accordingly
 ---@param scriptPath string
+---@param vars table<string, string>? # Additional environment variables
 ---@return boolean? # Success
 ---@return string # Output
-function Package:runScript(scriptPath)
+function Package:runScript(scriptPath, vars)
 	local modulesDir = self:getModulesDir()
 
-	local luaPath = path.join(modulesDir, "?.lua") .. ";" .. path.join(modulesDir, "?", "init.lua") .. ";"
+	local luaPath =
+		path.join(modulesDir, "?.lua") .. ";"
+		.. path.join(modulesDir, "?", "init.lua") .. ";"
+
+	local luaCPath =
+		path.join(modulesDir, "?.so") .. ";"
+		.. path.join(modulesDir, "?.dll") .. ";"
+
 	local engine = self:readConfig().engine or "lua"
 
-	return process.exec(engine, { scriptPath }, { env = { LUA_PATH = luaPath } })
+	local env = { LUA_PATH = luaPath, LUA_CPATH = luaCPath }
+	if vars then
+		for k, v in pairs(vars) do
+			env[k] = v
+		end
+	end
+
+	return process.exec(engine, { scriptPath }, { cwd = self:getDir(), env = env })
 end
 
 return Package
