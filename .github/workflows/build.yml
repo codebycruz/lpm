@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  build:
+  build-linux:
     runs-on: ubuntu-latest
 
     steps:
@@ -37,3 +37,34 @@ jobs:
         with:
           name: lpm-linux-x86_64
           path: packages/lpm/lpm-linux-x86_64
+
+  build-windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Download previous lpm release
+        shell: bash
+        run: |
+          gh release download --repo ${{ github.repository }} --pattern "lpm-windows-x86_64.exe"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup luajit
+        run: |
+          choco install luajit
+
+      - name: Bundle new lpm
+        shell: bash
+        run: |
+          cd packages/lpm
+          $GITHUB_WORKSPACE/lpm-windows-x86_64.exe install
+          $GITHUB_WORKSPACE/lpm-windows-x86_64.exe compile --outfile ./lpm-windows-x86_64.exe
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v6
+        with:
+          name: lpm-windows-x86_64
+          path: packages/lpm/lpm-windows-x86_64.exe
