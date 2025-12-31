@@ -4,14 +4,17 @@ local ansi = require("ansi")
 local function help(args)
 	local commands = {
 		{ cmd = "run",     ex = "foo.lua",   color = ansi.green,   desc = "Execute a lua script" },
+		{ cmd = "test",    ex = nil,         color = ansi.green,   desc = "Run project tests" },
 		{},
 		{ cmd = "new",     ex = "myproject", color = ansi.red,     desc = "Create a new lpm project" },
 		{ cmd = "init",    ex = nil,         color = ansi.red,     desc = "Initialize current directory as lpm project" },
 		{},
 		{ cmd = "install", ex = nil,         color = ansi.yellow,  desc = "Install project dependencies" },
 		{ cmd = "add",     ex = "gfx",       color = ansi.yellow,  desc = "Add a dependency (--path <path> or --git <url>)" },
+		{ cmd = "remove",  ex = "json",      color = ansi.yellow,  desc = "Remove a dependency" },
 		{},
-		{ cmd = "bundle",  ex = nil,         color = ansi.magenta, desc = "Bundle current project into executable" }
+		{ cmd = "compile", ex = nil,         color = ansi.magenta, desc = "Compile current project into an executable" },
+		{ cmd = "bundle",  ex = nil,         color = ansi.magenta, desc = "Bundle current project into a single lua file" }
 	}
 
 	print("lpm is a package manager for Lua, written in Lua.\n")

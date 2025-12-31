@@ -155,7 +155,7 @@ function Package:installDependencies(dependencies)
 	end
 end
 
-function Package:bundle()
+function Package:compile()
 	self:installDependencies()
 
 	---@type table<{path: string, content: string}>

@@ -1,7 +1,4 @@
 local ansi = require("ansi")
-local fs = require("fs")
-
-local Package = require("lpm.package")
 
 ---@param args clap.Args
 local function bundle(args)
@@ -10,10 +7,7 @@ local function bundle(args)
 		error("Please specify an output file using --outfile")
 	end
 
-	local executable = Package.open():bundle()
-	fs.move(executable, outFile)
-
-	print(ansi.colorize(ansi.green, "Bundle created: " .. outFile))
+	print(ansi.colorize(ansi.red, "Bundling is not yet implemented."))
 end
 
 return bundle

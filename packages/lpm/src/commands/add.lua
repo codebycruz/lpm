@@ -37,13 +37,9 @@ local function add(args)
 
 	config.dependencies[name] = { [depType] = depValue }
 
-	local file = io.open(configPath, "w")
-	if file then
-		file:write(json.encode(config))
-		file:close()
-		print(ansi.colorize(ansi.green, "Added dependency: " .. name) ..
-			" (" .. ansi.colorize(ansi.cyan, depType .. ": " .. depValue) .. ")")
-	end
+	fs.write(configPath, json.encode(config))
+	print(ansi.colorize(ansi.green, "Added dependency: " .. name) ..
+		" (" .. ansi.colorize(ansi.cyan, depType .. ": " .. depValue) .. ")")
 end
 
 return add
