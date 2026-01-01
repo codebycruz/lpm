@@ -59,20 +59,27 @@ function sea.compile(main, files)
 
 	local filePreloads = {}
 	for i, file in ipairs(files) do
-		local bytecode = sea.bytecode(file.content, file.path)
-		local hexArray = {}
-		for j = 1, #bytecode do
-			hexArray[j] = string.format("0x%02x", string.byte(bytecode, j))
-		end
-		local hexString = table.concat(hexArray, ",")
+		-- local bytecode = sea.bytecode(file.content, file.path)
+		-- local literalArray = {}
+		-- for j = 1, #bytecode do literalArray[j] = string.format("%d", string.byte(bytecode, j)) end
+		-- local bytecodeArray = table.concat(literalArray, ",")
+
 		local escapedName = file.path:gsub(".", CEscapes)
 
-		filePreloads[i] = ('const unsigned char data_%d[] = {%s}; luaL_loadbuffer(L, (const char*)data_%d, %d, "%s"); lua_setfield(L, -2, "%s");')
+		-- Bytecode temporarily disabled as windows has some issues with it apparently
+		-- filePreloads[i] = ('const unsigned char data_%d[] = {%s}; luaL_loadbuffer(L, (const char*)data_%d, %d, "%s"); lua_setfield(L, -2, "%s");')
+		-- 	:format(
+		-- 		i,
+		-- 		bytecodeArray,
+		-- 		i,
+		-- 		#bytecode,
+		-- 		escapedName,
+		-- 		escapedName
+		-- 	)
+		filePreloads[i] = ('luaL_loadbuffer(L, "%s", %d, "%s"); lua_setfield(L, -2, "%s");')
 			:format(
-				i,
-				hexString,
-				i,
-				#bytecode,
+				file.content:gsub(".", CEscapes),
+				#file.content,
 				escapedName,
 				escapedName
 			)
@@ -84,7 +91,12 @@ function sea.compile(main, files)
 		#include "lualib.h"
 
 		int traceback(lua_State* L) {
-			luaL_traceback(L, L, lua_tostring(L, 1), 1);
+			const char* msg = lua_tostring(L, 1);
+			if (msg == NULL) {
+				msg = "(error object is not a string)";
+			}
+
+			luaL_traceback(L, L, msg, 1);
 			return 1;
 		}
 

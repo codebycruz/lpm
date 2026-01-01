@@ -10,6 +10,10 @@ local function compile(args)
 		error("Please specify an output file using --outfile")
 	end
 
+	if string.sub(outFile, -4) ~= ".exe" then
+		outFile = outFile .. ".exe"
+	end
+
 	local executable = Package.open():compile()
 	fs.move(executable, outFile)
 
