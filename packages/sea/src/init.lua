@@ -4,22 +4,6 @@ local fs = require("fs")
 local process = require("process")
 local path = require("path")
 
-function write(cmd, data)
-	if process.platform == "win32" then
-		local success = process.exec("cmd", { "/c", cmd }, { stdin = data })
-		if not success then
-			error("Command failed: " .. cmd)
-		end
-	else
-		local success = process.exec("sh", { "-c", cmd }, { stdin = data })
-		if not success then
-			error("Command failed: " .. cmd)
-		end
-	end
-
-	return true
-end
-
 local libs, cflags
 if process.platform == "linux" then
 	local ok, rawlibs = process.exec("pkg-config", { "--libs", "luajit" })
@@ -32,7 +16,8 @@ if process.platform == "linux" then
 		error("Failed to find cflags for luajit " .. rawcflags)
 	end
 
-	libs, cflags = rawlibs, rawcflags
+	libs = rawlibs:gsub("%s+$", "")
+	cflags = rawcflags:gsub("%s+$", "")
 elseif process.platform == "win32" then
 	-- Currently hardcoded to the location of winget's LuaJIT distribution since it doesnt provide a pc.
 	local ljPath = path.join(os.getenv("LOCALAPPDATA"), "Programs", "LuaJIT")
@@ -132,9 +117,12 @@ function sea.compile(main, files)
 		}
 	]]
 
-	local success = write(("cc %s -xc - -o %s %s"):format(cflags, outPath, libs), code)
-	if not success then
-		error("Compilation failed")
+	-- Use unsafe mode to pass the full cc command without extra escaping
+	local ccCommand = "cc " .. cflags .. " -xc - -o " .. outPath .. " " .. libs
+	local success, output = process.exec(ccCommand, nil, { stdin = code, unsafe = true })
+
+	if not success or string.find(output, "is not recognized as an internal", 1, true) then
+		error("Compilation failed: " .. output)
 	end
 
 	return outPath

@@ -16,6 +16,7 @@ end
 ---@class process.CommandOptions
 ---@field cwd string?
 ---@field env table<string, string>?
+---@field unsafe boolean? # If true, do not escape command and arguments. Especially useful because windows is completely worthless :)
 
 ---@class process.ExecOptions: process.CommandOptions
 ---@field stdin string?
@@ -26,6 +27,8 @@ end
 ---@param args string[]?
 ---@param options process.CommandOptions?
 local function formatCommand(name, args, options)
+	local escape = (options and options.unsafe) and function(s) return s end or escape
+
 	if process.platform ~= "win32" then
 		name = escape(name)
 	end
@@ -59,7 +62,6 @@ local function formatCommand(name, args, options)
 		command = table.concat(parts, " ") .. " " .. command
 	end
 
-	print("cmd", command)
 	return command
 end
 

@@ -164,7 +164,7 @@ function Package:installDependencies(dependencies, relativeTo)
 		if depInfo.git then
 			local repoDir = global.getOrInitGitRepo(name, depInfo.git)
 
-			for _, config in ipairs(fs.scan(repoDir, "**/lpm.json")) do
+			for _, config in ipairs(fs.scan(repoDir, "**" .. path.separator .. "lpm.json")) do
 				local parentDir = path.join(repoDir, path.dirname(config))
 				local package = Package.open(parentDir)
 
@@ -196,7 +196,7 @@ function Package:compile()
 
 	---@param dir string
 	local function bundleDir(projectName, dir)
-		for _, relativePath in ipairs(fs.scan(dir, "**/*.lua")) do
+		for _, relativePath in ipairs(fs.scan(dir, "**" .. path.separator .. "*.lua")) do
 			local absPath = path.join(dir, relativePath)
 			local content = fs.read(absPath)
 			if not content then

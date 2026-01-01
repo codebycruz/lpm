@@ -16,7 +16,7 @@ local function test(args)
 	---@type { relativePath: string, msg: string }[]
 	local failures = {}
 
-	local testFiles = fs.scan(testDir, "**/*.lua")
+	local testFiles = fs.scan(testDir, "**" .. path.separator .. "*.lua")
 	for _, relativePath in ipairs(testFiles) do
 		local testFile = path.join(testDir, relativePath)
 

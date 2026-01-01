@@ -9,8 +9,8 @@ function fs.globToPattern(glob)
 	local pattern = glob
 		:gsub("([%^%$%(%)%%%.%[%]%+%-])", "%%%1")
 		:gsub("%*%*", "\001")
-		:gsub("%*", "[^/]*")
-		:gsub("%?", "[^/]")
+		:gsub("%*", "[^" .. path.separator .. "]*")
+		:gsub("%?", "[^" .. path.separator .. "]")
 		:gsub("\001", ".*")
 
 	return "^" .. pattern .. "$"
@@ -33,34 +33,21 @@ function fs.tmpdir(prefix)
 	return dir
 end
 
----@param p string
-function fs.realpath(p)
-	local ok, out = process.exec("realpath", { p })
-	if not ok then
-		error("Failed to get real path for " .. p)
-	end
-
-	return out:gsub("\n$", "")
-end
-
 ---@param cwd string
 ---@param glob string
 function fs.scan(cwd, glob)
 	local results = {}
 	local pattern = fs.globToPattern(glob)
 
-	local function scanRecursive(currentPath, visited)
-		local real = fs.realpath(currentPath)
-
-		if visited[real] then return end
-		visited[real] = true
-
+	local function scanRecursive(currentPath)
 		local items = fs.listdir(currentPath)
+		if not items then return end
+
 		for _, item in ipairs(items) do
 			local fullPath = path.resolve(currentPath, item)
 
 			if fs.isdir(fullPath) then
-				scanRecursive(fullPath, visited)
+				scanRecursive(fullPath)
 			elseif string.find(fullPath, pattern) then
 				results[#results + 1] = path.relative(cwd, fullPath)
 			end
@@ -68,7 +55,7 @@ function fs.scan(cwd, glob)
 	end
 
 	if fs.exists(cwd) and fs.isdir(cwd) then
-		scanRecursive(cwd, {})
+		scanRecursive(cwd)
 	end
 
 	return results
@@ -108,12 +95,13 @@ end
 
 ---@param p string
 function fs.exists(p)
-	local file = io.open(p, "r")
-	if file then
-		file:close()
-		return true
+	if isWindows then
+		local _, output = process.exec("cmd", { "/c", 'if exist "' .. p .. '" (echo yes) else (echo no)' },
+			{ unsafe = true })
+		return output:match("yes") ~= nil
 	else
-		return false
+		local success, _ = process.exec("test", { "-e", p })
+		return success == true
 	end
 end
 
@@ -155,10 +143,10 @@ function fs.cwd()
 	end
 end
 
----@param path string
-function fs.listdir(path)
+---@param p string
+function fs.listdir(p)
 	if isWindows then
-		local success, output = process.exec("cmd", { "/c", "dir /b \"" .. path .. "\"" })
+		local success, output = process.exec("dir", { "/b", p }, { unsafe = true })
 		if success then
 			local files = {}
 			for line in output:gmatch("[^\r\n]+") do
@@ -169,7 +157,7 @@ function fs.listdir(path)
 			return {}
 		end
 	else
-		local success, output = process.exec("ls", { "-1", path })
+		local success, output = process.exec("ls", { "-1", p })
 		if success then
 			local files = {}
 			for line in output:gmatch("[^\n]+") do
@@ -182,13 +170,14 @@ function fs.listdir(path)
 	end
 end
 
----@param path string
-function fs.isdir(path)
+---@param p string
+function fs.isdir(p)
 	if isWindows then
-		local _, output = process.exec("cmd", { "/c", 'if exist "' .. path .. '\\*" (echo yes) else (echo no)' })
+		local _, output = process.exec("cmd", { "/c", 'if exist "' .. p .. '\\*" (echo yes) else (echo no)' },
+			{ unsafe = true })
 		return output:match("yes") ~= nil
 	else
-		local success, _ = process.exec("test", { "-d", path })
+		local success, _ = process.exec("test", { "-d", p })
 		return success == true
 	end
 end
@@ -208,7 +197,7 @@ end
 ---@param dest string
 function fs.copy(src, dest)
 	if isWindows then
-		process.spawn("xcopy", { "/E", "/I", src, dest })
+		process.spawn("xcopy", { src, dest, "/E", "/I", "/Y" }, { unsafe = true })
 	else
 		process.spawn("cp", { "-r", src, dest })
 	end
@@ -218,7 +207,7 @@ end
 ---@param dest string
 function fs.move(src, dest)
 	if isWindows then
-		process.spawn("move", { src, dest })
+		process.exec("move", { src, dest })
 	else
 		process.spawn("mv", { src, dest })
 	end
