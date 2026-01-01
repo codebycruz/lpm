@@ -54,7 +54,7 @@ jobs:
 
       - name: Setup luajit
         run: |
-          winget install luajit
+          winget install luajit --accept-source-agreements --accept-package-agreements
           choco install pkgconfiglite
 
       - name: Bundle new lpm
