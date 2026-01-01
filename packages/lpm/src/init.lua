@@ -35,12 +35,13 @@ if os.getenv("BOOTSTRAP") then
 	local lpmModulesDir = join(baseDir, "lpm_modules")
 
 	local function dirExists(path)
-		local f = io.open(path, "r")
-		if f then
-			f:close()
-			return true
+		if isWindows then
+			local result = os.execute('if exist "' .. path .. '" exit 0')
+			return result == 0
+		else
+			local result = os.execute('test -d "' .. path .. '"')
+			return result == 0
 		end
-		return false
 	end
 
 	if not dirExists(lpmModulesDir) then
@@ -57,14 +58,17 @@ if os.getenv("BOOTSTRAP") then
 	}
 
 	for _, pkg in ipairs(pathPackages) do
-		local srcPath = join("..", "..", pkg, "src")
+		-- Semantics of the 'src' differ between windows and linux symlinks
+		local relSrcPath = join("..", "..", pkg, "src")
+		local absSrcPath = join(baseDir, "..", pkg, "src")
+
 		local linkPath = join(lpmModulesDir, pkg)
 
 		if not dirExists(linkPath) then
 			if isWindows then
-				os.execute('mklink /J "' .. linkPath .. '" "' .. srcPath .. '"')
+				os.execute('mklink /J "' .. linkPath .. '" "' .. absSrcPath .. '"')
 			else
-				os.execute("ln -sf '" .. srcPath .. "' '" .. linkPath .. "'")
+				os.execute("ln -sf '" .. relSrcPath .. "' '" .. linkPath .. "'")
 			end
 		end
 	end
@@ -89,7 +93,6 @@ if os.getenv("BOOTSTRAP") then
 			if isWindows then
 				os.execute('git clone "' .. pkg.url .. '" "' .. tmpGitPath .. '"')
 				os.execute('mklink /J "' .. linkPath .. '" "' .. join(tmpGitPath, "src") .. '"')
-				os.execute('rmdir /S /Q "' .. tmpGitPath .. '"')
 			else
 				os.execute('git clone "' .. pkg.url .. '" "' .. tmpGitPath .. '"')
 				os.execute("ln -sf '" .. join(tmpGitPath, "src") .. "' '" .. linkPath .. "'")
