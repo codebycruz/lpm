@@ -14,11 +14,11 @@ local repoUrl = "https://github.com/codebycruz/lpm"
 local apiUrl = "https://api.github.com/repos/codebycruz/lpm/releases/latest"
 
 local function getBinaryInstallLocation()
-	if process.win32 then
+	if process.platform == "win32" then
 		return path.join(global.getDir(), "lpm.exe")
-	elseif process.linux then
+	elseif process.platform == "linux" then
 		return path.join(global.getDir(), "lpm")
-	elseif process.darwin then
+	elseif process.platform == "darwin" then
 		return path.join(global.getDir(), "lpm")
 	end
 end
@@ -99,7 +99,7 @@ local function upgrade(args)
 		return
 	end
 
-	if not process.win32 then
+	if process.platform == "linux" then
 		local chmodSuccess, chmodErr = process.spawn("chmod", { "+x", tempLocation })
 		if not chmodSuccess then
 			print(ansi.colorize(ansi.red, "Failed to make binary executable: " .. chmodErr))

@@ -7,7 +7,7 @@ local isWindows = path.separator == "\\"
 ---@param arg string
 local function escape(arg)
 	if isWindows then
-		return '"' .. string.gsub(arg, '"', '\\"') .. '"'
+		return '"' .. string.gsub(arg, '"', '""') .. '"'
 	else
 		return "'" .. string.gsub(arg, "'", "'\\''") .. "'"
 	end
@@ -26,16 +26,20 @@ end
 ---@param args string[]?
 ---@param options process.CommandOptions?
 local function formatCommand(name, args, options)
+	if process.platform ~= "win32" then
+		name = escape(name)
+	end
+
 	local command
 	if args then
-		local parts = { escape(name) }
+		local parts = { name }
 		for i, arg in ipairs(args) do
 			parts[i + 1] = escape(arg)
 		end
 
 		command = table.concat(parts, " ")
 	else
-		command = escape(name)
+		command = name
 	end
 
 	if options and options.cwd then
@@ -55,6 +59,7 @@ local function formatCommand(name, args, options)
 		command = table.concat(parts, " ") .. " " .. command
 	end
 
+	print("cmd", command)
 	return command
 end
 

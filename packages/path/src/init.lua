@@ -14,29 +14,50 @@ function path.dirname(p)
 	return p:match("^(.*)" .. path.separator) or "."
 end
 
+local windowsDriveLetter = "^%a:\\"
+
 ---@param p string
 function path.isAbsolute(p)
+	if string.sub(p, 1, 1) == path.separator then
+		return true
+	end
+
 	if isWindows then
-		return string.match(p, "^%a:\\") ~= nil or string.sub(p, 1, 1) == path.separator
-	else
-		return string.sub(p, 1, 1) == path.separator
+		return string.match(p, windowsDriveLetter) ~= nil
 	end
 end
 
 ---@param p string
 function path.parts(p)
-	return string.gmatch(p, "[^" .. path.separator .. "]+")
+	return string.gmatch(p, "[^/\\]+")
 end
 
 ---@param p string
-function path.normalize(p)
-	local isAbsolute = path.isAbsolute(p)
+function path.root(p)
+	local root = string.sub(p, 1, 1)
+	if root == path.separator then
+		return root
+	end
 
+	if isWindows then
+		root = string.match(p, windowsDriveLetter)
+		if root then
+			return root
+		end
+	end
+end
+
+function path.normalize(p)
+	local root = path.root(p) -- Root if absolute
+	local isRelative = root == nil
 	local parts = {}
+
 	for part in path.parts(p) do
 		if part == ".." then
-			if #parts > 0 then
+			if #parts > 0 and parts[#parts] ~= ".." then
 				table.remove(parts)
+			elseif isRelative then
+				parts[#parts + 1] = ".."
 			end
 		elseif part ~= "." and part ~= "" then
 			parts[#parts + 1] = part
@@ -44,11 +65,14 @@ function path.normalize(p)
 	end
 
 	if #parts == 0 then
-		return isAbsolute and path.separator or "."
-	elseif isAbsolute then
-		return path.separator .. table.concat(parts, path.separator)
+		return root or "."
 	else
-		return table.concat(parts, path.separator)
+		local result = table.concat(parts, path.separator)
+		if root and root == path.separator then
+			return root .. result
+		else
+			return result
+		end
 	end
 end
 
@@ -57,9 +81,9 @@ end
 function path.resolve(base, relative)
 	if path.isAbsolute(relative) then
 		return path.normalize(relative)
-	else
-		return path.normalize(base .. path.separator .. relative)
 	end
+
+	return path.normalize(base .. path.separator .. relative)
 end
 
 ---@param ... string

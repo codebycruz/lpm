@@ -2,27 +2,45 @@ local sea = {}
 
 local fs = require("fs")
 local process = require("process")
-
-function read(cmd)
-	local success, output = process.exec("sh", { "-c", cmd })
-	if not success then
-		error("Command failed: " .. cmd)
-	end
-
-	return output
-end
+local path = require("path")
 
 function write(cmd, data)
-	local success, _ = process.exec("sh", { "-c", cmd }, { stdin = data })
-	if not success then
-		error("Command failed: " .. cmd)
+	if process.platform == "win32" then
+		local success = process.exec("cmd", { "/c", cmd }, { stdin = data })
+		if not success then
+			error("Command failed: " .. cmd)
+		end
+	else
+		local success = process.exec("sh", { "-c", cmd }, { stdin = data })
+		if not success then
+			error("Command failed: " .. cmd)
+		end
 	end
 
 	return true
 end
 
-local libs = read("pkg-config --libs luajit"):gsub("\n", "")
-local cflags = read("pkg-config --cflags luajit"):gsub("\n", "")
+local libs, cflags
+if process.platform == "linux" then
+	local ok, rawlibs = process.exec("pkg-config", { "--libs", "luajit" })
+	if not ok or string.find(rawlibs, "luajit was not found", 1, true) then
+		error("Epically failed to find luajit")
+	end
+
+	local ok, rawcflags = process.exec("pkg-config", { "--cflags", "luajit" })
+	if not ok then
+		error("Failed to find cflags for luajit " .. rawcflags)
+	end
+
+	libs, cflags = rawlibs, rawcflags
+elseif process.platform == "win32" then
+	-- Currently hardcoded to the location of winget's LuaJIT distribution since it doesnt provide a pc.
+	local ljPath = path.join(os.getenv("LOCALAPPDATA"), "Programs", "LuaJIT")
+	libs = "-L" .. path.join(ljPath, "bin") .. " -llua51"
+	cflags = "-I" .. path.join(ljPath, "include")
+else
+	error("Unsupported platform: " .. process.platform)
+end
 
 local CEscapes = {
 	["\a"] = "\\a",

@@ -173,7 +173,8 @@ function Package:installDependencies(dependencies, relativeTo)
 				end
 			end
 		elseif depInfo.path then
-			self:installDependency(Package.open(path.resolve(relativeTo, depInfo.path)))
+			local normalized = path.normalize(depInfo.path)
+			self:installDependency(Package.open(path.resolve(relativeTo, normalized)))
 		else
 			error("Unsupported dependency type for: " .. name)
 		end

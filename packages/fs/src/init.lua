@@ -120,7 +120,7 @@ end
 ---@param p string
 function fs.mkdir(p)
 	if isWindows then
-		process.spawn("mkdir", { p })
+		process.exec("md", { p })
 	else
 		process.spawn("mkdir", { "-p", p })
 	end
@@ -130,32 +130,55 @@ end
 ---@param dest string
 function fs.mklink(src, dest)
 	if isWindows then
-		process.spawn("mklink", { "/D", dest, src })
+		local cmd = "New-Item -ItemType Junction -Path '" .. dest .. "' -Target " .. src .. " -Force 2>$null"
+		process.spawn("powershell", { "-NoProfile", "-Command", cmd })
 	else
 		process.spawn("ln", { "-s", src, dest })
 	end
 end
 
 function fs.cwd()
-	local ok, out = process.exec("pwd")
-	if not ok then
-		error("Failed to get current working directory")
-	end
+	if isWindows then
+		local ok, out = process.exec("cd")
+		if not ok then
+			error("Failed to get current working directory")
+		end
 
-	return out:gsub("\n$", "")
+		return out:gsub("\r?\n$", "")
+	else
+		local ok, out = process.exec("pwd")
+		if not ok then
+			error("Failed to get current working directory")
+		end
+
+		return out:gsub("\n$", "")
+	end
 end
 
 ---@param path string
 function fs.listdir(path)
-	local success, output = process.exec("ls", { "-1", path })
-	if success then
-		local files = {}
-		for line in output:gmatch("[^\n]+") do
-			table.insert(files, line)
+	if isWindows then
+		local success, output = process.exec("cmd", { "/c", "dir /b \"" .. path .. "\"" })
+		if success then
+			local files = {}
+			for line in output:gmatch("[^\r\n]+") do
+				table.insert(files, line)
+			end
+			return files
+		else
+			return {}
 		end
-		return files
 	else
-		return {}
+		local success, output = process.exec("ls", { "-1", path })
+		if success then
+			local files = {}
+			for line in output:gmatch("[^\n]+") do
+				table.insert(files, line)
+			end
+			return files
+		else
+			return {}
+		end
 	end
 end
 

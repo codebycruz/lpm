@@ -19,6 +19,7 @@ It was created due to my frustration with the current status quo of package mana
 
 - You'll need LuaJIT 2.1+ to use `lpm` as it is currently a dynamically linked `lpm compile`'d executable.
 - Git is required for git repository installations.
+- `pkg-config` for building with `lpm compile`.
 
 ## Installation
 
