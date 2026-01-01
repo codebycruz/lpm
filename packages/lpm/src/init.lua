@@ -1,20 +1,19 @@
+-- Bootstrapping mode for initial creation of an lpm binary for a platform.
+-- Heavily unoptimized, do not use this.
 if os.getenv("BOOTSTRAP") then
 	local scriptPath = debug.getinfo(1, "S").source:sub(2)
 	local srcDir = scriptPath:match("^(.*)[/\\]")
 	local baseDir = srcDir:match("^(.*)[/\\]")
 
-	-- Insert custom loader for lpm.* -> src/*
 	table.insert(package.loaders, 2, function(modname)
 		if modname:match("^lpm%.") then
 			local file = modname:gsub("^lpm%.", ""):gsub("%.", "/")
 
-			-- Try regular .lua file
 			local path = srcDir .. "/" .. file .. ".lua"
 			if io.open(path, "r") then
 				return loadfile(path)
 			end
 
-			-- Try init.lua pattern
 			path = srcDir .. "/" .. file .. "/init.lua"
 			if io.open(path, "r") then
 				return loadfile(path)
@@ -22,10 +21,81 @@ if os.getenv("BOOTSTRAP") then
 		end
 	end)
 
-	-- Add lpm_modules to package.path
 	package.path = baseDir .. "/lpm_modules/?.lua;" ..
 		baseDir .. "/lpm_modules/?/init.lua;" ..
 		package.path
+
+	local separator = package.config:sub(1, 1)
+
+	local function join(...)
+		return table.concat({ ... }, separator)
+	end
+
+	local isWindows = separator == '\\'
+	local lpmModulesDir = join(baseDir, "lpm_modules")
+
+	local function dirExists(path)
+		local f = io.open(path, "r")
+		if f then
+			f:close()
+			return true
+		end
+		return false
+	end
+
+	if not dirExists(lpmModulesDir) then
+		if isWindows then
+			os.execute('mkdir "' .. lpmModulesDir .. '"')
+		else
+			os.execute('mkdir -p "' .. lpmModulesDir .. '"')
+		end
+	end
+
+	local pathPackages = {
+		"ansi", "clap", "fs", "http", "lockfile",
+		"path", "process", "sea", "semver", "util"
+	}
+
+	for _, pkg in ipairs(pathPackages) do
+		local srcPath = join("..", "..", pkg, "src")
+		local linkPath = join(lpmModulesDir, pkg)
+
+		if not dirExists(linkPath) then
+			if isWindows then
+				os.execute('mklink /J "' .. linkPath .. '" "' .. srcPath .. '"')
+			else
+				os.execute("ln -sf '" .. srcPath .. "' '" .. linkPath .. "'")
+			end
+		end
+	end
+
+	local function tmp()
+		if isWindows then
+			return os.getenv("TEMP") or "C:\\Temp"
+		else
+			return "/tmp"
+		end
+	end
+
+	local gitPackages = {
+		{ name = "json", url = "https://github.com/codebycruz/json.lua.git" }
+	}
+
+	for _, pkg in ipairs(gitPackages) do
+		local linkPath = join(lpmModulesDir, pkg.name)
+		local tmpGitPath = join(tmp(), "lpm_bootstrap_" .. pkg.name)
+
+		if not dirExists(linkPath) then
+			if isWindows then
+				os.execute('git clone "' .. pkg.url .. '" "' .. tmpGitPath .. '"')
+				os.execute('mklink /J "' .. linkPath .. '" "' .. join(tmpGitPath, "src") .. '"')
+				os.execute('rmdir /S /Q "' .. tmpGitPath .. '"')
+			else
+				os.execute('git clone "' .. pkg.url .. '" "' .. tmpGitPath .. '"')
+				os.execute("ln -sf '" .. join(tmpGitPath, "src") .. "' '" .. linkPath .. "'")
+			end
+		end
+	end
 end
 
 local ansi = require("ansi")
