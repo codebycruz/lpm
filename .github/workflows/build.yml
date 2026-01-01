@@ -54,7 +54,8 @@ jobs:
 
       - name: Setup luajit
         run: |
-          choco install luajit pkgconfiglite
+          winget install luajit
+          choco install pkgconfiglite
 
       - name: Bundle new lpm
         shell: bash
