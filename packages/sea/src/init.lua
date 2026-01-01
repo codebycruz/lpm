@@ -39,8 +39,10 @@ local CEscapes = {
 	["\\"] = "\\\\",
 }
 
-function sea.bytecode(content)
-	local success, bytecode = process.exec("luajit", { "-b", "-", "-" }, { stdin = content })
+---@param content string
+---@param chunkName string
+function sea.bytecode(content, chunkName)
+	local success, bytecode = process.exec("luajit", { "-b", "-g", "-F", chunkName, "-", "-" }, { stdin = content })
 
 	if not success then
 		error("Failed to compile bytecode: " .. bytecode)
@@ -57,7 +59,7 @@ function sea.compile(main, files)
 
 	local filePreloads = {}
 	for i, file in ipairs(files) do
-		local bytecode = sea.bytecode(file.content)
+		local bytecode = sea.bytecode(file.content, file.path)
 		local hexArray = {}
 		for j = 1, #bytecode do
 			hexArray[j] = string.format("0x%02x", string.byte(bytecode, j))

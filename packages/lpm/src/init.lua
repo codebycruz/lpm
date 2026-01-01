@@ -1,33 +1,36 @@
-local script_path = debug.getinfo(1, "S").source:sub(2)
-local src_dir = script_path:match("^(.*)[/\\]")
-local base_dir = src_dir:match("^(.*)[/\\]")
+-- Stuff for bootstrapping windows, ignore
+if string.sub(package.config, 1, 1) == "\\" then
+	local script_path = debug.getinfo(1, "S").source:sub(2)
+	local src_dir = script_path:match("^(.*)[/\\]")
+	local base_dir = src_dir:match("^(.*)[/\\]")
 
--- Insert custom loader for lpm.* -> src/*
-table.insert(package.loaders, 2, function(modname)
-	if modname:match("^lpm%.") then
-		local file = modname:gsub("^lpm%.", ""):gsub("%.", "/")
-		local path = src_dir .. "/" .. file .. ".lua"
-		local f = io.open(path, "r")
-		if f then
-			f:close()
-			return loadfile(path)
+	-- Insert custom loader for lpm.* -> src/*
+	table.insert(package.loaders, 2, function(modname)
+		if modname:match("^lpm%.") then
+			local file = modname:gsub("^lpm%.", ""):gsub("%.", "/")
+			local path = src_dir .. "/" .. file .. ".lua"
+			local f = io.open(path, "r")
+			if f then
+				f:close()
+				return loadfile(path)
+			end
+
+			-- Try init.lua pattern
+			path = src_dir .. "/" .. file .. "/init.lua"
+			f = io.open(path, "r")
+			if f then
+				f:close()
+				return loadfile(path)
+			end
 		end
+		return "\n\tno custom loader match"
+	end)
 
-		-- Try init.lua pattern
-		path = src_dir .. "/" .. file .. "/init.lua"
-		f = io.open(path, "r")
-		if f then
-			f:close()
-			return loadfile(path)
-		end
-	end
-	return "\n\tno custom loader match"
-end)
-
--- Keep lpm_modules in package.path
-package.path = base_dir .. "/lpm_modules/?.lua;" ..
-	base_dir .. "/lpm_modules/?/init.lua;" ..
-	package.path
+	-- Keep lpm_modules in package.path
+	package.path = base_dir .. "/lpm_modules/?.lua;" ..
+		base_dir .. "/lpm_modules/?/init.lua;" ..
+		package.path
+end
 
 local ansi = require("ansi")
 local clap = require("clap")
