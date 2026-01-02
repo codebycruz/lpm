@@ -1,5 +1,6 @@
 local ansi = require("ansi")
 local fs = require("fs")
+local process = require("process")
 
 local Package = require("lpm.package")
 
@@ -10,8 +11,10 @@ local function compile(args)
 		error("Please specify an output file using --outfile")
 	end
 
-	if string.sub(outFile, -4) ~= ".exe" then
-		outFile = outFile .. ".exe"
+	if process.platform == "win32" then
+		if string.sub(outFile, -4) ~= ".exe" then
+			outFile = outFile .. ".exe"
+		end
 	end
 
 	local executable = Package.open():compile()

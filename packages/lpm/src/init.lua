@@ -127,13 +127,25 @@ commands.bundle = require("lpm.commands.bundle")
 commands.compile = require("lpm.commands.compile")
 commands.test = require("lpm.commands.test")
 
-if args:count() == 0 then
-	commands.help()
-else
-	local command = args:pop("string")
-	if commands[command] then
-		commands[command](args)
+local ok, err = xpcall(function()
+	if args:count() == 0 then
+		commands.help()
 	else
-		print(ansi.colorize(ansi.red, "Unknown command: " .. tostring(command)))
+		local command = args:pop("string")
+		if commands[command] then
+			commands[command](args)
+		else
+			print(ansi.colorize(ansi.red, "Unknown command: " .. tostring(command)))
+		end
+	end
+end, function(err)
+	return { msg = err, trace = debug.traceback(nil, 2) }
+end)
+
+if not ok then ---@cast err { msg: string, trace: string }
+	print(ansi.colorize(ansi.red, "Error: " .. tostring(err.msg)))
+
+	if os.getenv("DEBUG") then
+		print(err.trace)
 	end
 end
