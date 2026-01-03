@@ -1,4 +1,5 @@
 local Config = require("lpm.config")
+local Lockfile = require("lpm.lockfile")
 local global = require("lpm.global")
 
 local fs = require("fs")
@@ -41,6 +42,10 @@ function Package:getConfigPath()
 	return path.join(self.dir, "lpm.json")
 end
 
+function Package:getLockfilePath()
+	return path.join(self.dir, "lpm-lock.json")
+end
+
 ---@param dir string?
 function Package.open(dir)
 	dir = dir or fs.cwd()
@@ -57,15 +62,16 @@ end
 function Package:readConfig()
 	local configPath = self:getConfigPath()
 
-	local file = io.open(configPath, "r")
-	if not file then
-		error("Could not read lpm.json in directory: " .. configPath)
+	local content = fs.read(configPath)
+	if not content then
+		error("Could not read lpm.json: " .. configPath)
 	end
 
-	local content = file:read("*all")
-	file:close()
-
 	return Config.new(json.decode(content))
+end
+
+function Package:readLockfile()
+	return Lockfile.open(self:getLockfilePath())
 end
 
 ---@param dir string
