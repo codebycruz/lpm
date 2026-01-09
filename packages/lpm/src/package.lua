@@ -240,6 +240,16 @@ end
 function Package:runScript(scriptPath, vars)
 	local modulesDir = self:getModulesDir()
 
+	if not fs.isdir(modulesDir) then
+		return false, "Modules directory does not exist: " .. modulesDir
+	end
+
+	local selfPackage = path.join(modulesDir, self:getName())
+	if not fs.islink(selfPackage) then
+		-- Create symlink to self's source dir in lpm_modules so that require(<self>) works
+		fs.mklink(self:getSrcDir(), selfPackage)
+	end
+
 	local luaPath =
 		path.join(modulesDir, "?.lua") .. ";"
 		.. path.join(modulesDir, "?", "init.lua") .. ";"
@@ -248,7 +258,10 @@ function Package:runScript(scriptPath, vars)
 		path.join(modulesDir, "?.so") .. ";"
 		.. path.join(modulesDir, "?.dll") .. ";"
 
-	local engine = self:readConfig().engine or "lua"
+	local engine = self:readConfig().engine
+	if not engine then
+		return false, "No engine specified in lpm.json. Specify 'lua' or 'luajit'"
+	end
 
 	local env = { LUA_PATH = luaPath, LUA_CPATH = luaCPath }
 	if vars then
