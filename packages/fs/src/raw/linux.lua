@@ -15,19 +15,24 @@ ffi.cdef([[
 	int stat(const char *pathname, struct stat *statbuf);
 	int lstat(const char *pathname, struct stat *statbuf);
 	struct stat {
-		unsigned long   st_dev;
-		unsigned long   st_ino;
-		unsigned long   st_nlink;
-		unsigned int    st_mode;
-		unsigned int    st_uid;
-		unsigned int    st_gid;
-		unsigned long   st_rdev;
-		long            st_size;
-		long            st_blksize;
-		long            st_blocks;
-		long            st_atime;
-		long            st_mtime;
-		long            st_ctime;
+		unsigned long st_dev;
+		unsigned long st_ino;
+		unsigned long st_nlink;
+		unsigned int  st_mode;
+		unsigned int  st_uid;
+		unsigned int  st_gid;
+		unsigned int  __pad0;
+		unsigned long st_rdev;
+		long          st_size;
+		long          st_blksize;
+		long          st_blocks;
+		unsigned long st_atime;
+		unsigned long st_atime_nsec;
+		unsigned long st_mtime;
+		unsigned long st_mtime_nsec;
+		unsigned long st_ctime;
+		unsigned long st_ctime_nsec;
+		long          __unused[3];
 	};
 	int mkdir(const char *pathname, unsigned int mode);
 	int symlink(const char *target, const char *linkpath);
@@ -67,8 +72,10 @@ function fs.readdir(p)
 	end
 end
 
+local newStat = ffi.typeof("struct stat")
+
 local function stat(p) ---@return { st_mode: number }?, number?
-	local statbuf = ffi.new("struct stat")
+	local statbuf = newStat()
 	if ffi.C.stat(p, statbuf) ~= 0 then
 		return nil, ffi.errno()
 	end
@@ -77,7 +84,7 @@ local function stat(p) ---@return { st_mode: number }?, number?
 end
 
 local function lstat(p) ---@return { st_mode: number }?, number?
-	local statbuf = ffi.new("struct stat")
+	local statbuf = newStat()
 	if ffi.C.lstat(p, statbuf) ~= 0 then
 		return nil, ffi.errno()
 	end
