@@ -53,8 +53,8 @@ if os.getenv("BOOTSTRAP") then
 	end
 
 	local pathPackages = {
-		"ansi", "clap", "fs", "http", "lockfile",
-		"path", "process", "sea", "semver", "util"
+		"ansi", "clap", "fs", "http", "lockfile", "env", "path",
+		"process", "sea", "semver", "util"
 	}
 
 	for _, pkg in ipairs(pathPackages) do

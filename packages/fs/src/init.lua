@@ -86,10 +86,6 @@ function fs.move(old, new)
 	return true
 end
 
-function fs.tmpfile()
-	return os.tmpname()
-end
-
 ---@param p string
 function fs.delete(p)
 	return os.remove(p) ~= nil
@@ -111,6 +107,7 @@ end
 
 ---@param cwd string
 ---@param glob string
+---@return string[]?
 function fs.scan(cwd, glob)
 	local nextEntry = fs.readdir(cwd)
 	if not nextEntry then
@@ -118,19 +115,28 @@ function fs.scan(cwd, glob)
 	end
 
 	local pattern = fs.globToPattern(glob)
+	local entries = {}
 
-	return function()
-		local entry = nextEntry()
-		if not entry then
-			return nil
+	local function dir(p)
+		for entry in fs.readdir(p) do
+			local entryPath = p .. sep .. entry.name
+
+			if entry.type == "dir" then
+				dir(entryPath)
+			elseif entry.type == "file" then
+				if string.find(entry.name, pattern) then
+					entries[#entries + 1] = entryPath
+				end
+			end
 		end
-
-		if entry.type == "dir" then
-
-		end
-
-		return entry
 	end
+
+	if not fs.isdir(cwd) then
+		return nil
+	end
+
+	dir(cwd)
+	return entries
 end
 
 return fs

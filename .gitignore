@@ -1,3 +1,4 @@
 lpm_modules
 .luarc.json
+!/.luarc.json
 /lpm*

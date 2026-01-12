@@ -1,0 +1,17 @@
+{
+	"$schema": "https://raw.githubusercontent.com/sumneko/vscode-lua/master/setting/schema.json",
+	"diagnostics": {
+		"groupSeverity": {
+			"unused": "Warning",
+			"type-check": "Error",
+			"unbalanced": "Error",
+			"luadoc": "Error",
+			"duplicate": "Error",
+			"global": "Error"
+		},
+		"unusedLocalExclude": ["_*"]
+	},
+	"runtime": {
+		"version": "LuaJIT"
+	}
+}

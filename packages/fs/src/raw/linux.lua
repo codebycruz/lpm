@@ -67,19 +67,19 @@ function fs.readdir(p)
 	end
 end
 
-local function stat(p) ---@return { st_mode: number }?
+local function stat(p) ---@return { st_mode: number }?, number?
 	local statbuf = ffi.new("struct stat")
 	if ffi.C.stat(p, statbuf) ~= 0 then
-		return nil
+		return nil, ffi.errno()
 	end
 
 	return statbuf
 end
 
-local function lstat(p) ---@return { st_mode: number }?
+local function lstat(p) ---@return { st_mode: number }?, number?
 	local statbuf = ffi.new("struct stat")
 	if ffi.C.lstat(p, statbuf) ~= 0 then
-		return nil
+		return nil, ffi.errno()
 	end
 
 	return statbuf
