@@ -118,7 +118,12 @@ function fs.scan(cwd, glob)
 	local entries = {}
 
 	local function dir(p)
-		for entry in fs.readdir(p) do
+		local dirIter = fs.readdir(p)
+		if not dirIter then
+			return
+		end
+
+		for entry in dirIter do
 			local entryPath = p .. sep .. entry.name
 
 			if entry.type == "dir" then

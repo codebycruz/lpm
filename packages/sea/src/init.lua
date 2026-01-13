@@ -1,8 +1,8 @@
 local sea = {}
 
-local fs = require("fs")
 local process = require("process")
 local path = require("path")
+local env = require("env")
 
 local libs, cflags
 if process.platform == "linux" then
@@ -55,7 +55,7 @@ end
 ---@param files { path: string, content: string }[]
 ---@return string
 function sea.compile(main, files)
-	local outPath = fs.tmpfile()
+	local outPath = env.tmpdir() .. "/sea.out"
 
 	local filePreloads = {}
 	for i, file in ipairs(files) do

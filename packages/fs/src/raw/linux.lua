@@ -65,8 +65,13 @@ function fs.readdir(p)
 			return nil
 		end
 
+		local name = ffi.string(entry.d_name)
+		if name == ".." or name == "." then
+			return nil
+		end
+
 		return {
-			name = ffi.string(entry.d_name),
+			name = name,
 			type = entryTypeMap[entry.d_type] or "unknown",
 		}
 	end
