@@ -1,3 +1,5 @@
+local path = require("path")
+
 ---@class fs.raw
 ---@field exists fun(p: string): boolean
 ---@field isdir fun(p: string): boolean
@@ -107,12 +109,14 @@ end
 
 ---@param cwd string
 ---@param glob string
+---@param opts { absolute: boolean }?
 ---@return string[]?
-function fs.scan(cwd, glob)
-	local nextEntry = fs.readdir(cwd)
-	if not nextEntry then
-		return nil
+function fs.scan(cwd, glob, opts)
+	if not fs.isdir(cwd) then
+		error("not a directory")
 	end
+
+	local absolute = opts and opts.absolute or false
 
 	local pattern = fs.globToPattern(glob)
 	local entries = {}
@@ -126,11 +130,15 @@ function fs.scan(cwd, glob)
 		for entry in dirIter do
 			local entryPath = p .. sep .. entry.name
 
-			if entry.type == "dir" then
+			if fs.isdir(entryPath) then
 				dir(entryPath)
-			elseif entry.type == "file" then
-				if string.find(entry.name, pattern) then
-					entries[#entries + 1] = entryPath
+			elseif fs.isfile(entryPath) then
+				if string.find(entryPath, pattern) then
+					if absolute then
+						entries[#entries + 1] = entryPath
+					else
+						entries[#entries + 1] = path.relative(cwd, entryPath)
+					end
 				end
 			end
 		end

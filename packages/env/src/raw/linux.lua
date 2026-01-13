@@ -9,7 +9,12 @@ local env = {}
 
 ---@param name string
 function env.var(name) ---@return string?
-	return ffi.string(ffi.C.getenv(name))
+	local v = ffi.C.getenv(name)
+	if v == nil then
+		return nil
+	end
+
+	return ffi.string(v)
 end
 
 function env.tmpdir()

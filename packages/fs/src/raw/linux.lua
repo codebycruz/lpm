@@ -59,21 +59,21 @@ function fs.readdir(p)
 	end
 
 	return function()
-		local entry = ffi.C.readdir(dir)
-		if entry == nil then
-			ffi.C.closedir(dir)
-			return nil
-		end
+		while true do
+			local entry = ffi.C.readdir(dir)
+			if entry == nil then
+				ffi.C.closedir(dir)
+				return nil
+			end
 
-		local name = ffi.string(entry.d_name)
-		if name == ".." or name == "." then
-			return nil
+			local name = ffi.string(entry.d_name)
+			if name ~= ".." and name ~= "." then
+				return {
+					name = name,
+					type = entryTypeMap[entry.d_type] or "unknown",
+				}
+			end
 		end
-
-		return {
-			name = name,
-			type = entryTypeMap[entry.d_type] or "unknown",
-		}
 	end
 end
 
