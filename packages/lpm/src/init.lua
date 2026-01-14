@@ -90,12 +90,14 @@ if os.getenv("BOOTSTRAP") then
 		local linkPath = join(lpmModulesDir, pkg.name)
 		local tmpGitPath = join(tmp(), "lpm_bootstrap_" .. pkg.name)
 
+		if not exists(tmpGitPath) then
+			os.execute('git clone "' .. pkg.url .. '" "' .. tmpGitPath .. '"')
+		end
+
 		if not exists(linkPath) then
 			if isWindows then
-				os.execute('git clone "' .. pkg.url .. '" "' .. tmpGitPath .. '"')
 				os.execute('mklink /J "' .. linkPath .. '" "' .. join(tmpGitPath, "src") .. '"')
 			else
-				os.execute('git clone "' .. pkg.url .. '" "' .. tmpGitPath .. '"')
 				os.execute("ln -sf '" .. join(tmpGitPath, "src") .. "' '" .. linkPath .. "'")
 			end
 		end

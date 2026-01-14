@@ -125,7 +125,7 @@ function Package:build(destinationPath)
 
 		local ok, err = self:runScript(buildScriptPath, { LPM_OUTPUT_DIR = destinationPath })
 		if not ok then
-			error("Build script failed: " .. err)
+			error("Build script failed for package '" .. self:getName() .. "': " .. err)
 		end
 	else
 		fs.mklink(self:getSrcDir(), destinationPath)
@@ -241,7 +241,8 @@ function Package:runScript(scriptPath, vars)
 	local modulesDir = self:getModulesDir()
 
 	if not fs.isdir(modulesDir) then
-		return false, "Modules directory does not exist: " .. modulesDir
+		fs.mkdir(modulesDir)
+		-- return false, "Modules directory does not exist: " .. modulesDir
 	end
 
 	local selfPackage = path.join(modulesDir, self:getName())
@@ -260,7 +261,8 @@ function Package:runScript(scriptPath, vars)
 
 	local engine = self:readConfig().engine
 	if not engine then
-		return false, "No engine specified in lpm.json. Specify 'lua' or 'luajit'"
+		print("Warning: No engine specified for package '" .. self:getName() .. "', defaulting to 'lua'.")
+		engine = "lua"
 	end
 
 	local env = { LUA_PATH = luaPath, LUA_CPATH = luaCPath }
