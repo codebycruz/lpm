@@ -1,6 +1,7 @@
 local fs = require("fs")
 local ansi = require("ansi")
 local path = require("path")
+local env = require("env")
 
 local Package = require("lpm.package")
 
@@ -15,7 +16,7 @@ local function new(args)
 	fs.mkdir(name)
 	print(ansi.colorize(ansi.green, "Created directory: " .. name))
 
-	Package.init(path.join(fs.cwd(), name))
+	Package.init(path.join(env.cwd(), name))
 end
 
 return new

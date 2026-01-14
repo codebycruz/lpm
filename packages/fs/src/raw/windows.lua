@@ -47,6 +47,8 @@ local fs = {}
 ---@return (fun(): fs.DirEntry?)?
 function fs.readdir(p)
 	local searchPath = p .. "\\*"
+
+	---@type { cFileName: string, dwFileAttributes: number }
 	local findData = ffi.new("WIN32_FIND_DATAA")
 
 	local handle = kernel32.FindFirstFileA(searchPath, findData)

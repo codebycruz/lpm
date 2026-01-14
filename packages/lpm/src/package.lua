@@ -3,6 +3,7 @@ local Lockfile = require("lpm.lockfile")
 local global = require("lpm.global")
 
 local fs = require("fs")
+local env = require("env")
 local json = require("json")
 local path = require("path")
 local sea = require("sea")
@@ -48,7 +49,7 @@ end
 
 ---@param dir string?
 function Package.open(dir)
-	dir = dir or fs.cwd()
+	dir = dir or env.cwd()
 
 	local configPath = path.join(dir, "lpm.json")
 	if not fs.exists(configPath) then

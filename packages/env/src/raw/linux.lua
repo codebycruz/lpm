@@ -22,13 +22,14 @@ function env.tmpdir()
 end
 
 function env.cwd()
-	local buf = ffi.new("char[?]", 1024)
-	local size = ffi.C.getcwd(buf, 1024)
-	if size == nil then
+	local buf = ffi.new("char[?]", 4096)
+
+	local result = ffi.C.getcwd(buf, 4096)
+	if result == nil then
 		return nil
 	end
 
-	return ffi.string(buf, size)
+	return ffi.string(buf)
 end
 
 return env
