@@ -14,12 +14,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Download previous lpm release
-        run: |
-          gh release download --repo ${{ github.repository }} --pattern "lpm-linux-x86_64"
-          chmod +x ./lpm-linux-x86_64
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Download previous lpm release
+      #   run: |
+      #     gh release download --repo ${{ github.repository }} --pattern "lpm-linux-x86_64"
+      #     chmod +x ./lpm-linux-x86_64
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup luajit
         run: |
@@ -29,14 +29,13 @@ jobs:
       - name: Bundle new lpm
         run: |
           cd packages/lpm
-          $GITHUB_WORKSPACE/lpm-linux-x86_64 install
-          $GITHUB_WORKSPACE/lpm-linux-x86_64 compile --outfile ./lpm-linux-x86_64
+          BOOTSTRAP=1 luajit ./src/init.lua compile
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6
         with:
           name: lpm-linux-x86_64
-          path: packages/lpm/lpm-linux-x86_64
+          path: ./packages/lpm/lpm
 
   build-windows:
     runs-on: windows-latest
