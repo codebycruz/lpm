@@ -1,21 +1,22 @@
 {
-    "name": "lpm",
-    "version": "0.1.0",
-    "$schema": "./lpm.schema.json",
-    "dependencies": {
-        "json": { "git": "https://github.com/codebycruz/json.lua.git" },
-        "ansi": { "path": "../ansi" },
-        "sea": { "path": "../sea" },
-        "path": { "path": "../path" },
-        "process": { "path": "../process" },
-        "clap": { "path": "../clap" },
-        "fs": { "path": "../fs" },
-        "env": { "path": "../env" },
-        "util": { "path": "../util" },
-        "http": { "path": "../http" },
-        "semver": { "path": "../semver" }
-    },
-    "devDependencies": {
-        "busted": { "git": "https://github.com/codebycruz/busted.git" }
-    }
+	"name": "lpm",
+	"version": "0.1.0",
+	"engine": "luajit",
+	"$schema": "./lpm.schema.json",
+	"dependencies": {
+		"json": { "git": "https://github.com/codebycruz/json.lua.git" },
+		"ansi": { "path": "../ansi" },
+		"sea": { "path": "../sea" },
+		"path": { "path": "../path" },
+		"process": { "path": "../process" },
+		"clap": { "path": "../clap" },
+		"fs": { "path": "../fs" },
+		"env": { "path": "../env" },
+		"util": { "path": "../util" },
+		"http": { "path": "../http" },
+		"semver": { "path": "../semver" }
+	},
+	"devDependencies": {
+		"busted": { "git": "https://github.com/codebycruz/busted.git" }
+	}
 }
