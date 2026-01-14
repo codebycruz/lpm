@@ -36,7 +36,6 @@ ffi.cdef([[
 	};
 	int mkdir(const char *pathname, unsigned int mode);
 	int symlink(const char *target, const char *linkpath);
-	char *getcwd(char *buf, size_t size);
 ]])
 
 ---@class fs.raw.linux
@@ -142,18 +141,6 @@ function fs.isfile(p)
 	end
 
 	return bit.band(s.st_mode, 0x8000) ~= 0
-end
-
----@return string?
-function fs.cwd()
-	local buf = ffi.new("char[?]", 4096)
-
-	local result = ffi.C.getcwd(buf, 4096)
-	if result == nil then
-		return nil
-	end
-
-	return ffi.string(buf)
 end
 
 return fs
