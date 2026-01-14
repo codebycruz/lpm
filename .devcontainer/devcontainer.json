@@ -1,0 +1,6 @@
+{
+	"name": "Lua Package Manager",
+	"build": {
+		"dockerfile": "Dockerfile",
+	},
+}
