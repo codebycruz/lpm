@@ -45,12 +45,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Download previous lpm release
-        shell: bash
-        run: |
-          gh release download --repo ${{ github.repository }} --pattern "lpm-windows-x86_64.exe"
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      # - name: Download previous lpm release
+      #   shell: bash
+      #   run: |
+      #     gh release download --repo ${{ github.repository }} --pattern "lpm-windows-x86_64.exe"
+      #   env:
+      #     GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup luajit
         run: |
@@ -61,11 +61,10 @@ jobs:
         shell: bash
         run: |
           cd packages/lpm
-          $GITHUB_WORKSPACE/lpm-windows-x86_64.exe install
-          $GITHUB_WORKSPACE/lpm-windows-x86_64.exe compile --outfile ./lpm-windows-x86_64.exe
+          BOOTSTRAP=1 luajit ./src/init.lua compile
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6
         with:
           name: lpm-windows-x86_64
-          path: packages/lpm/lpm-windows-x86_64.exe
+          path: packages/lpm/lpm.exe
