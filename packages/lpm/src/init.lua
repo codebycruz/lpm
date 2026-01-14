@@ -34,17 +34,19 @@ if os.getenv("BOOTSTRAP") then
 	local isWindows = separator == '\\'
 	local lpmModulesDir = join(baseDir, "lpm_modules")
 
-	local function dirExists(path)
-		if isWindows then
-			local result = os.execute('if exist "' .. path .. '" exit 0')
-			return result == 0
-		else
-			local result = os.execute('test -d "' .. path .. '"')
-			return result == 0
+	local function exists(path)
+		local h = io.open(path, "r")
+		if not h then return false end
+
+		local _, _, id = h:read("*a")
+		if id == 21 then
+			return true
 		end
+
+		return false
 	end
 
-	if not dirExists(lpmModulesDir) then
+	if not exists(lpmModulesDir) then
 		if isWindows then
 			os.execute('mkdir "' .. lpmModulesDir .. '"')
 		else
@@ -53,8 +55,8 @@ if os.getenv("BOOTSTRAP") then
 	end
 
 	local pathPackages = {
-		"ansi", "clap", "fs", "http", "lockfile",
-		"path", "process", "sea", "semver", "util"
+		"ansi", "clap", "fs", "http", "env", "path",
+		"process", "sea", "semver", "util"
 	}
 
 	for _, pkg in ipairs(pathPackages) do
@@ -62,13 +64,12 @@ if os.getenv("BOOTSTRAP") then
 		local relSrcPath = join("..", "..", pkg, "src")
 		local absSrcPath = join(baseDir, "..", pkg, "src")
 
-		local linkPath = join(lpmModulesDir, pkg)
-
-		if not dirExists(linkPath) then
+		local moduleDistPath = join(lpmModulesDir, pkg)
+		if not exists(moduleDistPath) then
 			if isWindows then
-				os.execute('mklink /J "' .. linkPath .. '" "' .. absSrcPath .. '"')
+				os.execute('mklink /J "' .. moduleDistPath .. '" "' .. absSrcPath .. '"')
 			else
-				os.execute("ln -sf '" .. relSrcPath .. "' '" .. linkPath .. "'")
+				os.execute("ln -sf '" .. relSrcPath .. "' '" .. moduleDistPath .. "'")
 			end
 		end
 	end
@@ -89,7 +90,7 @@ if os.getenv("BOOTSTRAP") then
 		local linkPath = join(lpmModulesDir, pkg.name)
 		local tmpGitPath = join(tmp(), "lpm_bootstrap_" .. pkg.name)
 
-		if not dirExists(linkPath) then
+		if not exists(linkPath) then
 			if isWindows then
 				os.execute('git clone "' .. pkg.url .. '" "' .. tmpGitPath .. '"')
 				os.execute('mklink /J "' .. linkPath .. '" "' .. join(tmpGitPath, "src") .. '"')

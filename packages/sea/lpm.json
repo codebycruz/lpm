@@ -4,6 +4,7 @@
 	"dependencies": {
 		"process": { "path": "../process" },
 		"fs": { "path": "../fs" },
-		"path": { "path": "../path" }
+		"path": { "path": "../path" },
+		"env": { "path": "../env" }
 	}
 }
