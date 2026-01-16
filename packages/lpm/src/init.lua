@@ -142,7 +142,7 @@ local ok, err = xpcall(function()
 		end
 	end
 end, function(err)
-	return { msg = err, trace = debug.traceback(nil, 2) }
+	return { msg = err, trace = debug.traceback(nil, 1) }
 end)
 
 if not ok then ---@cast err { msg: string, trace: string }

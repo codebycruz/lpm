@@ -56,7 +56,6 @@ jobs:
         run: |
           winget install luajit --accept-source-agreements --accept-package-agreements
           choco install pkgconfiglite
-          echo "C:\Program Files\LuaJIT\bin" >> $GITHUB_PATH
 
       - name: Bundle new lpm
         shell: bash

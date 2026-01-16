@@ -132,7 +132,7 @@ function sea.compile(main, files)
 	]]
 
 	-- Use unsafe mode to pass the full cc command without extra escaping
-	local ccCommand = "cc " .. cflags .. " -xc - -o " .. outPath .. " " .. libs
+	local ccCommand = "gcc " .. cflags .. " -xc - -o " .. outPath .. " " .. libs
 	local success, output = process.exec(ccCommand, nil, { stdin = code, unsafe = true })
 
 	if not success or string.find(output, "is not recognized as an internal", 1, true) then
