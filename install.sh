@@ -57,6 +57,9 @@ add_to_path() {
     local shell_rc="$1"
     local path_line="export PATH=\"\$HOME/.lpm:\$PATH\""
 
+    # Create if DNE
+    touch "$shell_rc"
+
     if [ -f "$shell_rc" ]; then
         if ! grep -q "\.lpm" "$shell_rc"; then
             echo "" >> "$shell_rc"
