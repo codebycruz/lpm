@@ -35,15 +35,17 @@ if os.getenv("BOOTSTRAP") then
 	local lpmModulesDir = join(baseDir, "lpm_modules")
 
 	local function exists(path)
-		local h = io.open(path, "r")
-		if not h then return false end
+		local ok, _, code = os.rename(path, path)
 
-		local _, _, id = h:read("*a")
-		if id == 21 then
-			return true
+		if not ok then
+			if code == 13 then -- permission denied but exists
+				return true
+			end
+
+			return false
 		end
 
-		return false
+		return true
 	end
 
 	if not exists(lpmModulesDir) then
