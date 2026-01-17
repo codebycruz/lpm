@@ -79,13 +79,7 @@ end
 ---@param old string
 ---@param new string
 function fs.move(old, new)
-	local success = fs.copy(old, new)
-	if not success then
-		return false
-	end
-
-	fs.delete(old)
-	return true
+	return os.rename(old, new)
 end
 
 ---@param p string
