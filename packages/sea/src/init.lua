@@ -3,29 +3,69 @@ local sea = {}
 local process = require("process")
 local path = require("path")
 local env = require("env")
+local fs = require("fs")
+local http = require("http")
+local jit = require("jit")
 
-local libs, cflags
-if process.platform == "linux" then
-	local ok, rawlibs = process.exec("pkg-config", { "--libs", "luajit" })
-	if not ok or string.find(rawlibs, "luajit was not found", 1, true) then
-		error("Epically failed to find luajit")
-	end
+local ljDistRepo = "codebycruz/lj-dist"
+local ljDistTag = "latest"
 
-	local ok, rawcflags = process.exec("pkg-config", { "--cflags", "luajit" })
-	if not ok then
-		error("Failed to find cflags for luajit " .. rawcflags)
-	end
+local function getPlatformArch()
+	local platform = process.platform == "linux" and "linux"
+		or process.platform == "win32" and "windows"
+		or error("Unsupported platform: " .. process.platform)
 
-	libs = rawlibs:gsub("%s+$", "")
-	cflags = rawcflags:gsub("%s+$", "")
-elseif process.platform == "win32" then
-	-- Currently hardcoded to the location of winget's LuaJIT distribution since it doesnt provide a pc.
-	local ljPath = path.join(os.getenv("LOCALAPPDATA"), "Programs", "LuaJIT")
-	libs = "-L" .. path.join(ljPath, "bin") .. " -llua51"
-	cflags = "-I" .. path.join(ljPath, "include")
-else
-	error("Unsupported platform: " .. process.platform)
+	local arch = jit.arch == "x64" and "x86-64"
+		or jit.arch == "arm64" and "aarch64"
+		or error("Unsupported architecture: " .. jit.arch)
+
+	return platform, arch
 end
+
+local function getLuajitPath()
+	local cacheDir = path.join(env.tmpdir(), "luajit-cache")
+	local platform, arch = getPlatformArch()
+	local targetDir = path.join(cacheDir, string.format("luajit-%s-%s", platform, arch))
+
+	if fs.exists(path.join(targetDir, "include", "lua.h")) then
+		return targetDir
+	end
+
+	fs.mkdir(cacheDir)
+
+	local tarballName = string.format("luajit-%s-%s.tar.gz", platform, arch)
+	local downloadUrl = string.format(
+		"https://github.com/%s/releases/download/%s/%s",
+		ljDistRepo,
+		ljDistTag,
+		tarballName
+	)
+	local tarballPath = path.join(cacheDir, tarballName)
+
+	local content = http.get(downloadUrl)
+	if not content then
+		error("Failed to download LuaJIT from " .. downloadUrl)
+	end
+
+	local file = io.open(tarballPath, "wb")
+	if not file then
+		error("Failed to write tarball to " .. tarballPath)
+	end
+
+	file:write(content)
+	file:close()
+
+	local success, output = process.exec("tar", { "-xzf", tarballPath, "-C", cacheDir })
+	if not success then
+		error("Failed to extract LuaJIT: " .. output)
+	end
+
+	fs.delete(tarballPath)
+
+	return targetDir
+end
+
+
 
 local CEscapes = {
 	["\a"] = "\\a",
@@ -59,23 +99,8 @@ function sea.compile(main, files)
 
 	local filePreloads = {}
 	for i, file in ipairs(files) do
-		-- local bytecode = sea.bytecode(file.content, file.path)
-		-- local literalArray = {}
-		-- for j = 1, #bytecode do literalArray[j] = string.format("%d", string.byte(bytecode, j)) end
-		-- local bytecodeArray = table.concat(literalArray, ",")
-
 		local escapedName = file.path:gsub(".", CEscapes)
 
-		-- Bytecode temporarily disabled as windows has some issues with it apparently
-		-- filePreloads[i] = ('const unsigned char data_%d[] = {%s}; luaL_loadbuffer(L, (const char*)data_%d, %d, "%s"); lua_setfield(L, -2, "%s");')
-		-- 	:format(
-		-- 		i,
-		-- 		bytecodeArray,
-		-- 		i,
-		-- 		#bytecode,
-		-- 		escapedName,
-		-- 		escapedName
-		-- 	)
 		filePreloads[i] = ('luaL_loadbuffer(L, "%s", %d, "%s"); lua_setfield(L, -2, "%s");')
 			:format(
 				file.content:gsub(".", CEscapes),
@@ -131,10 +156,20 @@ function sea.compile(main, files)
 		}
 	]]
 
-	-- Use unsafe mode to pass the full cc command without extra escaping
-	local ccCommand = "gcc " .. cflags .. " -xc - -o " .. outPath .. " " .. libs
-	local success, output = process.exec(ccCommand, nil, { stdin = code, unsafe = true })
+	local ljPath = getLuajitPath()
+	local includePath = path.join(ljPath, "include")
+	local libPath = path.join(ljPath, "lib")
 
+	local gccArgs = { "-I" .. includePath, "-xc", "-", "-xnone", "-o", outPath }
+	if process.platform == "linux" then
+		gccArgs[#gccArgs + 1] = path.join(libPath, "libluajit.a")
+		gccArgs[#gccArgs + 1] = "-lm"
+		gccArgs[#gccArgs + 1] = "-ldl"
+	elseif process.platform == "win32" then
+		gccArgs[#gccArgs + 1] = path.join(libPath, "lua51.lib")
+	end
+
+	local success, output = process.exec("gcc", gccArgs, { stdin = code })
 	if not success or string.find(output, "is not recognized as an internal", 1, true) then
 		error("Compilation failed: " .. output)
 	end
