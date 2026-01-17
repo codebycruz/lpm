@@ -5,9 +5,27 @@ set -e
 REPO="codebycruz/lpm"
 LPM_DIR="$HOME/.lpm"
 BINARY_NAME="lpm"
-ARTIFACT="lpm-linux-x86-64"
 
 echo "Installing lpm..."
+
+# Detect architecture
+ARCH=$(uname -m)
+case "$ARCH" in
+    x86_64)
+        ARTIFACT="lpm-linux-x86-64"
+        ;;
+    aarch64|arm64)
+        ARTIFACT="lpm-linux-aarch64"
+        ;;
+    *)
+        echo "Error: Unsupported architecture: $ARCH"
+        echo "Supported architectures: x86_64, aarch64"
+        exit 1
+        ;;
+esac
+
+echo "Detected architecture: $ARCH"
+echo "Using artifact: $ARTIFACT"
 
 # Create .lpm directory if it doesn't exist
 mkdir -p "$LPM_DIR"
