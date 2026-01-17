@@ -151,7 +151,13 @@ function sea.compile(main, files)
 	local includePath = path.join(ljPath, "include")
 	local libPath = path.join(ljPath, "lib")
 
-	local args = { "-I" .. includePath, "-xc", "-", "-o", outPath, "-xnone", path.join(libPath, "libluajit.a") }
+	local args = {
+		"-I" .. includePath,
+		"-xc", "-",
+		"-o", outPath,
+		"-xnone", path.join(libPath, "libluajit.a"),
+	}
+
 	if process.platform == "linux" then
 		args[#args + 1] = "-lm"
 		args[#args + 1] = "-ldl"

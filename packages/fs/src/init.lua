@@ -34,12 +34,12 @@ end
 ---@param p string
 ---@return string|nil
 function fs.read(p)
-	local file = io.open(p, "r")
+	local file = io.open(p, "rb")
 	if not file then
 		return nil
 	end
 
-	local content = file:read("*all")
+	local content = file:read("*a")
 	file:close()
 
 	return content
@@ -49,7 +49,7 @@ end
 ---@param content string
 ---@return boolean
 function fs.write(p, content)
-	local file = io.open(p, "w")
+	local file = io.open(p, "wb")
 	if not file then
 		return false
 	end

@@ -123,7 +123,7 @@ function process.exec(name, args, options)
 	if success then
 		output = stdout
 	else
-		local handle = io.open(tmpErrorFile, "r")
+		local handle = io.open(tmpErrorFile, "rb")
 
 		local stderr = {}
 		while true do
