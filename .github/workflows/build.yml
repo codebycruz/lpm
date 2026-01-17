@@ -13,13 +13,13 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux
-            arch: x86_64
+            arch: x86-64
           - os: ubuntu-24.04-arm
             platform: linux
             arch: aarch64
           - os: windows-latest
             platform: windows
-            arch: x86_64
+            arch: x86-64
 
     runs-on: ${{ matrix.os }}
 
@@ -27,15 +27,24 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Setup LuaJIT
-        uses: leafo/gh-actions-lua@v12
+      - name: Cache LuaJIT
+        id: cache-luajit
+        uses: actions/cache@v5
         with:
-          luaVersion: "luajit-2.1.0-beta3"
+          path: luajit-${{ matrix.platform }}-${{ matrix.arch }}
+          key: luajit-${{ matrix.platform }}-${{ matrix.arch }}-latest
+
+      - name: Download LuaJIT
+        if: steps.cache-luajit.outputs.cache-hit != 'true'
+        run: |
+          curl -L -o luajit.tar.gz https://github.com/codebycruz/lj-dist/releases/download/latest/luajit-${{ matrix.platform }}-${{ matrix.arch }}.tar.gz
+          tar -xzf luajit.tar.gz
+          chmod +x luajit-${{ matrix.platform }}-${{ matrix.arch }}/luajit${{ matrix.platform == 'windows' && '.exe' || '' }}
 
       - name: Build lpm
         run: |
           cd packages/lpm
-          BOOTSTRAP=1 $GITHUB_WORKSPACE/.lua/bin/luajit ./src/init.lua compile
+          BOOTSTRAP=1 $GITHUB_WORKSPACE/luajit-${{ matrix.platform }}-${{ matrix.arch }}/luajit${{ matrix.platform == 'windows' && '.exe' || '' }} ./src/init.lua compile
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6
