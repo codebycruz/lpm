@@ -7,7 +7,20 @@ local isWindows = path.separator == "\\"
 ---@param arg string
 local function escape(arg)
 	if isWindows then
-		return '"' .. string.gsub(arg, '"', '""') .. '"'
+		if not string.match(arg, '[%s"^&|<>%%]') and arg ~= "" then
+			return arg
+		end
+
+		local inner = arg
+			:gsub('(\\+)"', function(backslashes)
+				return backslashes .. backslashes .. '\\"'
+			end)
+			:gsub('(\\+)$', function(backslashes)
+				return backslashes .. backslashes
+			end)
+			:gsub('"', '\\"')
+
+		return '"' .. inner .. '"'
 	else
 		return "'" .. string.gsub(arg, "'", "'\\''") .. "'"
 	end
@@ -27,17 +40,17 @@ end
 ---@param args string[]?
 ---@param options process.CommandOptions?
 local function formatCommand(name, args, options)
-	local escape = (options and options.unsafe) and function(s) return s end or escape
+	local escapeFunc = (options and options.unsafe) and function(s) return s end or escape
 
 	if process.platform ~= "win32" then
-		name = escape(name)
+		name = escapeFunc(name)
 	end
 
 	local command
 	if args then
 		local parts = { name }
 		for i, arg in ipairs(args) do
-			parts[i + 1] = escape(arg)
+			parts[i + 1] = escapeFunc(arg)
 		end
 
 		command = table.concat(parts, " ")
@@ -46,16 +59,20 @@ local function formatCommand(name, args, options)
 	end
 
 	if options and options.cwd then
-		command = "cd " .. escape(options.cwd) .. " && " .. command
+		if isWindows then
+			command = "cd /d " .. escapeFunc(options.cwd) .. " && " .. command
+		else
+			command = "cd " .. escapeFunc(options.cwd) .. " && " .. command
+		end
 	end
 
 	if options and options.env then
 		local parts = {}
 		for k, v in pairs(options.env) do
 			if isWindows then
-				parts[#parts + 1] = "set " .. k:match("^[%w_]+$") .. "=" .. escape(v) .. "&&"
+				parts[#parts + 1] = "set " .. string.match(k, "^[%w_]+$") .. "=" .. escapeFunc(v) .. "&&"
 			else
-				parts[#parts + 1] = "export " .. k:match("^[%w_]+$") .. "=" .. escape(v) .. ";"
+				parts[#parts + 1] = "export " .. string.match(k, "^[%w_]+$") .. "=" .. escapeFunc(v) .. ";"
 			end
 		end
 
@@ -66,22 +83,24 @@ local function formatCommand(name, args, options)
 end
 
 ---@param name string
----@param args string[]
+---@param args string[]?
 ---@param options process.ExecOptions?
 ---@return boolean? # Success
 ---@return string # Output
 function process.exec(name, args, options)
 	local command = formatCommand(name, args, options)
-	command = command .. " 2>&1" -- Redirect stderr to stdout
 
-	local tmpfile = nil
+	local tmpErrorFile = os.tmpname()
+	command = command .. " 2>" .. escape(tmpErrorFile)
+
+	local tmpInputFile = nil
 	if options and options.stdin then
-		tmpfile = os.tmpname()
-		local f = io.open(tmpfile, "w")
+		tmpInputFile = os.tmpname()
+		local f = io.open(tmpInputFile, "wb")
 		if f then
 			f:write(options.stdin)
 			f:close()
-			command = command .. " < " .. escape(tmpfile)
+			command = command .. " < " .. escape(tmpInputFile)
 		end
 	end
 
@@ -90,12 +109,33 @@ function process.exec(name, args, options)
 		error("Failed to start process: " .. command)
 	end
 
-	local output = handle:read("*a")
+	-- This can error if OOM
+	local _ok, stdout = pcall(function()
+		return handle:read("*a")
+	end)
 	local success = handle:close()
 
-	if tmpfile then
-		os.remove(tmpfile)
+	if tmpInputFile then
+		os.remove(tmpInputFile)
 	end
+
+	local output
+	if success then
+		output = stdout
+	else
+		local handle = io.open(tmpErrorFile, "r")
+
+		local stderr = {}
+		while true do
+			local chunk = handle:read(4096)
+			if not chunk or #stderr > 10 then break end
+			stderr[#stderr + 1] = chunk
+		end
+
+		output = table.concat(stderr)
+	end
+
+	os.remove(tmpErrorFile)
 
 	return success, output
 end
@@ -104,8 +144,7 @@ end
 ---@param args string[]
 ---@param options process.SpawnOptions?
 function process.spawn(name, args, options)
-	local command = formatCommand(name, args, options)
-	return os.execute(command)
+	return os.execute(formatCommand(name, args, options))
 end
 
 if isWindows then
