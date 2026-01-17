@@ -4,7 +4,6 @@ local process = require("process")
 local path = require("path")
 local env = require("env")
 local fs = require("fs")
-local http = require("http")
 local jit = require("jit")
 
 local ljDistRepo = "codebycruz/lj-dist"
@@ -42,18 +41,10 @@ local function getLuajitPath()
 	)
 	local tarballPath = path.join(cacheDir, tarballName)
 
-	local content = http.get(downloadUrl)
-	if not content then
-		error("Failed to download LuaJIT from " .. downloadUrl)
+	local success, output = process.exec("curl", { "-L", "-o", tarballPath, downloadUrl })
+	if not success then
+		error("Failed to download LuaJIT from " .. downloadUrl .. ": " .. output)
 	end
-
-	local file = io.open(tarballPath, "wb")
-	if not file then
-		error("Failed to write tarball to " .. tarballPath)
-	end
-
-	file:write(content)
-	file:close()
 
 	local success, output = process.exec("tar", { "-xzf", tarballPath, "-C", cacheDir })
 	if not success then
@@ -95,7 +86,7 @@ end
 ---@param files { path: string, content: string }[]
 ---@return string
 function sea.compile(main, files)
-	local outPath = env.tmpdir() .. "/sea.out"
+	local outPath = path.join(env.tmpdir(), "sea.out")
 
 	local filePreloads = {}
 	for i, file in ipairs(files) do
@@ -160,16 +151,13 @@ function sea.compile(main, files)
 	local includePath = path.join(ljPath, "include")
 	local libPath = path.join(ljPath, "lib")
 
-	local gccArgs = { "-I" .. includePath, "-xc", "-", "-xnone", "-o", outPath }
+	local args = { "-I" .. includePath, "-xc", "-", "-o", outPath, "-xnone", path.join(libPath, "libluajit.a") }
 	if process.platform == "linux" then
-		gccArgs[#gccArgs + 1] = path.join(libPath, "libluajit.a")
-		gccArgs[#gccArgs + 1] = "-lm"
-		gccArgs[#gccArgs + 1] = "-ldl"
-	elseif process.platform == "win32" then
-		gccArgs[#gccArgs + 1] = path.join(libPath, "lua51.lib")
+		args[#args + 1] = "-lm"
+		args[#args + 1] = "-ldl"
 	end
 
-	local success, output = process.exec("gcc", gccArgs, { stdin = code })
+	local success, output = process.exec("gcc", args, { stdin = code })
 	if not success or string.find(output, "is not recognized as an internal", 1, true) then
 		error("Compilation failed: " .. output)
 	end
