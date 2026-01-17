@@ -113,7 +113,7 @@ end
 ---@return string[]?
 function fs.scan(cwd, glob, opts)
 	if not fs.isdir(cwd) then
-		error("not a directory")
+		error("not a directory: '" .. cwd .. "'")
 	end
 
 	local absolute = opts and opts.absolute or false
