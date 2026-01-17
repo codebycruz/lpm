@@ -24,9 +24,9 @@ local function getBinaryInstallLocation()
 end
 
 local artifactNames = {
-	win32 = "lpm-windows-x86_64.exe",
-	linux = "lpm-linux-x86_64",
-	darwin = "lpm-macos-x86_64",
+	win32 = "lpm-windows-x86-64.exe",
+	linux = "lpm-linux-x86-64",
+	darwin = "lpm-macos-x86-64",
 }
 
 ---@param args clap.Args

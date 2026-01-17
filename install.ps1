@@ -3,7 +3,7 @@ $ErrorActionPreference = "Stop"
 $repo = "codebycruz/lpm"
 $lpmDir = "$env:USERPROFILE\.lpm"
 $binaryName = "lpm.exe"
-$artifact = "lpm-windows-x86_64.exe"
+$artifact = "lpm-windows-x86-64.exe"
 
 Write-Host "Installing lpm..." -ForegroundColor Green
 

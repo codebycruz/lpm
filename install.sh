@@ -5,7 +5,7 @@ set -e
 REPO="codebycruz/lpm"
 LPM_DIR="$HOME/.lpm"
 BINARY_NAME="lpm"
-ARTIFACT="lpm-linux-x86_64"
+ARTIFACT="lpm-linux-x86-64"
 
 echo "Installing lpm..."
 
