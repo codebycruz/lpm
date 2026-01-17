@@ -63,14 +63,26 @@ end
 ---@param src string
 ---@param dest string
 function fs.copy(src, dest)
-	local content = fs.read(src)
-	if content == nil then
-		return false
+	if fs.isfile(src) then
+		local content = fs.read(src)
+		if not content then return false end
+		fs.write(dest, content)
+
+		return true
 	end
 
-	local success = fs.write(dest, content)
-	if not success then
-		return false
+	local iter = fs.readdir(src)
+	if not iter then return false end
+	if not fs.isdir(dest) and not fs.mkdir(dest) then return false end
+
+	for entry in iter do
+		local srcPath = path.join(src, entry.name)
+		local destPath = path.join(dest, entry.name)
+
+		local r = fs.copy(srcPath, destPath)
+		if not r then
+			return false
+		end
 	end
 
 	return true
