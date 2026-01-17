@@ -41,10 +41,17 @@ jobs:
           tar -xzf luajit.tar.gz
           chmod +x luajit-${{ matrix.platform }}-${{ matrix.arch }}/luajit${{ matrix.platform == 'windows' && '.exe' || '' }}
 
-      - name: Build lpm
+      - name: Build lpm (Unix)
+        if: matrix.platform != 'windows'
         run: |
           cd packages/lpm
-          BOOTSTRAP=1 $GITHUB_WORKSPACE/luajit-${{ matrix.platform }}-${{ matrix.arch }}/luajit${{ matrix.platform == 'windows' && '.exe' || '' }} ./src/init.lua compile
+          BOOTSTRAP=1 $GITHUB_WORKSPACE/luajit-${{ matrix.platform }}-${{ matrix.arch }}/luajit ./src/init.lua compile
+
+      - name: Build lpm (Windows)
+        if: matrix.platform == 'windows'
+        run: |
+          cd packages/lpm
+          $env:BOOTSTRAP=1; & "$env:GITHUB_WORKSPACE/luajit-windows-x86-64/luajit.exe" ./src/init.lua compile
 
       - name: Upload artifact
         uses: actions/upload-artifact@v6
