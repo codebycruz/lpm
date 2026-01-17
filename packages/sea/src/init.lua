@@ -25,7 +25,7 @@ end
 local function getLuajitPath()
 	local cacheDir = path.join(env.tmpdir(), "luajit-cache")
 	local platform, arch = getPlatformArch()
-	local targetDir = path.join(cacheDir, string.format("luajit-%s-%s", platform, arch))
+	local targetDir = path.join(cacheDir, string.format("libluajit-%s-%s", platform, arch))
 
 	if fs.exists(path.join(targetDir, "include", "lua.h")) then
 		return targetDir
@@ -33,7 +33,7 @@ local function getLuajitPath()
 
 	fs.mkdir(cacheDir)
 
-	local tarballName = string.format("luajit-%s-%s.tar.gz", platform, arch)
+	local tarballName = string.format("libluajit-%s-%s.tar.gz", platform, arch)
 	local downloadUrl = string.format(
 		"https://github.com/%s/releases/download/%s/%s",
 		ljDistRepo,
