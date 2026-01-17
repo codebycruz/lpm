@@ -66,5 +66,5 @@ jobs:
         uses: actions/upload-artifact@v6
         with:
           name: lpm-${{ matrix.platform }}-${{ matrix.arch }}
-          path: packages\lpm\lpm.exe
+          path: ${{ github.workspace }}/packages/lpm/lpm.exe
           if-no-files-found: error
