@@ -39,7 +39,7 @@ jobs:
       - name: Download LuaJIT
         if: steps.cache-luajit.outputs.cache-hit != 'true'
         run: |
-          curl -L -o luajit.tar.gz https://github.com/codebycruz/lj-dist/releases/download/latest/luajit-${{ matrix.platform }}-${{ matrix.arch }}.tar.gz
+          curl -L -o luajit.tar.gz https://github.com/codebycruz/lj-dist/releases/download/latest/luajit-${{ matrix.platform }}-${{ matrix.arch }}-gnu.tar.gz
           tar -xzf luajit.tar.gz
           chmod +x luajit-${{ matrix.platform }}-${{ matrix.arch }}/luajit${{ matrix.platform == 'windows' && '.exe' || '' }}
 
