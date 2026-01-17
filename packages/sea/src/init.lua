@@ -21,10 +21,21 @@ local function getPlatformArch()
 	return platform, arch
 end
 
+local function getPlatformLibc()
+	local ok, out = process.exec("ldd", { "--version" })
+
+	if ok and string.find(out, "musl", 1, true) then
+		return "musl"
+	end
+
+	return "gnu"
+end
+
 local function getLuajitPath()
 	local cacheDir = path.join(env.tmpdir(), "luajit-cache")
 	local platform, arch = getPlatformArch()
-	local targetDir = path.join(cacheDir, string.format("libluajit-%s-%s", platform, arch))
+	local libc = getPlatformLibc()
+	local targetDir = path.join(cacheDir, string.format("libluajit-%s-%s-%s", platform, arch, libc))
 
 	if fs.exists(path.join(targetDir, "include", "lua.h")) then
 		return targetDir
@@ -32,7 +43,7 @@ local function getLuajitPath()
 
 	fs.mkdir(cacheDir)
 
-	local tarballName = string.format("libluajit-%s-%s.tar.gz", platform, arch)
+	local tarballName = string.format("libluajit-%s-%s-%s.tar.gz", platform, arch, libc)
 	local downloadUrl = string.format(
 		"https://github.com/%s/releases/download/%s/%s",
 		ljDistRepo,
@@ -87,6 +98,8 @@ end
 ---@return string
 function sea.compile(main, files)
 	local outPath = path.join(env.tmpdir(), "sea.out")
+
+	print("sea.compile", #files)
 
 	local filePreloads = {}
 	for i, file in ipairs(files) do
