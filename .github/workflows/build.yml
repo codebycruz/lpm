@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+    paths:
+      - "packages/**"
   workflow_dispatch:
 
 jobs:
