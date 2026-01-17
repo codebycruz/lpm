@@ -53,8 +53,18 @@ jobs:
           cd packages/lpm
           $env:BOOTSTRAP=1; & "$env:GITHUB_WORKSPACE/luajit-windows-x86-64/luajit.exe" ./src/init.lua compile
 
-      - name: Upload artifact
+      - name: Upload artifact (Unix)
+        if: matrix.platform != 'windows'
         uses: actions/upload-artifact@v6
         with:
           name: lpm-${{ matrix.platform }}-${{ matrix.arch }}
-          path: packages/lpm/lpm${{ matrix.platform == 'windows' && '.exe' || '' }}
+          path: packages/lpm/lpm
+          if-no-files-found: error
+
+      - name: Upload artifact (Windows)
+        if: matrix.platform == 'windows'
+        uses: actions/upload-artifact@v6
+        with:
+          name: lpm-${{ matrix.platform }}-${{ matrix.arch }}
+          path: packages\lpm\lpm.exe
+          if-no-files-found: error
