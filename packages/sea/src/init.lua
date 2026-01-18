@@ -22,9 +22,10 @@ local function getPlatformArch()
 end
 
 local function getPlatformLibc()
-	local ok, out = process.exec("ldd", { "--version" })
+	-- note: for some reason 'ok' is nil here.
+	local _ok, out = process.exec("ldd", { "--version" })
 
-	if ok and string.find(out, "musl", 1, true) then
+	if string.find(out, "musl", 1, true) then
 		return "musl"
 	end
 
@@ -99,7 +100,6 @@ end
 function sea.compile(main, files)
 	local outPath = path.join(env.tmpdir(), "sea.out")
 
-	print("sea.compile", #files)
 
 	local filePreloads = {}
 	for i, file in ipairs(files) do
