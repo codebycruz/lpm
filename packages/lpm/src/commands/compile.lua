@@ -19,7 +19,11 @@ local function compile(args)
 	end
 
 	local executable = pkg:compile()
-	fs.move(executable, outFile)
+	local ok, err = fs.move(executable, outFile)
+
+	if not ok then
+		error("Failed to move executable: " .. err)
+	end
 
 	print(ansi.colorize(ansi.green, "Executable created: " .. outFile))
 end
