@@ -1,8 +1,6 @@
 local process = {}
 
-local path = require("path")
-
-local isWindows = path.separator == "\\"
+local isWindows = jit.os == "Windows"
 
 ---@param arg string
 local function escape(arg)
@@ -129,7 +127,7 @@ local function executeCommand(name, args, options, isStdoutEnabled)
 	end
 
 	local exitCode = os.execute(command)
-	local ranSuccessfully = exitCode == 0
+	local ranSuccessfully = exitCode == true or exitCode == 0 -- todo: WTAF?
 
 	local catastrophicFailure = nil ---@type string?
 	local output ---@type string?
@@ -176,19 +174,12 @@ end
 
 if isWindows then
 	process.platform = "win32"
+elseif jit.os == "Linux" then
+	process.platform = "linux"
+elseif jit.os == "OSX" then
+	process.platform = "darwin"
 else
-	local ok, out = process.exec("uname", { "-s" })
-	if ok then
-		if string.match(out, "^Linux") then
-			process.platform = "linux"
-		elseif string.match(out, "^Darwin") then
-			process.platform = "darwin"
-		else
-			process.platform = "unix"
-		end
-	else
-		process.platform = "unix"
-	end
+	process.platform = "unix"
 end
 
 return process
