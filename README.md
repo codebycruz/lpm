@@ -17,9 +17,9 @@ It was created due to my frustration with the current status quo of package mana
 
 ## Requirements
 
-- You'll need LuaJIT 2.1+ to use `lpm` as it is currently a dynamically linked `lpm compile`'d executable.
-- Git is required for git repository installations.
-- `pkg-config` for building with `lpm compile`.
+- glibc 2.35+
+- `gcc` if you plan on using `lpm compile`
+    - This requirement may be lifted at some point in the future.
 
 ## Installation
 
@@ -34,7 +34,5 @@ irm https://raw.githubusercontent.com/codebycruz/lpm/master/install.ps1 | iex
 ```
 
 ## Development
-
-To build with `lpm compile`, you'll need `gcc`, but otherwise, that should be it. Later on, this requirement will hopefully be lifted by statically linking tinycc.
 
 In the future this will be streamlined with a devcontainer, but that's not a priority for me until [Zed's support for devcontainers](https://github.com/zed-industries/zed/issues/11473) improves.
