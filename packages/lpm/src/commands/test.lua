@@ -3,14 +3,13 @@ local Package = require("lpm.package")
 local fs = require("fs")
 local path = require("path")
 local ansi = require("ansi")
+local env = require("env")
 
----@param args clap.Args
-local function test(args)
-	local pkg = Package.open()
-
-	local testDir = pkg:getTestDir()
+---@param package lpm.Package
+local function runTests(package)
+	local testDir = package:getTestDir()
 	if not fs.exists(testDir) then
-		error("No tests directory found in package: " .. testDir)
+		return false, "No tests directory found in package: " .. testDir
 	end
 
 	---@type { relativePath: string, msg: string }[]
@@ -20,7 +19,7 @@ local function test(args)
 	for _, relativePath in ipairs(testFiles) do
 		local testFile = path.join(testDir, relativePath)
 
-		local ok, msg = pkg:runScript(testFile)
+		local ok, msg = package:runScript(testFile)
 		if not ok then
 			ansi.printf("{red}[FAIL] %s", relativePath)
 			failures[#failures + 1] = { relativePath = relativePath, msg = msg }
@@ -46,6 +45,31 @@ local function test(args)
 		end
 	else
 		ansi.printf("{green}All %d tests passed!", #testFiles)
+	end
+end
+
+---@param args clap.Args
+local function test(args)
+	local package = Package.tryOpen()
+	if not package then
+		local cwd = env.cwd()
+
+		-- Recursively search for packages
+		for _, relativePath in ipairs(fs.scan(cwd, "**" .. path.separator .. "lpm.json")) do
+			local configPath = path.join(cwd, relativePath)
+
+			local package = Package.tryOpen(path.dirname(configPath))
+			if package then
+				runTests(package)
+			end
+		end
+
+		return
+	end
+
+	local ok, err = runTests(package)
+	if not ok then
+		error(err)
 	end
 end
 

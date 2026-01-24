@@ -48,6 +48,18 @@ function Package:getLockfilePath()
 end
 
 ---@param dir string?
+function Package.tryOpen(dir)
+	dir = dir or env.cwd()
+
+	local configPath = path.join(dir, "lpm.json")
+	if not fs.exists(configPath) then
+		return
+	end
+
+	return setmetatable({ dir = dir }, Package)
+end
+
+---@param dir string?
 function Package.open(dir)
 	dir = dir or env.cwd()
 
