@@ -1,5 +1,3 @@
-local Package = require("lpm.package")
-
 local http = require("http")
 local process = require("process")
 local semver = require("semver")
@@ -10,7 +8,6 @@ local fs = require("fs")
 
 local global = require("lpm.global")
 
-local repoUrl = "https://github.com/codebycruz/lpm"
 local apiUrl = "https://api.github.com/repos/codebycruz/lpm/releases/latest"
 
 local function getBinaryInstallLocation()
@@ -107,7 +104,7 @@ local function upgrade(args)
 		end
 	end
 
-	local moveSuccess, moveErr = fs.rename(tempLocation, binLocation)
+	local moveSuccess, moveErr = fs.move(tempLocation, binLocation)
 	if not moveSuccess then
 		fs.delete(tempLocation)
 		print(ansi.colorize(ansi.red, "Failed to replace binary: " .. moveErr))
