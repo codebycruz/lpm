@@ -128,40 +128,32 @@ local function executeCommand(name, args, options, isStdoutEnabled)
 		command = command .. " > " .. escape(tmpOutputFile)
 	end
 
-	local failure = nil ---@type string?
+	local exitCode = os.execute(command)
+	local ranSuccessfully = exitCode == 0
+
+	local catastrophicFailure = nil ---@type string?
 	local output ---@type string?
-
-	local success, exitCode, code = os.execute(command)
-	if not success then
-		failure = "Failed with code " .. code .. " (" .. exitCode .. ")"
-		goto fail
-	end
-
-	if success and tmpOutputFile then
+	if ranSuccessfully and tmpOutputFile then
 		output = readChunked(tmpOutputFile, 4096, 10)
 		if not output then
-			failure = "Failed to read stdout"
-			goto fail
+			catastrophicFailure = "Failed to read stdout"
 		end
-	elseif not success then
+	elseif not ranSuccessfully then
 		output = readChunked(tmpErrorFile, 4096, 10)
 		if not output then
-			failure = "Failed to read stderr"
-			goto fail
+			catastrophicFailure = "Failed to read stderr"
 		end
 	end
-
-	::fail::
 
 	if tmpInputFile then os.remove(tmpInputFile) end
 	if tmpOutputFile then os.remove(tmpOutputFile) end
 	os.remove(tmpErrorFile)
 
-	if failure then
-		error(failure)
+	if catastrophicFailure then
+		error(catastrophicFailure)
 	end
 
-	return success, output
+	return ranSuccessfully, output
 end
 
 ---@param name string
