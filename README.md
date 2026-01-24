@@ -35,6 +35,6 @@ irm https://raw.githubusercontent.com/codebycruz/lpm/master/install.ps1 | iex
 
 ## Development
 
-To build with `lpm compile`, you'll need `cc` and `luajit` development libraries installed.
+To build with `lpm compile`, you'll need `gcc`, but otherwise, that should be it. Later on, this requirement will hopefully be lifted by statically linking tinycc.
 
 In the future this will be streamlined with a devcontainer, but that's not a priority for me until [Zed's support for devcontainers](https://github.com/zed-industries/zed/issues/11473) improves.
