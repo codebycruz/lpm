@@ -18,7 +18,7 @@ local function add(args)
 	end
 
 	if not depType then
-		print(ansi.colorize(ansi.red, "You must specify either --path <path> or --git <url>"))
+		ansi.printf("{red}You must specify either --path <path> or --git <url>")
 		return
 	end
 
@@ -31,15 +31,14 @@ local function add(args)
 	end
 
 	if config.dependencies[name] then
-		print(ansi.colorize(ansi.yellow, "Dependency already exists: " .. name))
+		ansi.printf("{yellow}Dependency already exists: %s", name)
 		return
 	end
 
 	config.dependencies[name] = { [depType] = depValue }
 
 	fs.write(configPath, json.encode(config))
-	print(ansi.colorize(ansi.green, "Added dependency: " .. name) ..
-		" (" .. ansi.colorize(ansi.cyan, depType .. ": " .. depValue) .. ")")
+	ansi.printf("{green}Added dependency: %s{reset} ({cyan}%s: %s{reset})", name, depType, depValue)
 end
 
 return add

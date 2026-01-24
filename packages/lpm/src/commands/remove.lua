@@ -17,7 +17,7 @@ local function remove(args)
 	end
 
 	if not config.dependencies[name] then
-		print(ansi.colorize(ansi.yellow, "Dependency does not exist: " .. name))
+		ansi.printf("{yellow}Dependency does not exist: %s", name)
 		return
 	end
 
@@ -25,7 +25,7 @@ local function remove(args)
 
 	fs.write(configPath, json.encode(config))
 
-	print(ansi.colorize(ansi.green, "Removed dependency: " .. name))
+	ansi.printf("{green}Removed dependency: %s", name)
 end
 
 return remove

@@ -30,42 +30,42 @@ local artifactNames = {
 local function upgrade(args)
 	local out, err = http.get(apiUrl)
 	if not out then
-		print(ansi.colorize(ansi.red, "Failed to fetch latest release: " .. err))
+		ansi.printf("{red}Failed to fetch latest release: %s", err)
 		return
 	end
 
 	local releaseInfo = json.decode(out)
 	if not releaseInfo or not releaseInfo.tag_name or not releaseInfo.assets then
-		print(ansi.colorize(ansi.red, "Invalid release information received"))
+		ansi.printf("{red}Invalid release information received")
 		return
 	end
 
 	local latestVersion = string.match(releaseInfo.tag_name, "v?(%d+%.%d+%.%d+)")
 	if not latestVersion then
-		print(ansi.colorize(ansi.red, "Invalid version format in release tag"))
+		ansi.printf("{red}Invalid version format in release tag")
 		return
 	end
 
 	local runningVersion = global.currentVersion
 	if semver.compare(latestVersion, runningVersion) <= 0 then
-		print(ansi.colorize(ansi.green, "You are already running the latest version (" .. runningVersion .. ")"))
+		ansi.printf("{green}You are already running the latest version (%s)", runningVersion)
 		return
 	end
 
 	local binLocation = getBinaryInstallLocation()
 	if not binLocation then
-		print(ansi.colorize(ansi.red, "Unsupported platform: " .. process.platform))
+		ansi.printf("{red}Unsupported platform: %s", process.platform)
 		return
 	end
 
 	if not fs.exists(binLocation) then
-		print(ansi.colorize(ansi.red, "Cannot upgrade: binary not found at " .. binLocation))
+		ansi.printf("{red}Cannot upgrade: binary not found at %s", binLocation)
 		return
 	end
 
 	local artifactName = artifactNames[process.platform]
 	if not artifactName then
-		print(ansi.colorize(ansi.red, "No artifact available for platform: " .. process.platform))
+		ansi.printf("{red}No artifact available for platform: %s", process.platform)
 		return
 	end
 
@@ -78,28 +78,28 @@ local function upgrade(args)
 	end
 
 	if not downloadUrl then
-		print(ansi.colorize(ansi.red, "Could not find download URL for artifact: " .. artifactName))
+		ansi.printf("{red}Could not find download URL for artifact: %s", artifactName)
 		return
 	end
 
 	print("Downloading " .. artifactName .. " from " .. downloadUrl)
 	local binaryData, downloadErr = http.get(downloadUrl)
 	if not binaryData then
-		print(ansi.colorize(ansi.red, "Failed to download binary: " .. downloadErr))
+		ansi.printf("{red}Failed to download binary: %s", downloadErr)
 		return
 	end
 
 	local tempLocation = binLocation .. ".tmp"
 	local writeSuccess, writeErr = fs.write(tempLocation, binaryData)
 	if not writeSuccess then
-		print(ansi.colorize(ansi.red, "Failed to write temporary file: " .. writeErr))
+		ansi.printf("{red}Failed to write temporary file: %s", writeErr)
 		return
 	end
 
 	if process.platform == "linux" then
 		local chmodSuccess, chmodErr = process.spawn("chmod", { "+x", tempLocation })
 		if not chmodSuccess then
-			print(ansi.colorize(ansi.red, "Failed to make binary executable: " .. chmodErr))
+			ansi.printf("{red}Failed to make binary executable: %s", chmodErr)
 			return
 		end
 	end
@@ -107,11 +107,11 @@ local function upgrade(args)
 	local moveSuccess, moveErr = fs.move(tempLocation, binLocation)
 	if not moveSuccess then
 		fs.delete(tempLocation)
-		print(ansi.colorize(ansi.red, "Failed to replace binary: " .. moveErr))
+		ansi.printf("{red}Failed to replace binary: %s", moveErr)
 		return
 	end
 
-	print(ansi.colorize(ansi.green, "Successfully upgraded to version " .. latestVersion .. "!"))
+	ansi.printf("{green}Successfully upgraded to version %s!", latestVersion)
 end
 
 return upgrade

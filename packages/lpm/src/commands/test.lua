@@ -22,14 +22,14 @@ local function test(args)
 
 		local ok, msg = pkg:runScript(testFile)
 		if not ok then
-			print(ansi.colorize(ansi.red, "[FAIL]") .. " " .. relativePath)
+			ansi.printf("{red}[FAIL] %s", relativePath)
 			failures[#failures + 1] = { relativePath = relativePath, msg = msg }
 		end
 	end
 
 	local didGetPackageError = false
 	if #failures > 0 then
-		print(ansi.colorize(ansi.red, "\nTest Failures:"))
+		ansi.printf("{red}\nTest Failures:")
 		for _, failure in ipairs(failures) do
 			if string.find(failure.msg, "no field package.preload", 1, true) then
 				didGetPackageError = true
@@ -38,14 +38,14 @@ local function test(args)
 			print("- " .. failure.relativePath .. ": " .. failure.msg)
 		end
 
-		print(ansi.colorize(ansi.red, #failures .. " out of " .. #testFiles .. " test(s) failed."))
+		ansi.printf("{red}%d out of %d test(s) failed.", #failures, #testFiles)
 
 		if didGetPackageError then
-			print(ansi.colorize(ansi.yellow,
-				"\nIt looks like some tests are failing due to missing dependencies. Do you need to run lpm install?"))
+			ansi.printf(
+				"{yellow}\nIt looks like some tests are failing due to missing dependencies. Do you need to run lpm install?")
 		end
 	else
-		print(ansi.colorize(ansi.green, "All " .. #testFiles .. " tests passed!"))
+		ansi.printf("{green}All %d tests passed!", #testFiles)
 	end
 end
 

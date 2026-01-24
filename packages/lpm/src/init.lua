@@ -140,7 +140,7 @@ local ok, err = xpcall(function()
 		if commands[command] then
 			commands[command](args)
 		else
-			print(ansi.colorize(ansi.red, "Unknown command: " .. tostring(command)))
+			ansi.printf("{red}Unknown command: %s", tostring(command))
 		end
 	end
 end, function(err)
@@ -148,7 +148,7 @@ end, function(err)
 end)
 
 if not ok then ---@cast err { msg: string, trace: string }
-	print(ansi.colorize(ansi.red, "Error: " .. tostring(err.msg)))
+	ansi.printf("{red}Error: %s", tostring(err.msg))
 
 	if os.getenv("DEBUG") then
 		print(err.trace)

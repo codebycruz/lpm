@@ -11,7 +11,7 @@ local function install(args)
 		pkg:installDevDependencies()
 	end
 
-	print(ansi.colorize(ansi.green, "All dependencies installed successfully."))
+	ansi.printf("{green}All dependencies installed successfully.")
 end
 
 return install

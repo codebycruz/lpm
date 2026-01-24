@@ -12,7 +12,7 @@ local function bundle(args)
 		outFile = path.join(pkg:getDir(), pkg:getName() .. "-bundled.lua")
 	end
 
-	print(ansi.colorize(ansi.red, "Bundling is not yet implemented."))
+	ansi.printf("{red}Bundling is not yet implemented.")
 end
 
 return bundle

@@ -14,7 +14,7 @@ local function new(args)
 	end
 
 	fs.mkdir(name)
-	print(ansi.colorize(ansi.green, "Created directory: " .. name))
+	ansi.printf("{green}Created directory: %s", name)
 
 	Package.init(path.join(env.cwd(), name))
 end

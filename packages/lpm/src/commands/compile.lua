@@ -25,7 +25,7 @@ local function compile(args)
 		error("Failed to move executable: " .. err)
 	end
 
-	print(ansi.colorize(ansi.green, "Executable created: " .. outFile))
+	ansi.printf("{green}Executable created: %s", outFile)
 end
 
 return compile

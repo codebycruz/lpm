@@ -1,30 +1,45 @@
 local ansi = {}
 
--- Reset
-ansi.reset = "\27[0m"
+---@alias ansi.Color
+--- | "reset"
+--- | "red"
+--- | "green"
+--- | "yellow"
+--- | "blue"
+--- | "magenta"
+--- | "cyan"
+--- | "white"
+--- | "gray"
 
--- Colors
-ansi.red = "\27[31m"
-ansi.green = "\27[32m"
-ansi.yellow = "\27[33m"
-ansi.blue = "\27[34m"
-ansi.magenta = "\27[35m"
-ansi.cyan = "\27[36m"
-ansi.white = "\27[37m"
-ansi.gray = "\27[90m"
+---@type table<ansi.Color, string>
+local colors = {
+	reset = "\27[0m",
+	red = "\27[31m",
+	green = "\27[32m",
+	yellow = "\27[33m",
+	blue = "\27[34m",
+	magenta = "\27[35m",
+	cyan = "\27[36m",
+	white = "\27[37m",
+	gray = "\27[90m"
+}
 
--- Bright colors
-ansi.bright_red = "\27[91m"
-ansi.bright_green = "\27[92m"
-ansi.bright_yellow = "\27[93m"
-ansi.bright_blue = "\27[94m"
-ansi.bright_magenta = "\27[95m"
-ansi.bright_cyan = "\27[96m"
-ansi.bright_white = "\27[97m"
+---@param name ansi.Color
+---@param s string
+function ansi.colorize(name, s)
+	return colors[name] .. s .. colors.reset
+end
 
--- Helper function to colorize text
-function ansi.colorize(color, text)
-	return color .. text .. ansi.reset
+---@param f string
+---@param ... any
+function ansi.format(f, ...)
+	return string.format(string.gsub(f, "{([^}]+)}", colors), ...) .. colors.reset
+end
+
+---@param f string
+---@param ... any
+function ansi.printf(f, ...)
+	print(ansi.format(f, ...))
 end
 
 return ansi
