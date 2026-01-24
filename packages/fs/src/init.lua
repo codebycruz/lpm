@@ -91,7 +91,9 @@ end
 ---@param old string
 ---@param new string
 function fs.move(old, new)
-	return os.rename(old, new)
+	if not fs.copy(old, new) then return false, "Failed to copy" end
+	if not fs.delete(old) then return false, "Failed to delete" end
+	return true
 end
 
 ---@param p string
