@@ -30,8 +30,6 @@ end
 ---@field cwd string?
 ---@field env table<string, string>?
 ---@field unsafe boolean? # If true, do not escape command and arguments. Especially useful because windows is completely worthless :)
-
----@class process.ExecOptions: process.CommandOptions
 ---@field stdin string?
 
 ---@class process.SpawnOptions: process.CommandOptions
@@ -82,12 +80,32 @@ local function formatCommand(name, args, options)
 	return command
 end
 
+---@param path string
+---@param chunkSize number
+---@param maxChunks number
+---@return string?
+local function readChunked(path, chunkSize, maxChunks)
+	local handle = io.open(path, "rb")
+	if not handle then
+		return
+	end
+
+	local buf = {}
+	while true do
+		local chunk = handle:read(chunkSize)
+		if not chunk or #buf > maxChunks then break end
+		buf[#buf + 1] = chunk
+	end
+
+	handle:close()
+	return table.concat(buf)
+end
+
 ---@param name string
 ---@param args string[]?
----@param options process.ExecOptions?
----@return boolean? # Success
----@return string # Output
-function process.exec(name, args, options)
+---@param options process.CommandOptions?
+---@param isStdoutEnabled boolean
+local function executeCommand(name, args, options, isStdoutEnabled)
 	local command = formatCommand(name, args, options)
 
 	local tmpErrorFile = os.tmpname()
@@ -104,47 +122,64 @@ function process.exec(name, args, options)
 		end
 	end
 
-	local handle = io.popen(command, "r")
-	if not handle then
-		error("Failed to start process: " .. command)
+	local tmpOutputFile = nil
+	if isStdoutEnabled then
+		tmpOutputFile = os.tmpname()
+		command = command .. " > " .. escape(tmpOutputFile)
 	end
 
-	-- This can error if OOM
-	local _ok, stdout = pcall(function()
-		return handle:read("*a")
-	end)
-	local success = handle:close()
+	local failure = nil ---@type string?
+	local output ---@type string?
 
-	if tmpInputFile then
-		os.remove(tmpInputFile)
+	local success, exitCode, code = os.execute(command)
+	if not success then
+		failure = "Failed with code " .. code .. " (" .. exitCode .. ")"
+		goto fail
 	end
 
-	local output
-	if success then
-		output = stdout
-	else
-		local handle = io.open(tmpErrorFile, "rb")
-
-		local stderr = {}
-		while true do
-			local chunk = handle:read(4096)
-			if not chunk or #stderr > 10 then break end
-			stderr[#stderr + 1] = chunk
+	if success and tmpOutputFile then
+		output = readChunked(tmpOutputFile, 4096, 10)
+		if not output then
+			failure = "Failed to read stdout"
+			goto fail
 		end
-
-		output = table.concat(stderr)
+	elseif not success then
+		output = readChunked(tmpErrorFile, 4096, 10)
+		if not output then
+			failure = "Failed to read stderr"
+			goto fail
+		end
 	end
 
+	::fail::
+
+	if tmpInputFile then os.remove(tmpInputFile) end
+	if tmpOutputFile then os.remove(tmpOutputFile) end
 	os.remove(tmpErrorFile)
+
+	if failure then
+		error(failure)
+	end
 
 	return success, output
 end
 
 ---@param name string
----@param args string[]
----@param options process.SpawnOptions?
+---@param args string[]?
+---@param options process.CommandOptions?
+---@return boolean? # Success
+---@return string # Output or Fail
+function process.exec(name, args, options)
+	return executeCommand(name, args, options, true)
+end
+
+---@param name string
+---@param args string[]?
+---@param options process.CommandOptions?
+---@return boolean # Success
+---@return string # Fail
 function process.spawn(name, args, options)
-	return os.execute(formatCommand(name, args, options))
+	return executeCommand(name, args, options, false)
 end
 
 if isWindows then
