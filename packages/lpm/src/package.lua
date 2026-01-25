@@ -96,7 +96,7 @@ function Package.init(dir)
 
 	fs.write(configPath, util.dedent [[
 		{
-			"name": "]] .. fs.basename(dir) .. [[",
+			"name": "]] .. path.basename(dir) .. [[",
 			"version": "0.1.0",
 			"engine": "lua",
 			"main": "src/init.lua"
