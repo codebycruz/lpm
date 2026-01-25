@@ -5,20 +5,11 @@ local json = require("json")
 local ansi = require("ansi")
 local path = require("path")
 local fs = require("fs")
+local env = require("env")
 
 local global = require("lpm.global")
 
-local apiUrl = "https://api.github.com/repos/codebycruz/lpm/releases/latest"
-
-local function getBinaryInstallLocation()
-	if process.platform == "win32" then
-		return path.join(global.getDir(), "lpm.exe")
-	elseif process.platform == "linux" then
-		return path.join(global.getDir(), "lpm")
-	elseif process.platform == "darwin" then
-		return path.join(global.getDir(), "lpm")
-	end
-end
+local releasesUrl = "https://api.github.com/repos/codebycruz/lpm/releases"
 
 local artifactNames = {
 	win32 = "lpm-windows-x86-64.exe",
@@ -28,7 +19,22 @@ local artifactNames = {
 
 ---@param args clap.Args
 local function upgrade(args)
-	local out, err = http.get(apiUrl)
+	if env.var("BOOTSTRAP") then
+		ansi.printf("{red}Cannot run upgrade during bootstrap")
+		return
+	end
+
+	local shouldForce = args:has("force")
+	local desiredVersion = args:key("version", "string")
+
+	local releaseUrl
+	if not desiredVersion then
+		releaseUrl = releasesUrl .. "/latest"
+	else
+		releaseUrl = releasesUrl .. "/tags/v" .. desiredVersion
+	end
+
+	local out, err = http.get(releaseUrl)
 	if not out then
 		ansi.printf("{red}Failed to fetch latest release: %s", err)
 		return
@@ -47,19 +53,14 @@ local function upgrade(args)
 	end
 
 	local runningVersion = global.currentVersion
-	if semver.compare(latestVersion, runningVersion) <= 0 then
+	if not shouldForce and not desiredVersion and semver.compare(latestVersion, runningVersion) <= 0 then
 		ansi.printf("{green}You are already running the latest version (%s)", runningVersion)
 		return
 	end
 
-	local binLocation = getBinaryInstallLocation()
+	local binLocation = env.execPath()
 	if not binLocation then
-		ansi.printf("{red}Unsupported platform: %s", process.platform)
-		return
-	end
-
-	if not fs.exists(binLocation) then
-		ansi.printf("{red}Cannot upgrade: binary not found at %s", binLocation)
+		ansi.printf("{red}Could not determine current executable path")
 		return
 	end
 
@@ -82,34 +83,54 @@ local function upgrade(args)
 		return
 	end
 
-	print("Downloading " .. artifactName .. " from " .. downloadUrl)
-	local binaryData, downloadErr = http.get(downloadUrl)
-	if not binaryData then
+	local tmpdir = env.tmpdir()
+	local binName = path.basename(binLocation)
+	local tempNewLocation = path.join(tmpdir, binName .. ".new")
+	local tempOldLocation = path.join(tmpdir, binName .. ".old")
+
+	ansi.printf("{green}==> Downloading {white}%s {green}from {cyan}%s", artifactName, downloadUrl)
+
+	-- Download directly to file to avoid output size limits in process.exec
+	local downloadSuccess, downloadErr = process.spawn("curl", { "-sL", "-o", tempNewLocation, downloadUrl })
+	if not downloadSuccess then
 		ansi.printf("{red}Failed to download binary: %s", downloadErr)
 		return
 	end
 
-	local tempLocation = binLocation .. ".tmp"
-	local writeSuccess, writeErr = fs.write(tempLocation, binaryData)
-	if not writeSuccess then
-		ansi.printf("{red}Failed to write temporary file: %s", writeErr)
+	if not fs.exists(tempNewLocation) then
+		ansi.printf("{red}Failed to download binary: file not created")
 		return
 	end
 
-	if process.platform == "linux" then
-		local chmodSuccess, chmodErr = process.spawn("chmod", { "+x", tempLocation })
+	if process.platform == "linux" or process.platform == "darwin" then
+		local chmodSuccess, chmodErr = process.spawn("chmod", { "+x", tempNewLocation })
 		if not chmodSuccess then
+			fs.delete(tempNewLocation)
 			ansi.printf("{red}Failed to make binary executable: %s", chmodErr)
 			return
 		end
 	end
 
-	local moveSuccess, moveErr = fs.move(tempLocation, binLocation)
-	if not moveSuccess then
-		fs.delete(tempLocation)
-		ansi.printf("{red}Failed to replace binary: %s", moveErr)
+	-- Move current executable to tmp (allows replacement even if running)
+	local moveOldSuccess, moveOldErr = fs.move(binLocation, tempOldLocation)
+	if not moveOldSuccess then
+		fs.delete(tempNewLocation)
+		ansi.printf("{red}Failed to move current binary: %s", moveOldErr)
 		return
 	end
+
+	-- Move new executable to original location
+	local moveNewSuccess, moveNewErr = fs.move(tempNewLocation, binLocation)
+	if not moveNewSuccess then
+		-- Try to restore the old binary
+		fs.move(tempOldLocation, binLocation)
+		fs.delete(tempNewLocation)
+		ansi.printf("{red}Failed to install new binary: %s", moveNewErr)
+		return
+	end
+
+	-- Clean up old binary
+	fs.delete(tempOldLocation)
 
 	ansi.printf("{green}Successfully upgraded to version %s!", latestVersion)
 end
