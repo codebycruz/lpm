@@ -1,0 +1,32 @@
+name: "Setup lpm"
+description: "Install lpm package manager"
+
+inputs:
+  version:
+    description: "Version to install (e.g., '0.4.3' or 'latest')"
+    required: false
+    default: "latest"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Install lpm
+      shell: bash
+      run: |
+        case "$(uname -m)" in
+          x86_64) ARTIFACT="lpm-linux-x86-64" ;;
+          aarch64|arm64) ARTIFACT="lpm-linux-aarch64" ;;
+          *) echo "Unsupported architecture: $(uname -m)"; exit 1 ;;
+        esac
+
+        if [ "${{ inputs.version }}" = "latest" ]; then
+          DOWNLOAD_URL="https://github.com/codebycruz/lpm/releases/latest/download/$ARTIFACT"
+        else
+          DOWNLOAD_URL="https://github.com/codebycruz/lpm/releases/download/v${{ inputs.version }}/$ARTIFACT"
+        fi
+
+        curl -fsSL -o lpm "$DOWNLOAD_URL"
+        chmod +x lpm
+        mkdir -p "$HOME/.lpm"
+        mv lpm "$HOME/.lpm/lpm"
+        echo "$HOME/.lpm" >> "$GITHUB_PATH"
