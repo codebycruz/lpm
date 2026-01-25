@@ -3,6 +3,7 @@ local ffi = require("ffi")
 ffi.cdef([[
 	DWORD GetEnvironmentVariableA(const char* lpName, char* lpBuffer, DWORD nSize);
 	DWORD GetCurrentDirectoryA(DWORD nBufferLength, char* lpBuffer);
+	DWORD GetModuleFileNameA(void* hModule, char* lpFilename, DWORD nSize);
 ]])
 
 local kernel32 = ffi.load("kernel32")
@@ -38,6 +39,17 @@ end
 function env.cwd()
 	local buf = ffi.new("char[?]", 4096)
 	local len = kernel32.GetCurrentDirectoryA(4096, buf)
+
+	if len == 0 then
+		return nil
+	end
+
+	return ffi.string(buf, len)
+end
+
+function env.execPath()
+	local buf = ffi.new("char[?]", 4096)
+	local len = kernel32.GetModuleFileNameA(nil, buf, 4096)
 
 	if len == 0 then
 		return nil

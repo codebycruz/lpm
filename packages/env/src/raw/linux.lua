@@ -3,6 +3,7 @@ local ffi = require("ffi")
 ffi.cdef([[
 	char* getenv(const char* name);
 	char* getcwd(char* buf, size_t size);
+	ssize_t readlink(const char* path, char* buf, size_t bufsiz);
 ]])
 
 local env = {}
@@ -30,6 +31,16 @@ function env.cwd()
 	end
 
 	return ffi.string(buf)
+end
+
+function env.execPath()
+	local buf = ffi.new("char[?]", 4096)
+	local len = ffi.C.readlink("/proc/self/exe", buf, 4096)
+	if len == -1 then
+		return nil
+	end
+
+	return ffi.string(buf, len)
 end
 
 return env
