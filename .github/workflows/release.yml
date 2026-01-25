@@ -1,0 +1,60 @@
+name: Release Build
+
+on:
+  release:
+    types: [created]
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-22.04
+            platform: linux
+            arch: x86-64
+            libc: gnu
+          - os: ubuntu-22.04-arm
+            platform: linux
+            arch: aarch64
+            libc: gnu
+          - os: windows-latest
+            platform: windows
+            arch: x86-64
+            libc: gnu
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Cache LuaJIT
+        id: cache-luajit
+        uses: actions/cache@v5
+        with:
+          path: luajit-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.libc }}
+          key: luajit-${{ matrix.platform }}-${{ matrix.arch }}-latest
+
+      - name: Download LuaJIT
+        if: steps.cache-luajit.outputs.cache-hit != 'true'
+        run: |
+          curl -L -o luajit.tar.gz https://github.com/codebycruz/lj-dist/releases/download/latest/luajit-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.libc }}.tar.gz
+          tar -xzf luajit.tar.gz
+          chmod +x luajit-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.libc }}/luajit${{ matrix.platform == 'windows' && '.exe' || '' }}
+
+      - name: Build lpm (Unix)
+        if: matrix.platform != 'windows'
+        run: |
+          cd packages/lpm
+          BOOTSTRAP=1 $GITHUB_WORKSPACE/luajit-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.libc }}/luajit ./src/init.lua compile --outfile lpm-${{ matrix.platform }}-${{ matrix.arch }}
+
+      - name: Build lpm (Windows)
+        if: matrix.platform == 'windows'
+        run: |
+          cd packages/lpm
+          $env:BOOTSTRAP=1; & "$env:GITHUB_WORKSPACE/luajit-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.libc }}/luajit.exe" ./src/init.lua compile --outfile lpm-${{ matrix.platform }}-${{ matrix.arch }}.exe
+
+      - name: Upload release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: packages/lpm/lpm-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.platform == 'windows' && '.exe' || '' }}
