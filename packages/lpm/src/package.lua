@@ -130,8 +130,10 @@ function Package:getName()
 	return self:readConfig().name
 end
 
----@param destinationPath string
+---@param destinationPath string?
 function Package:build(destinationPath)
+	destinationPath = destinationPath or path.join(self:getModulesDir(), self:getName())
+
 	local buildScriptPath = self:getBuildScriptPath()
 	if fs.exists(buildScriptPath) then
 		fs.copy(self:getSrcDir(), destinationPath)
@@ -206,8 +208,8 @@ function Package:installDevDependencies()
 	self:installDependencies(self:getDevDependencies())
 end
 
--- TODO: Support build step? Hmm.
 function Package:compile()
+	self:build()
 	self:installDependencies()
 
 	---@type table<{path: string, content: string}>
@@ -231,10 +233,10 @@ function Package:compile()
 		end
 	end
 
-	bundleDir(self:getName(), self:getSrcDir())
+	-- bundleDir(self:getName(), self:getSrcDir())
 
 	-- Use the lpm_modules directory for the build artifacts rather than src,
-	-- since in the future build scripts will be added that may modify src contents.
+	-- since build scripts may modify src contents.
 	local modulesDir = self:getModulesDir()
 	for depName in pairs(self:getDependencies()) do
 		local buildFolder = path.join(modulesDir, depName)
@@ -252,16 +254,11 @@ end
 ---@return string # Output
 function Package:runScript(scriptPath, vars)
 	local modulesDir = self:getModulesDir()
+	self:build()
 
 	if not fs.isdir(modulesDir) then
 		fs.mkdir(modulesDir)
 		-- return false, "Modules directory does not exist: " .. modulesDir
-	end
-
-	local selfPackage = path.join(modulesDir, self:getName())
-	if not fs.islink(selfPackage) then
-		-- Create symlink to self's source dir in lpm_modules so that require(<self>) works
-		fs.mklink(self:getSrcDir(), selfPackage)
 	end
 
 	local luaPath =
