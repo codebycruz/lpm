@@ -233,11 +233,11 @@ function Package:compile()
 		end
 	end
 
-	-- bundleDir(self:getName(), self:getSrcDir())
+	local modulesDir = self:getModulesDir()
+	bundleDir(self:getName(), path.join(modulesDir, self:getName()))
 
 	-- Use the lpm_modules directory for the build artifacts rather than src,
 	-- since build scripts may modify src contents.
-	local modulesDir = self:getModulesDir()
 	for depName in pairs(self:getDependencies()) do
 		local buildFolder = path.join(modulesDir, depName)
 		bundleDir(depName, buildFolder)
