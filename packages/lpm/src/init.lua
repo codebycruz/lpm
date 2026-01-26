@@ -5,22 +5,6 @@ if os.getenv("BOOTSTRAP") then
 	local srcDir = scriptPath:match("^(.*)[/\\]")
 	local baseDir = srcDir:match("^(.*)[/\\]")
 
-	table.insert(package.loaders, 2, function(modname)
-		if modname:match("^lpm%.") then
-			local file = modname:gsub("^lpm%.", ""):gsub("%.", "/")
-
-			local path = srcDir .. "/" .. file .. ".lua"
-			if io.open(path, "r") then
-				return loadfile(path)
-			end
-
-			path = srcDir .. "/" .. file .. "/init.lua"
-			if io.open(path, "r") then
-				return loadfile(path)
-			end
-		end
-	end)
-
 	package.path = baseDir .. "/lpm_modules/?.lua;" ..
 		baseDir .. "/lpm_modules/?/init.lua;" ..
 		package.path
@@ -73,6 +57,18 @@ if os.getenv("BOOTSTRAP") then
 			else
 				os.execute("ln -sf '" .. relSrcPath .. "' '" .. moduleDistPath .. "'")
 			end
+		end
+	end
+
+	local moduleDistPath = join(lpmModulesDir, "lpm")
+	if not exists(moduleDistPath) then
+		local relSrcPath = join("..", "src")
+		local absSrcPath = join(baseDir, "src")
+
+		if isWindows then
+			os.execute('mklink /J "' .. moduleDistPath .. '" "' .. absSrcPath .. '"')
+		else
+			os.execute("ln -sf '" .. relSrcPath .. "' '" .. moduleDistPath .. "'")
 		end
 	end
 
