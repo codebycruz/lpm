@@ -2,6 +2,10 @@ local fs = require("fs")
 local env = require("env")
 local path = require("path")
 
+local test = require("lpm:test")
+
+print(test.it)
+
 local tmp = path.join(env.tmpdir(), "fs-tests")
 fs.mkdir(tmp)
 

@@ -1,9 +1,11 @@
+---@alias lpm.Config.Dependencies table<string, lpm.Config.Dependency>
+
 ---@class lpm.Config
 ---@field name string
 ---@field version string
----@field engine? string
----@field dependencies? table<string, lpm.Config.Dependency>
----@field devDependencies? table<string, lpm.Config.Dependency>
+---@field engine string?
+---@field dependencies lpm.Config.Dependencies?
+---@field devDependencies lpm.Config.Dependencies?
 local Config = {}
 Config.__index = Config
 

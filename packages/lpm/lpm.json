@@ -17,6 +17,6 @@
 		"semver": { "path": "../semver" }
 	},
 	"devDependencies": {
-		"busted": { "git": "https://github.com/codebycruz/busted.git" }
+		"lpm:test": { "path": "../lpm:test" }
 	}
 }
