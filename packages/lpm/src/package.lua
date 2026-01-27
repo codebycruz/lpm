@@ -283,8 +283,23 @@ function Package:runScript(scriptPath, vars)
 
 	local engine = self:readConfig().engine
 	if not engine then
-		print("Warning: No engine specified for package '" .. self:getName() .. "', defaulting to 'lua'.")
-		engine = "lua"
+		print("Warning: No engine specified for package '" .. self:getName() .. "', defaulting to 'lpm'.")
+		engine = "lpm"
+	end
+
+	-- Use the currently running Lua interpreter as the engine
+	-- Convenient for packages that are lua agnostic for tests
+	if engine == "lpm" then
+		local oldPath, oldCPath = package.path, package.cpath
+		local callback = loadfile(scriptPath, "t")
+
+		local ok, err = pcall(function()
+			package.path, package.cpath = luaPath, luaCPath
+			return callback()
+		end)
+
+		package.path, package.cpath = oldPath, oldCPath
+		return ok, err
 	end
 
 	local env = { LUA_PATH = luaPath, LUA_CPATH = luaCPath }
