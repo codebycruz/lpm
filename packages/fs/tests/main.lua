@@ -3,6 +3,7 @@ local env = require("env")
 local path = require("path")
 
 local tmp = path.join(env.tmpdir(), "fs-tests")
+fs.mkdir(tmp)
 
 do
 	local file = path.join(tmp, "test.txt")
