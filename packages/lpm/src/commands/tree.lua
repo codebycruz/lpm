@@ -2,25 +2,35 @@ local ansi = require("ansi")
 
 local Package = require("lpm.package")
 
+---@type ansi.Color[]
+local depthColors = {
+	"yellow",
+	"magenta",
+	"cyan"
+}
+
 ---@param args clap.Args
 local function tree(args)
 	---@param pkg lpm.Package
-	---@param dep lpm.Config.Dependency?
-	---@param indent string?
-	local function printTree(pkg, dep, indent)
-		indent = indent or ""
+	---@param cfg lpm.Config.Dependency?
+	---@param depth number?
+	local function printTree(pkg, cfg, depth)
+		depth = depth or 0
 
-		if dep then
+		local indent = string.rep("  ", depth)
+		local name = ansi.colorize(depthColors[depth % #depthColors + 1], pkg:getName())
+
+		if cfg then
 			local desc
-			if dep.git then
-				desc = "git: " .. dep.git
-			elseif dep.path then
-				desc = "path: " .. dep.path
+			if cfg.git then
+				desc = "git: " .. cfg.git
+			elseif cfg.path then
+				desc = "path: " .. cfg.path
 			end
 
-			ansi.printf("%s{blue}%s {gray}(%s)", indent, pkg:getName(), desc)
+			ansi.printf("%s%s {gray}(%s)", indent, name, desc)
 		else
-			ansi.printf("%s{blue}%s", indent, pkg:getName())
+			ansi.printf("%s%s", indent, name)
 		end
 
 		local deps = {} ---@type { name: string, info: lpm.Config.Dependency }[]
@@ -33,7 +43,7 @@ local function tree(args)
 		end)
 
 		for _, dep in ipairs(deps) do
-			printTree(Package.open(pkg:getDependencyPath(dep.name, dep.info)), dep.info, indent .. "  ")
+			printTree(Package.open(pkg:getDependencyPath(dep.name, dep.info)), dep.info, depth + 1)
 		end
 	end
 
