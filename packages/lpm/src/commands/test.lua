@@ -7,6 +7,9 @@ local env = require("env")
 
 ---@param package lpm.Package
 local function runTests(package)
+	package:installDependencies()
+	package:installDevDependencies()
+
 	local testDir = package:getTestDir()
 	if not fs.exists(testDir) then
 		return false, "No tests directory found in package: " .. testDir
