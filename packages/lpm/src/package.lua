@@ -267,7 +267,6 @@ end
 ---@return string # Output
 function Package:runScript(scriptPath, vars)
 	local modulesDir = self:getModulesDir()
-	self:build()
 
 	if not fs.isdir(modulesDir) then
 		fs.mkdir(modulesDir)

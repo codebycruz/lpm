@@ -4,7 +4,10 @@ local Package = require("lpm.package")
 local function run(args)
 	local file = assert(args:pop("string"), "Usage: lpm run whatever.lua")
 
-	local ok, err = Package.open():runScript(file)
+	local pkg = Package.open()
+	pkg:build()
+
+	local ok, err = pkg:runScript(file)
 	if not ok then
 		error("Failed to run script: " .. err)
 	end
