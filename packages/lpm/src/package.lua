@@ -164,6 +164,19 @@ function Package:installDependency(dependency)
 	dependency:build(destinationPath)
 end
 
+---@param dir string
+---@param info lpm.Config.Dependency
+---@param relativeTo string?
+function Package:getDependencyPath(dir, info, relativeTo)
+	relativeTo = relativeTo or self.dir
+
+	if info.git then
+		return global.getGitRepoDir(dir)
+	elseif info.path then
+		return path.normalize(path.join(relativeTo, info.path))
+	end
+end
+
 --- TODO: Add luarc changing stuff again
 ---@param dependencies table<string, lpm.Config.Dependency>?
 ---@param relativeTo string? # Directory to resolve relative paths from
