@@ -22,8 +22,18 @@ local function tree(args)
 		else
 			ansi.printf("%s{blue}%s", indent, pkg:getName())
 		end
+
+		local deps = {} ---@type { name: string, info: lpm.Config.Dependency }[]
 		for name, info in pairs(pkg:getDependencies()) do
-			printTree(Package.open(pkg:getDependencyPath(name, info)), info, indent .. "  ")
+			deps[#deps + 1] = { name = name, info = info }
+		end
+
+		table.sort(deps, function(a, b)
+			return a.name < b.name
+		end)
+
+		for _, dep in ipairs(deps) do
+			printTree(Package.open(pkg:getDependencyPath(dep.name, dep.info)), dep.info, indent .. "  ")
 		end
 	end
 
