@@ -15,7 +15,7 @@ end
 ---@class lpm.Config.GitDependency
 ---@field git string
 ---@field commit string?
----@field ref string?
+---@field branch string?
 
 ---@class lpm.Config.PathDependency
 ---@field path string
