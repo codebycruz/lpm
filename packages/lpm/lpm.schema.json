@@ -52,6 +52,11 @@
 				}
 			]
 		},
+		"engine": {
+			"type": "string",
+			"enum": ["lua", "luajit", "lpm"],
+			"description": "The Lua engine to use"
+		},
 		"devDependencies": {
 			"allOf": [
 				{
