@@ -31,6 +31,10 @@ function Package:getModulesDir()
 	return path.join(self.dir, "lpm_modules")
 end
 
+function Package:getTargetDir()
+	return path.join(self:getModulesDir(), self:getName())
+end
+
 function Package:getSrcDir()
 	return path.join(self.dir, "src")
 end
@@ -262,6 +266,7 @@ end
 --- Runs a script within the package context
 --- This will use the package's engine and set up the LUA_PATH accordingly
 ---@param scriptPath string
+---@param args string[]? # Positional arguments
 ---@param vars table<string, string>? # Additional environment variables
 ---@return boolean? # Success
 ---@return string # Output
