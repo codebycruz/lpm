@@ -5,7 +5,7 @@
 	"$schema": "../lpm/lpm.schema.json",
 	"dependencies": {},
 	"devDependencies": {
-		"lpm:test": { "path": "../lpm:test" },
+		"lpm-test": { "path": "../lpm-test" },
 		"fs": { "path": "../fs" },
 		"env": { "path": "../env" },
 		"path": { "path": "../path" }

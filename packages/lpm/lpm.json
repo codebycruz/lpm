@@ -17,6 +17,6 @@
 		"semver": { "path": "../semver" }
 	},
 	"devDependencies": {
-		"lpm:test": { "path": "../lpm:test" }
+		"lpm-test": { "path": "../lpm-test" }
 	}
 }
