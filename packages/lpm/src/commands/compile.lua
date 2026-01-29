@@ -3,7 +3,7 @@ local fs = require("fs")
 local process = require("process")
 local path = require("path")
 
-local Package = require("lpm.package")
+local Package = require("lpm-core.package")
 
 ---@param args clap.Args
 local function compile(args)

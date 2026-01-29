@@ -42,7 +42,7 @@ if os.getenv("BOOTSTRAP") then
 
 	local pathPackages = {
 		"ansi", "clap", "fs", "http", "env", "path",
-		"process", "sea", "semver", "util"
+		"process", "sea", "semver", "util", "lpm-core"
 	}
 
 	for _, pkg in ipairs(pathPackages) do
@@ -105,7 +105,7 @@ end
 local ansi = require("ansi")
 local clap = require("clap")
 
-local global = require("lpm.global")
+local global = require("lpm-core.global")
 global.init()
 
 local args = clap.parse({ ... })

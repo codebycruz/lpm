@@ -1,6 +1,6 @@
 local env = require("env")
 
-local Package = require("lpm.package")
+local Package = require("lpm-core.package")
 
 ---@param args clap.Args
 local function init(args)

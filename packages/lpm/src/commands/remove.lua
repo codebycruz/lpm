@@ -2,7 +2,7 @@ local json = require("json")
 local ansi = require("ansi")
 local fs = require("fs")
 
-local Package = require("lpm.package")
+local Package = require("lpm-core.package")
 
 ---@param args clap.Args
 local function remove(args)

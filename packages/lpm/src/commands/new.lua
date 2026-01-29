@@ -3,7 +3,7 @@ local ansi = require("ansi")
 local path = require("path")
 local env = require("env")
 
-local Package = require("lpm.package")
+local Package = require("lpm-core.package")
 
 ---@param args clap.Args
 local function new(args)

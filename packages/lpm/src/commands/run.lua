@@ -1,4 +1,4 @@
-local Package = require("lpm.package")
+local Package = require("lpm-core.package")
 
 local path = require("path")
 

@@ -1,5 +1,5 @@
 {
-	"name": "lpm",
+	"name": "lpm-core",
 	"version": "0.1.0",
 	"$schema": "./lpm.schema.json",
 	"dependencies": {
@@ -13,10 +13,6 @@
 		"env": { "path": "../env" },
 		"util": { "path": "../util" },
 		"http": { "path": "../http" },
-		"semver": { "path": "../semver" },
-		"lpm-core": { "path": "../lpm-core" }
-	},
-	"devDependencies": {
-		"lpm-test": { "path": "../lpm-test" }
+		"semver": { "path": "../semver" }
 	}
 }

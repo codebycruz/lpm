@@ -7,7 +7,7 @@ local path = require("path")
 local fs = require("fs")
 local env = require("env")
 
-local global = require("lpm.global")
+local global = require("lpm-core.global")
 
 local releasesUrl = "https://api.github.com/repos/codebycruz/lpm/releases"
 

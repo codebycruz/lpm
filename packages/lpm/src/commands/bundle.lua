@@ -1,7 +1,7 @@
 local ansi = require("ansi")
 local path = require("path")
 
-local Package = require("lpm.package")
+local Package = require("lpm-core.package")
 
 ---@param args clap.Args
 local function bundle(args)

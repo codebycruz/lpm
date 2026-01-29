@@ -1,6 +1,6 @@
-local Config = require("lpm.config")
-local Lockfile = require("lpm.lockfile")
-local global = require("lpm.global")
+local Config = require("lpm-core.config")
+local Lockfile = require("lpm-core.lockfile")
+local global = require("lpm-core.global")
 
 local fs = require("fs")
 local env = require("env")

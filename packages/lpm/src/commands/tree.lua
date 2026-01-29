@@ -1,6 +1,6 @@
 local ansi = require("ansi")
 
-local Package = require("lpm.package")
+local Package = require("lpm-core.package")
 
 ---@type ansi.Color[]
 local depthColors = {
