@@ -265,7 +265,7 @@ end
 ---@param vars table<string, string>? # Additional environment variables
 ---@return boolean? # Success
 ---@return string # Output
-function Package:runScript(scriptPath, vars)
+function Package:runScript(scriptPath, args, vars)
 	local modulesDir = self:getModulesDir()
 
 	if not fs.isdir(modulesDir) then
@@ -303,7 +303,11 @@ function Package:runScript(scriptPath, vars)
 
 		local ok, err = pcall(function()
 			package.path, package.cpath = luaPath, luaCPath
-			return callback()
+			if args then
+				return callback(unpack(args))
+			else
+				return callback()
+			end
 		end)
 
 		-- Restore old env var values
