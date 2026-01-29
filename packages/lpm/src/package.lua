@@ -287,7 +287,10 @@ function Package:runScript(scriptPath, vars)
 	-- Convenient for packages that are lua agnostic for tests
 	if engine == "lpm" then
 		local oldPath, oldCPath = package.path, package.cpath
-		local callback = loadfile(scriptPath, "t")
+		local callback, err = loadfile(scriptPath, "t")
+		if not callback then
+			return false, err or "Failed to compile script"
+		end
 
 		-- Save old env var values and set new ones
 		local oldEnvVars = {}
