@@ -1,7 +1,6 @@
 {
 	"name": "lpm",
 	"version": "0.1.0",
-	"engine": "luajit",
 	"$schema": "./lpm.schema.json",
 	"dependencies": {
 		"json": { "git": "https://github.com/codebycruz/json.lua.git" },

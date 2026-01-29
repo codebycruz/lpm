@@ -281,11 +281,7 @@ function Package:runScript(scriptPath, vars)
 		path.join(modulesDir, "?.so") .. ";"
 		.. path.join(modulesDir, "?.dll") .. ";"
 
-	local engine = self:readConfig().engine
-	if not engine then
-		print("Warning: No engine specified for package '" .. self:getName() .. "', defaulting to 'lpm'.")
-		engine = "lpm"
-	end
+	local engine = self:readConfig().engine or "lpm"
 
 	-- Use the currently running Lua interpreter as the engine
 	-- Convenient for packages that are lua agnostic for tests
