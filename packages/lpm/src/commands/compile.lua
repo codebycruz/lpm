@@ -7,7 +7,7 @@ local Package = require("lpm.package")
 
 ---@param args clap.Args
 local function compile(args)
-	local outFile = args:key("outfile", "string")
+	local outFile = args:option("outfile", "string")
 
 	local pkg = Package.open()
 	if not outFile then

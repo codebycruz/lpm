@@ -7,7 +7,7 @@ local function install(args)
 	local pkg = Package.open()
 
 	pkg:installDependencies()
-	if not args:has("production") then
+	if not args:flag("production") then
 		pkg:installDevDependencies()
 	end
 

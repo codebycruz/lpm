@@ -24,8 +24,8 @@ local function upgrade(args)
 		return
 	end
 
-	local shouldForce = args:has("force")
-	local desiredVersion = args:key("version", "string")
+	local shouldForce = args:flag("force")
+	local desiredVersion = args:option("version", "string")
 
 	local releaseUrl
 	if not desiredVersion then
