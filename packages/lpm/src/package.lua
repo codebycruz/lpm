@@ -293,10 +293,24 @@ function Package:runScript(scriptPath, vars)
 		local oldPath, oldCPath = package.path, package.cpath
 		local callback = loadfile(scriptPath, "t")
 
+		-- Save old env var values and set new ones
+		local oldEnvVars = {}
+		if vars then
+			for k, v in pairs(vars) do
+				oldEnvVars[k] = env.var(k)
+				env.set(k, v)
+			end
+		end
+
 		local ok, err = pcall(function()
 			package.path, package.cpath = luaPath, luaCPath
 			return callback()
 		end)
+
+		-- Restore old env var values
+		for k, v in pairs(oldEnvVars) do
+			env.set(k, v)
+		end
 
 		package.path, package.cpath = oldPath, oldCPath
 		return ok, err
