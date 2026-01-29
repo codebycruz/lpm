@@ -110,7 +110,7 @@ global.init()
 
 local args = clap.parse({ ... })
 
-if args:has("version") and args:count() == 0 then
+if args:flag("version") and args:count() == 0 then
 	print(global.currentVersion)
 	return
 end
