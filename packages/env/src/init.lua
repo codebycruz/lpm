@@ -1,5 +1,6 @@
 ---@class env.raw
 ---@field var fun(name: string): string?
+---@field set fun(name: string, value: string?): boolean
 ---@field tmpdir fun(): string
 ---@field cwd fun(): string
 ---@field execPath fun(): string?

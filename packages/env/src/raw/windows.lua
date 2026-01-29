@@ -2,6 +2,7 @@ local ffi = require("ffi")
 
 ffi.cdef([[
 	DWORD GetEnvironmentVariableA(const char* lpName, char* lpBuffer, DWORD nSize);
+	BOOL SetEnvironmentVariableA(const char* lpName, const char* lpValue);
 	DWORD GetCurrentDirectoryA(DWORD nBufferLength, char* lpBuffer);
 	DWORD GetModuleFileNameA(void* hModule, char* lpFilename, DWORD nSize);
 ]])
@@ -30,6 +31,13 @@ function env.var(name) ---@return string?
 	end
 
 	return ffi.string(buf, len)
+end
+
+---@param name string
+---@param value string?
+function env.set(name, value) ---@return boolean
+	local result = kernel32.SetEnvironmentVariableA(name, value)
+	return result ~= 0
 end
 
 function env.tmpdir()

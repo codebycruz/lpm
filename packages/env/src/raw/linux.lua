@@ -2,6 +2,7 @@ local ffi = require("ffi")
 
 ffi.cdef([[
 	char* getenv(const char* name);
+	int setenv(const char* name, const char* value, int overwrite);
 	char* getcwd(char* buf, size_t size);
 	ssize_t readlink(const char* path, char* buf, size_t bufsiz);
 ]])
@@ -16,6 +17,12 @@ function env.var(name) ---@return string?
 	end
 
 	return ffi.string(v)
+end
+
+---@param name string
+---@param value string
+function env.set(name, value) ---@return boolean
+	return ffi.C.setenv(name, value, 1) == 0
 end
 
 function env.tmpdir()
