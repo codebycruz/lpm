@@ -98,14 +98,12 @@ function Package.init(dir)
 		error("Directory already contains lpm.json: " .. dir)
 	end
 
-	fs.write(configPath, util.dedent [[
+	fs.write(configPath, util.dedent([[
 		{
 			"name": "]] .. path.basename(dir) .. [[",
-			"version": "0.1.0",
-			"engine": "lua",
-			"main": "src/init.lua"
+			"version": "0.1.0"
 		}
-	]])
+	]]))
 
 	local package = Package.open(dir)
 

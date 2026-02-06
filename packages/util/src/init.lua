@@ -10,8 +10,8 @@ function util.dedent(str)
 	local minIndent = math.huge
 	for _, line in ipairs(lines) do
 		if line:match("%S") then
-			local indent = #line:match("^%s*")
-			minIndent = math.min(minIndent, indent)
+			local indent = line:match("^%s*")
+			minIndent = math.min(minIndent, #indent)
 		end
 	end
 
@@ -25,7 +25,8 @@ function util.dedent(str)
 		end
 	end
 
-	return table.concat(lines, "\n"):match("(.*)\n$")
+	local result = table.concat(lines, "\n")
+	return result:match("^(.-)%s*$") or result
 end
 
 return util
