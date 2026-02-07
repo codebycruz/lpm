@@ -7,6 +7,11 @@ local function run(args)
 	local pkg = Package.open()
 	pkg:build()
 
+	pkg:installDependencies()
+	if not args:flag("production") then
+		pkg:installDevDependencies()
+	end
+
 	local scriptArgs = {}
 	local scriptPath = nil ---@type string?
 
