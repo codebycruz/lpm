@@ -140,7 +140,7 @@ function Package:build(destinationPath)
 	if fs.exists(buildScriptPath) then
 		fs.copy(self:getSrcDir(), destinationPath)
 
-		local ok, err = self:runScript(buildScriptPath, { LPM_OUTPUT_DIR = destinationPath })
+		local ok, err = self:runScript(buildScriptPath, nil, { LPM_OUTPUT_DIR = destinationPath })
 		if not ok then
 			error("Build script failed for package '" .. self:getName() .. "': " .. err)
 		end
