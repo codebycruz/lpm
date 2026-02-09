@@ -21,7 +21,11 @@ local function getPlatformArch()
 	return platform, arch
 end
 
+---@return "musl" | "gnu" | nil
 local function getPlatformLibc()
+	if process.platform == "darwin" then return nil end
+	if process.platform == "windows" then return "gnu" end
+
 	-- note: for some reason 'ok' is nil here.
 	local _ok, out = process.exec("ldd", { "--version" })
 
@@ -36,7 +40,9 @@ local function getLuajitPath()
 	local cacheDir = path.join(env.tmpdir(), "luajit-cache")
 	local platform, arch = getPlatformArch()
 	local libc = getPlatformLibc()
-	local targetDir = path.join(cacheDir, string.format("libluajit-%s-%s-%s", platform, arch, libc))
+
+	local target = table.concat({ "libluajit", platform, arch, libc }, "-")
+	local targetDir = path.join(cacheDir, target)
 
 	if fs.exists(path.join(targetDir, "include", "lua.h")) then
 		return targetDir
@@ -44,7 +50,7 @@ local function getLuajitPath()
 
 	fs.mkdir(cacheDir)
 
-	local tarballName = string.format("libluajit-%s-%s-%s.tar.gz", platform, arch, libc)
+	local tarballName = target .. ".tar.gz"
 	local downloadUrl = string.format(
 		"https://github.com/%s/releases/download/%s/%s",
 		ljDistRepo,
