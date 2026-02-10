@@ -9,6 +9,13 @@
 			"duplicate": "Error",
 			"global": "Error"
 		},
+		"disable": [
+			"duplicate-doc-field",
+			"duplicate-doc-field",
+			"duplicate-index",
+			"duplicate-set-field",
+			"duplicate-doc-alias"
+		],
 		"unusedLocalExclude": ["_*"]
 	},
 	"runtime": {
