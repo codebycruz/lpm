@@ -6,7 +6,7 @@ local Package = require("lpm-core.package")
 
 ---@param args clap.Args
 local function remove(args)
-	local name = assert(args:pop("string"), "Usage: lpm remove <name>")
+	local name = assert(args:pop(), "Usage: lpm remove <name>")
 
 	local p = Package.open()
 	local configPath = p:getConfigPath()

@@ -6,17 +6,17 @@ local Package = require("lpm-core.package")
 
 ---@param args clap.Args
 local function add(args)
-	local name = assert(args:pop("string"), "Usage: lpm add <name> --path <path> | --git <url>")
+	local name = assert(args:pop(), "Usage: lpm add <name> --path <path> | --git <url>")
 	local isDevelopment = args:flag("dev")
 
 	---@type ("git" | "path")?, string?
 	local depType, depValue
-	if args:option("git", "string") then
+	if args:option("git") then
 		depType = "git"
-		depValue = args:option("git", "string")
-	elseif args:option("path", "string") then
+		depValue = args:option("git")
+	elseif args:option("path") then
 		depType = "path"
-		depValue = args:option("path", "string")
+		depValue = args:option("path")
 	end
 
 	if not depType or not depValue then
@@ -52,8 +52,8 @@ local function add(args)
 	if depType == "path" then
 		dependencyTable[name] = { path = depValue }
 	elseif depType == "git" then
-		local branch = args:option("branch", "string")
-		local commit = args:option("commit", "string")
+		local branch = args:option("branch")
+		local commit = args:option("commit")
 
 		dependencyTable[name] = { git = depValue, branch = branch, commit = commit }
 	end

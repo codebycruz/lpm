@@ -7,7 +7,7 @@ local Package = require("lpm-core.package")
 
 ---@param args clap.Args
 local function new(args)
-	local name = assert(args:pop("string"), "Usage: lpm new <name>")
+	local name = assert(args:pop(), "Usage: lpm new <name>")
 
 	if fs.exists(name) then
 		error("Directory " .. name .. " already exists")
