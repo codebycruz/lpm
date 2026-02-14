@@ -71,6 +71,7 @@ ffi.cdef([[
 
 	int mkdir(const char *pathname, unsigned int mode);
 	int symlink(const char *target, const char *linkpath);
+	int chmod(const char *pathname, unsigned int mode);
 ]])
 
 ---@class fs.raw.linux
@@ -157,7 +158,8 @@ local function rawToCrossStat(s)
 		size = s.st_size,
 		modifyTime = s.st_mtime,
 		accessTime = s.st_atime,
-		type = modeToStatType[bit.band(s.st_mode, 0xF000)]
+		type = modeToStatType[bit.band(s.st_mode, 0xF000)],
+		mode = bit.band(s.st_mode, 0x1FF),
 	}
 end
 
@@ -214,6 +216,12 @@ function fs.isfile(p)
 	end
 
 	return bit.band(s.st_mode, 0x8000) ~= 0
+end
+
+---@param p string
+---@param mode number
+function fs.chmod(p, mode)
+	return ffi.C.chmod(p, mode) == 0
 end
 
 return fs

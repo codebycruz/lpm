@@ -5,6 +5,7 @@ local path = require("path")
 ---@field accessTime number
 ---@field modifyTime number
 ---@field type fs.Stat.Type?
+---@field mode number? # Permission bits (Unix only)
 
 ---@alias fs.Stat.Type fs.DirEntry.Type
 ---@alias fs.DirEntry.Type "file" | "dir" | "symlink" | "unknown"
@@ -76,7 +77,6 @@ function fs.copy(src, dest)
 		local content = fs.read(src)
 		if not content then return false end
 		fs.write(dest, content)
-
 		return true
 	end
 
