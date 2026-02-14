@@ -50,31 +50,49 @@ local function runTests(package)
 		ansi.printf("{green}All %d tests passed!", #testFiles)
 	end
 
-	return true
+	return true, #failures > 0
 end
 
 ---@param args clap.Args
 local function test(args)
 	local package = Package.open()
+
+	-- Running outside of a package, run tests for all packages inside of cwd
 	if not package then
 		local cwd = env.cwd()
+		local hadFailures = false
 
 		-- Recursively search for packages
 		for _, relativePath in ipairs(fs.scan(cwd, "**" .. path.separator .. "lpm.json")) do
 			local configPath = path.join(cwd, relativePath)
 
-			local package = Package.tryOpen(path.dirname(configPath))
+			local package = Package.open(path.dirname(configPath))
 			if package then
-				runTests(package)
+				local ok, failures = runTests(package)
+				if ok then ---@cast failures boolean
+					if failures then
+						hadFailures = true
+					end
+				else ---@cast failures string # Failed to run at all
+					error(failures)
+				end
 			end
+		end
+
+		if hadFailures then
+			os.exit(1)
 		end
 
 		return
 	end
 
-	local ok, err = runTests(package)
-	if not ok then
-		error(err)
+	local ok, failures = runTests(package)
+	if ok then ---@cast failures boolean
+		if failures then
+			os.exit(1)
+		end
+	else ---@cast failures string # Failed to run at all
+		error(failures)
 	end
 end
 
