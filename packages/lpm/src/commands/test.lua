@@ -49,6 +49,8 @@ local function runTests(package)
 	else
 		ansi.printf("{green}All %d tests passed!", #testFiles)
 	end
+
+	return true
 end
 
 ---@param args clap.Args
