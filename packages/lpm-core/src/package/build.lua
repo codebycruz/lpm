@@ -1,9 +1,17 @@
 local fs = require("fs")
 local path = require("path")
 
+---@type table<lpm.Package, boolean>
+local currentlyBuilding = setmetatable({}, { __mode = "k" })
+
 ---@param package lpm.Package
 ---@param destinationPath string?
 local function buildPackage(package, destinationPath)
+	if currentlyBuilding[package] then
+		return
+	end
+	currentlyBuilding[package] = true
+
 	destinationPath = destinationPath or path.join(package:getModulesDir(), package:getName())
 
 	local buildScriptPath = package:getBuildScriptPath()
@@ -17,6 +25,8 @@ local function buildPackage(package, destinationPath)
 	else
 		fs.mklink(package:getSrcDir(), destinationPath)
 	end
+
+	currentlyBuilding[package] = nil
 end
 
 return buildPackage
