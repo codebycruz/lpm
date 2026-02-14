@@ -15,7 +15,8 @@ local path = require("path")
 local Package = {}
 Package.__index = Package
 
-print("??", ...)
+-- Add this since files in . will want access to the `Package` class.
+package.loaded[(...)] = Package
 
 ---@param dir string
 local function configPathAtDir(dir)
