@@ -24,7 +24,12 @@ local function add(args)
 		return
 	end
 
-	local p = Package.open()
+	local p, err = Package.open()
+	if not p then
+		ansi.printf("{red}%s", err)
+		return
+	end
+
 	local configPath = p:getConfigPath()
 
 	---@type lpm.Config

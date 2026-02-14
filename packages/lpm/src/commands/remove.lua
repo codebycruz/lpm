@@ -8,10 +8,15 @@ local Package = require("lpm-core.package")
 local function remove(args)
 	local name = assert(args:pop(), "Usage: lpm remove <name>")
 
-	local p = Package.open()
-	local configPath = p:getConfigPath()
+	local pkg, err = Package.open()
+	if not pkg then
+		ansi.printf("{red}%s", err)
+		return
+	end
 
-	local config = json.decode(fs.read(p:getConfigPath()))
+	local configPath = pkg:getConfigPath()
+
+	local config = json.decode(fs.read(pkg:getConfigPath()))
 	if not config.dependencies then
 		config.dependencies = {}
 	end

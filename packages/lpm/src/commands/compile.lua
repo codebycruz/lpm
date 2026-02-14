@@ -9,7 +9,12 @@ local Package = require("lpm-core.package")
 local function compile(args)
 	local outFile = args:option("outfile")
 
-	local pkg = Package.open()
+	local pkg, err = Package.open()
+	if not pkg then
+		ansi.printf("{red}%s", err)
+		return
+	end
+
 	if not outFile then
 		outFile = path.join(pkg:getDir(), pkg:getName())
 	end
@@ -20,7 +25,6 @@ local function compile(args)
 
 	local executable = pkg:compile()
 	local ok, err = fs.move(executable, outFile)
-
 	if not ok then
 		error("Failed to move executable: " .. err)
 	end

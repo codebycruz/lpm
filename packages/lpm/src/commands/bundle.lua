@@ -7,7 +7,12 @@ local Package = require("lpm-core.package")
 local function bundle(args)
 	local outFile = args:option("outfile")
 
-	local pkg = Package.open()
+	local pkg, err = Package.open()
+	if not pkg then
+		ansi.printf("{red}%s", err)
+		return
+	end
+
 	if not outFile then
 		outFile = path.join(pkg:getDir(), pkg:getName() .. "-bundled.lua")
 	end

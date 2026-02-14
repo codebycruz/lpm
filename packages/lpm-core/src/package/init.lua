@@ -1,0 +1,124 @@
+local Config = require("lpm-core.config")
+local Lockfile = require("lpm-core.lockfile")
+
+local global = require("lpm-core.global")
+
+local fs = require("fs")
+local env = require("env")
+local json = require("json")
+local path = require("path")
+local util = require("util")
+
+---@class lpm.Package
+---@field dir string
+---@field cachedConfig lpm.Config?
+---@field cachedConfigRawHash string?
+local Package = {}
+Package.__index = Package
+
+print("??", ...)
+
+---@param dir string
+local function configPathAtDir(dir)
+	return path.join(dir, "lpm.json")
+end
+
+function Package:getDir() return self.dir end
+
+function Package:getBuildScriptPath() return path.join(self.dir, "build.lua") end
+
+function Package:getLuarcPath() return path.join(self.dir, ".luarc.json") end
+
+function Package:getModulesDir() return path.join(self.dir, "lpm_modules") end
+
+function Package:getTargetDir() return path.join(self:getModulesDir(), self:getName()) end
+
+function Package:getSrcDir() return path.join(self.dir, "src") end
+
+function Package:getTestDir() return path.join(self.dir, "tests") end
+
+function Package:getConfigPath() return configPathAtDir(self.dir) end
+
+function Package:getLockfilePath() return path.join(self.dir, "lpm-lock.json") end
+
+---@param dir string?
+---@return lpm.Package?, string?
+function Package.open(dir)
+	dir = dir or env.cwd()
+
+	local configPath = configPathAtDir(dir)
+	if not fs.exists(configPath) then
+		return nil, "No lpm.json found in directory: " .. dir
+	end
+
+	return setmetatable({ dir = dir }, Package), nil
+end
+
+---@return lpm.Config
+function Package:readConfig()
+	local configPath = self:getConfigPath()
+
+	local content = fs.read(configPath)
+	if not content then
+		error("Could not read lpm.json: " .. configPath)
+	end
+
+	local currentHash = util.hash(content)
+	if self.cachedConfig and self.cachedConfigTime == currentHash then
+		return self.cachedConfig
+	end
+
+	local newConfig = Config.new(json.decode(content))
+	self.cachedConfig = newConfig
+	self.cachedConfigRawHash = currentHash
+
+	return newConfig
+end
+
+function Package:readLockfile()
+	return Lockfile.open(self:getLockfilePath())
+end
+
+Package.init = require("lpm-core.package.initialize")
+
+function Package:__tostring()
+	return "Package(" .. self.dir .. ")"
+end
+
+function Package:getDependencies()
+	return self:readConfig().dependencies or {}
+end
+
+function Package:getDevDependencies()
+	return self:readConfig().devDependencies or {}
+end
+
+function Package:getName()
+	return self:readConfig().name
+end
+
+Package.build = require("lpm-core.package.build")
+
+---@param dir string
+---@param info lpm.Config.Dependency
+---@param relativeTo string?
+function Package:getDependencyPath(dir, info, relativeTo)
+	relativeTo = relativeTo or self.dir
+
+	if info.git then
+		return global.getGitRepoDir(dir)
+	elseif info.path then
+		return path.normalize(path.join(relativeTo, info.path))
+	end
+end
+
+Package.installDependencies = require("lpm-core.package.install")
+
+function Package:installDevDependencies()
+	self:installDependencies(self:getDevDependencies())
+end
+
+Package.compile = require("lpm-core.package.compile")
+Package.runScript = require("lpm-core.package.run")
+
+return Package

@@ -4,7 +4,11 @@ local Package = require("lpm-core.package")
 
 ---@param args clap.Args
 local function install(args)
-	local pkg = Package.open()
+	local pkg, err = Package.open()
+	if not pkg then
+		ansi.printf("{red}%s", err)
+		return
+	end
 
 	pkg:installDependencies()
 	if not args:flag("production") then

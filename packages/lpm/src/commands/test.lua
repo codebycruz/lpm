@@ -53,7 +53,7 @@ end
 
 ---@param args clap.Args
 local function test(args)
-	local package = Package.tryOpen()
+	local package = Package.open()
 	if not package then
 		local cwd = env.cwd()
 

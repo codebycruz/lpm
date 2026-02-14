@@ -4,7 +4,11 @@ local path = require("path")
 
 ---@param args clap.Args
 local function run(args)
-	local pkg = Package.open()
+	local pkg, err = Package.open()
+	if not pkg then
+		error("Failed to open package: " .. err)
+	end
+
 	pkg:build()
 
 	pkg:installDependencies()

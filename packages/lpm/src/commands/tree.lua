@@ -43,11 +43,24 @@ local function tree(args)
 		end)
 
 		for _, dep in ipairs(deps) do
-			printTree(Package.open(pkg:getDependencyPath(dep.name, dep.info)), dep.info, depth + 1)
+			local pkg, err = Package.open(pkg:getDependencyPath(dep.name, dep.info))
+			if not pkg then
+				ansi.printf("%s  {red}Failed to open package: %s", indent, err)
+				goto skip
+			end
+
+			printTree(pkg, dep.info, depth + 1)
+			::skip::
 		end
 	end
 
-	printTree(Package.open())
+	local pkg, err = Package.open()
+	if not pkg then
+		ansi.printf("{red}%s", err)
+		return
+	end
+
+	printTree(pkg)
 end
 
 return tree
