@@ -102,15 +102,6 @@ local function upgrade(args)
 		return
 	end
 
-	if process.platform == "linux" or process.platform == "darwin" then
-		local chmodSuccess, chmodErr = process.spawn("chmod", { "+x", tempNewLocation })
-		if not chmodSuccess then
-			fs.delete(tempNewLocation)
-			ansi.printf("{red}Failed to make binary executable: %s", chmodErr)
-			return
-		end
-	end
-
 	-- Move current executable to tmp (allows replacement even if running)
 	local moveOldSuccess, moveOldErr = fs.move(binLocation, tempOldLocation)
 	if not moveOldSuccess then
