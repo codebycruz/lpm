@@ -104,6 +104,7 @@ end
 
 local ansi = require("ansi")
 local clap = require("clap")
+local env = require("env")
 
 local global = require("lpm-core.global")
 global.init()
@@ -131,13 +132,15 @@ commands.tree = require("lpm.commands.tree")
 
 local ok, err = xpcall(function()
 	if args:count() == 0 then
-		commands.help()
+		commands.help(args)
 	else
-		local command = args:pop("string")
-		if commands[command] then
-			commands[command](args)
+		local commandName = args:pop()
+		local commandHandler = commands[commandName]
+
+		if commandHandler then
+			commandHandler(args)
 		else
-			ansi.printf("{red}Unknown command: %s", tostring(command))
+			ansi.printf("{red}Unknown command: %s", tostring(commandName))
 		end
 	end
 end, function(err)
@@ -147,7 +150,7 @@ end)
 if not ok then ---@cast err { msg: string, trace: string }
 	ansi.printf("{red}Error: %s", tostring(err.msg))
 
-	if os.getenv("DEBUG") then
+	if env.var("DEBUG") then
 		print(err.trace)
 	end
 end
