@@ -7,12 +7,11 @@ local fs = require("fs")
 local env = require("env")
 local json = require("json")
 local path = require("path")
-local util = require("util")
 
 ---@class lpm.Package
 ---@field dir string
 ---@field cachedConfig lpm.Config?
----@field cachedConfigRawHash string?
+---@field cachedConfigMtime number?
 local Package = {}
 Package.__index = Package
 
@@ -58,19 +57,23 @@ end
 function Package:readConfig()
 	local configPath = self:getConfigPath()
 
+	local s = fs.stat(configPath)
+	if not s then
+		error("Could not read lpm.json: " .. configPath)
+	end
+
+	if self.cachedConfig and self.cachedConfigMtime == s.modifyTime then
+		return self.cachedConfig
+	end
+
 	local content = fs.read(configPath)
 	if not content then
 		error("Could not read lpm.json: " .. configPath)
 	end
 
-	local currentHash = util.hash(content)
-	if self.cachedConfig and self.cachedConfigTime == currentHash then
-		return self.cachedConfig
-	end
-
 	local newConfig = Config.new(json.decode(content))
 	self.cachedConfig = newConfig
-	self.cachedConfigRawHash = currentHash
+	self.cachedConfigMtime = s.modifyTime
 
 	return newConfig
 end
