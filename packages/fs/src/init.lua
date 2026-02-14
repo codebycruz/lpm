@@ -100,6 +100,12 @@ end
 ---@param old string
 ---@param new string
 function fs.move(old, new)
+	-- Simpler and saves file permissions.
+	if fs.isfile(old) then
+		return os.rename(old, new)
+	end
+
+	-- Fallback to copy+delete for folders
 	if not fs.copy(old, new) then return false, "Failed to copy" end
 	if not fs.delete(old) then return false, "Failed to delete" end
 	return true
