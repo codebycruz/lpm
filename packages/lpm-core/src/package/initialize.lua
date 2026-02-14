@@ -16,7 +16,8 @@ local function initPackage(dir)
 	fs.write(configPath, util.dedent([[
 		{
 			"name": "]] .. path.basename(dir) .. [[",
-			"version": "0.1.0"
+			"version": "0.1.0",
+			"dependencies": {}
 		}
 	]]))
 
