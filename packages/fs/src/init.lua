@@ -1,5 +1,18 @@
 local path = require("path")
 
+---@class fs.Stat
+---@field size number # Size in bytes
+---@field accessTime number
+---@field modifyTime number
+---@field type fs.Stat.Type?
+
+---@alias fs.Stat.Type fs.DirEntry.Type
+---@alias fs.DirEntry.Type "file" | "dir" | "symlink" | "unknown"
+
+---@class fs.DirEntry
+---@field name string
+---@field type fs.DirEntry.Type
+
 ---@class fs.raw
 ---@field exists fun(p: string): boolean
 ---@field isdir fun(p: string): boolean
@@ -8,12 +21,8 @@ local path = require("path")
 ---@field readdir fun(p: string): (fun(): fs.DirEntry?)?
 ---@field mkdir fun(p: string): boolean
 ---@field mklink fun(src: string, dest: string): boolean
-
----@alias fs.DirEntry.Type "file" | "dir" | "symlink" | "unknown"
-
----@class fs.DirEntry
----@field name string
----@field type fs.DirEntry.Type
+---@field stat fun(p: string): fs.Stat?
+---@field lstat fun(p: string): fs.Stat?
 
 local rawfs ---@type fs.raw
 if jit.os == "Windows" then

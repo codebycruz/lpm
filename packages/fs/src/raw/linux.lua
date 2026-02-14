@@ -77,11 +77,18 @@ ffi.cdef([[
 local fs = {}
 
 ---@type table<number, fs.DirEntry.Type>
-local entryTypeMap = {
+local dTypeToEntryType = {
 	[0] = "unknown",
 	[4] = "dir",
 	[8] = "file",
 	[10] = "symlink",
+}
+
+---@type table<number, fs.Stat.Type>
+local modeToStatType = {
+	[0x4000] = "dir",
+	[0x8000] = "file",
+	[0xA000] = "symlink",
 }
 
 ---@param p string
@@ -104,7 +111,7 @@ function fs.readdir(p)
 			if name ~= ".." and name ~= "." then
 				return {
 					name = name,
-					type = entryTypeMap[entry.d_type] or "unknown",
+					type = dTypeToEntryType[entry.d_type] or "unknown",
 				}
 			end
 		end
@@ -113,7 +120,13 @@ end
 
 local newStat = ffi.typeof("struct stat")
 
-local function stat(p) ---@return { st_mode: number }?, number?
+---@class fs.raw.linux.Stat
+---@field st_mode number
+---@field st_mtime number
+---@field st_atime number
+---@field st_size number
+
+local function stat(p) ---@return fs.raw.linux.Stat?, number?
 	local statbuf = newStat()
 	if ffi.C.stat(p, statbuf) ~= 0 then
 		return nil, ffi.errno()
@@ -122,7 +135,7 @@ local function stat(p) ---@return { st_mode: number }?, number?
 	return statbuf
 end
 
-local function lstat(p) ---@return { st_mode: number }?, number?
+local function lstat(p) ---@return fs.raw.linux.Stat?, number?
 	local statbuf = newStat()
 	if ffi.C.lstat(p, statbuf) ~= 0 then
 		return nil, ffi.errno()
@@ -135,6 +148,31 @@ end
 ---@return boolean
 function fs.exists(p)
 	return stat(p) ~= nil
+end
+
+---@param s fs.raw.linux.Stat
+---@return fs.Stat?
+local function rawToCrossStat(s)
+	return {
+		size = s.st_size,
+		modifyTime = s.st_mtime,
+		accessTime = s.st_atime,
+		type = modeToStatType[bit.band(s.st_mode, 0xF000)]
+	}
+end
+
+---@param p string
+function fs.stat(p)
+	local s = stat(p)
+	if s == nil then return nil end
+	return rawToCrossStat(s)
+end
+
+---@param p string
+function fs.lstat(p)
+	local s = lstat(p)
+	if s == nil then return nil end
+	return rawToCrossStat(s)
 end
 
 ---@param p string
