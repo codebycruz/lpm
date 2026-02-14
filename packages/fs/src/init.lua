@@ -118,7 +118,7 @@ end
 ---@param cwd string
 ---@param glob string
 ---@param opts { absolute: boolean }?
----@return string[]?
+---@return string[]
 function fs.scan(cwd, glob, opts)
 	if not fs.isdir(cwd) then
 		error("not a directory: '" .. cwd .. "'")
@@ -150,10 +150,6 @@ function fs.scan(cwd, glob, opts)
 				end
 			end
 		end
-	end
-
-	if not fs.isdir(cwd) then
-		return nil
 	end
 
 	dir(cwd)
