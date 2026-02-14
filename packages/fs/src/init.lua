@@ -100,14 +100,15 @@ end
 ---@param old string
 ---@param new string
 function fs.move(old, new)
-	-- Simpler and saves file permissions.
-	if fs.isfile(old) then
-		return os.rename(old, new)
+	-- Fast path, only works on same device (and need to ensure it works)
+	if fs.isfile(old) and os.rename(old, new) then
+		return true
 	end
 
-	-- Fallback to copy+delete for folders
+	-- Fallback to copy+delete for cross-device moves and directories
 	if not fs.copy(old, new) then return false, "Failed to copy" end
 	if not fs.delete(old) then return false, "Failed to delete" end
+
 	return true
 end
 
