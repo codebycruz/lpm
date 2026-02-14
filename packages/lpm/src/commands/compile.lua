@@ -29,6 +29,10 @@ local function compile(args)
 		error("Failed to move executable: " .. err)
 	end
 
+	if process.platform ~= "win32" then
+		fs.chmod(outFile, tonumber("755", 8))
+	end
+
 	ansi.printf("{green}Executable created: %s", outFile)
 end
 
