@@ -1,6 +1,12 @@
 local ffi = require("ffi")
 
 ffi.cdef([[
+	typedef void* HANDLE;
+	typedef uint32_t DWORD;
+	typedef uint16_t WORD;
+	typedef unsigned char BYTE;
+	typedef int BOOL;
+
 	DWORD GetEnvironmentVariableA(const char* lpName, char* lpBuffer, DWORD nSize);
 	BOOL SetEnvironmentVariableA(const char* lpName, const char* lpValue);
 	DWORD GetCurrentDirectoryA(DWORD nBufferLength, char* lpBuffer);
