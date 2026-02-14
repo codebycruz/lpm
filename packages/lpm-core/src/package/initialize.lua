@@ -21,6 +21,9 @@ local function initPackage(dir)
 	]]))
 
 	local package = Package.open(dir)
+	if not package then
+		error("Failed to initialize package at directory: " .. dir)
+	end
 
 	local src = package:getSrcDir()
 	if not fs.exists(src) then
