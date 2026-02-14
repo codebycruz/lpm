@@ -1,6 +1,8 @@
 local Config = require("lpm-core.config")
 local Lockfile = require("lpm-core.lockfile")
+
 local global = require("lpm-core.global")
+local runtime = require("lpm-core.runtime")
 
 local fs = require("fs")
 local env = require("env")
@@ -9,6 +11,7 @@ local path = require("path")
 local sea = require("sea")
 local process = require("process")
 local util = require("util")
+local ffi = require("ffi")
 
 ---@class lpm.Package
 ---@field dir string
@@ -281,45 +284,20 @@ function Package:runScript(scriptPath, args, vars)
 		.. path.join(modulesDir, "?", "init.lua") .. ";"
 
 	local luaCPath =
-		path.join(modulesDir, "?.so") .. ";"
-		.. path.join(modulesDir, "?.dll") .. ";"
+		ffi.os == "Linux" and path.join(modulesDir, "?.so") .. ";"
+		or ffi.os == "Windows" and path.join(modulesDir, "?.dll") .. ";"
+		or path.join(modulesDir, "?.dylib") .. ";"
 
 	local engine = self:readConfig().engine or "lpm"
 
 	-- Use the currently running Lua interpreter as the engine
 	-- Convenient for packages that are lua agnostic for tests
 	if engine == "lpm" then
-		local oldPath, oldCPath = package.path, package.cpath
-		local callback, err = loadfile(scriptPath, "t")
-		if not callback then
-			return false, err or "Failed to compile script"
-		end
-
-		-- Save old env var values and set new ones
-		local oldEnvVars = {}
-		if vars then
-			for k, v in pairs(vars) do
-				oldEnvVars[k] = env.var(k)
-				env.set(k, v)
-			end
-		end
-
-		local ok, err = pcall(function()
-			package.path, package.cpath = luaPath, luaCPath
-			if args then
-				return callback(unpack(args))
-			else
-				return callback()
-			end
-		end)
-
-		-- Restore old env var values
-		for k, v in pairs(oldEnvVars) do
-			env.set(k, v)
-		end
-
-		package.path, package.cpath = oldPath, oldCPath
-		return ok, err
+		return runtime.executeFile(scriptPath, {
+			args = args,
+			packagePath = luaPath,
+			packageCPath = luaCPath,
+		})
 	end
 
 	local env = { LUA_PATH = luaPath, LUA_CPATH = luaCPath }
