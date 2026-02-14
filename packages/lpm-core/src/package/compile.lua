@@ -19,9 +19,13 @@ local function compilePackage(package)
 				error("Could not read file: " .. absPath)
 			end
 
-			local moduleName = projectName
-			if relativePath ~= "init.lua" then
-				moduleName = projectName .. "." .. relativePath:gsub(path.separator, "."):gsub("%.lua$", "")
+			-- Map file paths to Lua module names following the init.lua convention:
+			-- init.lua -> projectName, foo/init.lua -> projectName.foo, etc.
+			local moduleName = relativePath:gsub(path.separator, "."):gsub("%.lua$", ""):gsub("%.?init$", "")
+			if moduleName ~= "" then
+				moduleName = projectName .. "." .. moduleName
+			else
+				moduleName = projectName
 			end
 
 			table.insert(files, { path = moduleName, content = content })
