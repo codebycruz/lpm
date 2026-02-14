@@ -10,13 +10,25 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install lpm
+    - name: Install lpm (Unix)
+      if: runner.os != 'Windows'
       shell: bash
       run: |
-        case "$(uname -m)" in
-          x86_64) ARTIFACT="lpm-linux-x86-64" ;;
-          aarch64|arm64) ARTIFACT="lpm-linux-aarch64" ;;
-          *) echo "Unsupported architecture: $(uname -m)"; exit 1 ;;
+        OS="$(uname -s)"
+        ARCH="$(uname -m)"
+
+        case "$OS" in
+          Linux)
+            case "$ARCH" in
+              x86_64) ARTIFACT="lpm-linux-x86-64" ;;
+              aarch64|arm64) ARTIFACT="lpm-linux-aarch64" ;;
+              *) echo "Unsupported architecture: $ARCH"; exit 1 ;;
+            esac
+            ;;
+          Darwin)
+            ARTIFACT="lpm-macos-x86-64"
+            ;;
+          *) echo "Unsupported OS: $OS"; exit 1 ;;
         esac
 
         if [ "${{ inputs.version }}" = "latest" ]; then
@@ -30,3 +42,23 @@ runs:
         mkdir -p "$HOME/.lpm"
         mv lpm "$HOME/.lpm/lpm"
         echo "$HOME/.lpm" >> "$GITHUB_PATH"
+
+    - name: Install lpm (Windows)
+      if: runner.os == 'Windows'
+      shell: pwsh
+      run: |
+        $ARTIFACT = "lpm-windows-x86-64.exe"
+
+        if ("${{ inputs.version }}" -eq "latest") {
+          $DOWNLOAD_URL = "https://github.com/codebycruz/lpm/releases/latest/download/$ARTIFACT"
+        } else {
+          $DOWNLOAD_URL = "https://github.com/codebycruz/lpm/releases/download/v${{ inputs.version }}/$ARTIFACT"
+        }
+
+        $lpmDir = "$env:USERPROFILE\.lpm"
+        if (-not (Test-Path $lpmDir)) {
+          New-Item -ItemType Directory -Path $lpmDir | Out-Null
+        }
+
+        Invoke-WebRequest -Uri $DOWNLOAD_URL -OutFile "$lpmDir\lpm.exe"
+        echo "$lpmDir" >> $env:GITHUB_PATH
