@@ -120,6 +120,10 @@ local function upgrade(args)
 		return
 	end
 
+	if process.platform ~= "win32" then
+		fs.chmod(binLocation, tonumber("755", 8))
+	end
+
 	-- Clean up old binary
 	fs.delete(tempOldLocation)
 
