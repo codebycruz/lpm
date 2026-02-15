@@ -4,7 +4,7 @@ local fs = require("fs")
 local path = require("path")
 local process = require("process")
 
-global.currentVersion = "0.5.3"
+global.currentVersion = "0.5.4"
 
 function global.getDir()
 	local home = os.getenv("HOME") or os.getenv("USERPROFILE")
