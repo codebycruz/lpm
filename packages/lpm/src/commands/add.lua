@@ -11,12 +11,16 @@ local function add(args)
 
 	---@type ("git" | "path")?, string?
 	local depType, depValue
-	if args:option("git") then
+
+	local gitUrl = args:option("git")
+	local pathValue = args:option("path")
+
+	if gitUrl then
 		depType = "git"
-		depValue = args:option("git")
-	elseif args:option("path") then
+		depValue = gitUrl
+	elseif pathValue then
 		depType = "path"
-		depValue = args:option("path")
+		depValue = pathValue
 	end
 
 	if not depType or not depValue then
