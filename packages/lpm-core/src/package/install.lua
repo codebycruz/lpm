@@ -27,7 +27,7 @@ end
 ---@param relativeTo string
 local function dependencyToPackage(name, depInfo, relativeTo)
 	if depInfo.git then
-		local repoDir = global.getOrInitGitRepo(name, depInfo.git)
+		local repoDir = global.getOrInitGitRepo(name, depInfo.git, depInfo.branch, depInfo.commit)
 
 		for _, config in ipairs(fs.scan(repoDir, "**" .. path.separator .. "lpm.json")) do
 			local parentDir = path.join(repoDir, path.dirname(config))

@@ -6,6 +6,11 @@ local process = require("process")
 
 global.currentVersion = "0.5.4"
 
+---@param s string
+local function sanitize(s)
+	return (string.gsub(s, "[^%w_%-]", "_"))
+end
+
 function global.getDir()
 	local home = os.getenv("HOME") or os.getenv("USERPROFILE")
 	return path.join(home, ".lpm")
@@ -15,27 +20,62 @@ function global.getGitCacheDir()
 	return path.join(global.getDir(), "git")
 end
 
+--- Builds the cache directory name for a git repo.
+--- Format: name, name-branch, or name-branch-commit
 ---@param repoName string
-function global.getGitRepoDir(repoName)
-	local safeName = repoName:gsub("[^%w_%-]", "_")
-	return path.join(global.getGitCacheDir(), safeName)
+---@param branch string?
+---@param commit string?
+---@return string
+function global.getGitRepoDir(repoName, branch, commit)
+	local parts = { sanitize(repoName) }
+
+	if branch then
+		parts[#parts + 1] = sanitize(branch)
+	end
+
+	if commit then
+		parts[#parts + 1] = sanitize(commit)
+	end
+
+	local fullName = table.concat(parts, "-")
+	return path.join(global.getGitCacheDir(), fullName)
 end
 
 ---@param repoName string
 ---@param repoUrl string
-function global.cloneDir(repoName, repoUrl)
-	local repoDir = global.getGitRepoDir(repoName)
-	return process.spawn("git", { "clone", repoUrl, repoDir })
+---@param branch string?
+function global.cloneDir(repoName, repoUrl, branch)
+	local repoDir = global.getGitRepoDir(repoName, branch)
+	local args = { "clone" }
+
+	if branch then
+		args[#args + 1] = "--branch"
+		args[#args + 1] = branch
+	end
+
+	args[#args + 1] = repoUrl
+	args[#args + 1] = repoDir
+
+	return process.spawn("git", args)
 end
 
 ---@param repoName string
 ---@param repoUrl string
-function global.getOrInitGitRepo(repoName, repoUrl)
-	local repoDir = global.getGitRepoDir(repoName)
+---@param branch string?
+---@param commit string?
+function global.getOrInitGitRepo(repoName, repoUrl, branch, commit)
+	local repoDir = global.getGitRepoDir(repoName, branch, commit)
 	if not fs.exists(repoDir) then
-		local ok, err = global.cloneDir(repoName, repoUrl)
+		local ok, err = global.cloneDir(repoName, repoUrl, branch)
 		if not ok then
 			error("Failed to clone git repository: " .. err)
+		end
+
+		if commit then
+			local checkoutOk, checkoutErr = process.spawn("git", { "checkout", commit }, { cwd = repoDir })
+			if not checkoutOk then
+				error("Failed to checkout commit " .. commit .. ": " .. checkoutErr)
+			end
 		end
 	end
 

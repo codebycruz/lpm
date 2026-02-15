@@ -110,7 +110,7 @@ function Package:getDependencyPath(dir, info, relativeTo)
 	relativeTo = relativeTo or self.dir
 
 	if info.git then
-		return global.getGitRepoDir(dir)
+		return global.getGitRepoDir(dir, info.branch, info.commit)
 	elseif info.path then
 		return path.normalize(path.join(relativeTo, info.path))
 	end
