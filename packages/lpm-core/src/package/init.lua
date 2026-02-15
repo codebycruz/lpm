@@ -29,7 +29,7 @@ function Package:getBuildScriptPath() return path.join(self.dir, "build.lua") en
 
 function Package:getLuarcPath() return path.join(self.dir, ".luarc.json") end
 
-function Package:getModulesDir() return path.join(self.dir, "lpm_modules") end
+function Package:getModulesDir() return path.join(self.dir, "target") end
 
 function Package:getTargetDir() return path.join(self:getModulesDir(), self:getName()) end
 

@@ -35,7 +35,7 @@ local function compilePackage(package)
 	local modulesDir = package:getModulesDir()
 	bundleDir(package:getName(), path.join(modulesDir, package:getName()))
 
-	-- Use the lpm_modules directory for the build artifacts rather than src,
+	-- Use the target directory for the build artifacts rather than src,
 	-- since build scripts may modify src contents.
 	for depName in pairs(package:getDependencies()) do
 		local buildFolder = path.join(modulesDir, depName)

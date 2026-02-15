@@ -22,8 +22,7 @@ local function initPackage(dir)
 	]]))
 
 	local idealGitignore = util.dedent([[
-		/lpm_modules/
-		/target/ # Reserved for future use
+		/target/
 		/lpm.lock # Reserved for future use
 		/lpm-lock.json
 	]])
@@ -37,7 +36,7 @@ local function initPackage(dir)
 			error("Failed to read existing .gitignore at: " .. gitignorePath)
 		end
 
-		if not string.find(content, "/lpm_modules/", 1, true) then
+		if not string.find(content, "/target/", 1, true) then
 			content = content .. "\n" .. idealGitignore
 			fs.write(gitignorePath, content)
 		end
@@ -59,7 +58,7 @@ local function initPackage(dir)
 				},
 				"runtime": {
 					"version": "LuaJIT",
-					"path": ["./lpm_modules/?.lua", "./lpm_modules/?/init.lua"]
+					"path": ["./target/?.lua", "./target/?/init.lua"]
 				}
 			}
 		]]))

@@ -5,8 +5,8 @@ if os.getenv("BOOTSTRAP") then
 	local srcDir = scriptPath:match("^(.*)[/\\]")
 	local baseDir = srcDir:match("^(.*)[/\\]")
 
-	package.path = baseDir .. "/lpm_modules/?.lua;" ..
-		baseDir .. "/lpm_modules/?/init.lua;" ..
+	package.path = baseDir .. "/target/?.lua;" ..
+		baseDir .. "/target/?/init.lua;" ..
 		package.path
 
 	local separator = package.config:sub(1, 1)
@@ -16,7 +16,7 @@ if os.getenv("BOOTSTRAP") then
 	end
 
 	local isWindows = separator == '\\'
-	local lpmModulesDir = join(baseDir, "lpm_modules")
+	local lpmModulesDir = join(baseDir, "target")
 
 	local function exists(path)
 		local ok, _, code = os.rename(path, path)

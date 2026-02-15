@@ -1,4 +1,4 @@
-lpm_modules
+target
 .luarc.json
 !/.luarc.json
 /lpm*
