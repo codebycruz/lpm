@@ -32,8 +32,6 @@ function Args:option(desiredKey)
 					return table.remove(self.raw, i), i - 2
 				end
 			end
-
-			return nil
 		end
 	end
 end
