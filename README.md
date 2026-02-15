@@ -33,6 +33,13 @@ Windows
 irm https://raw.githubusercontent.com/codebycruz/lpm/master/install.ps1 | iex
 ```
 
-## Development
+## Quickstart
 
-In the future this will be streamlined with a devcontainer, but that's not a priority for me until [Zed's support for devcontainers](https://github.com/zed-industries/zed/issues/11473) improves.
+```bash
+lpm new myproject
+cd myproject
+lpm add hood --git https://github.com/codebycruz/hood
+echo "print(require('hood'))" > ./src/init.lua
+lpm run
+# Output: table: 0x7f53326fd030
+```
