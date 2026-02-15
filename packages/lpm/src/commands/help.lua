@@ -3,19 +3,20 @@ local ansi = require("ansi")
 ---@param args clap.Args
 local function help(args)
 	local commands = {
-		{ cmd = "run",     ex = "foo.lua",   color = "green",   desc = "Execute a lua script" },
-		{ cmd = "test",    ex = nil,         color = "green",   desc = "Run project tests" },
+		{ cmd = "run",     ex = "foo.lua",     color = "green",   desc = "Execute a lua script" },
+		{ cmd = "x",       ex = "--git <url>", color = "green",   desc = "Run a package from a git repo or path" },
+		{ cmd = "test",    ex = nil,           color = "green",   desc = "Run project tests" },
 		{},
-		{ cmd = "new",     ex = "myproject", color = "red",     desc = "Create a new lpm project" },
-		{ cmd = "init",    ex = nil,         color = "red",     desc = "Initialize current directory as lpm project" },
-		{ cmd = "upgrade", ex = nil,         color = "red",     desc = "Upgrade lpm to the latest version" },
+		{ cmd = "new",     ex = "myproject",   color = "red",     desc = "Create a new lpm project" },
+		{ cmd = "init",    ex = nil,           color = "red",     desc = "Initialize current directory as lpm project" },
+		{ cmd = "upgrade", ex = nil,           color = "red",     desc = "Upgrade lpm to the latest version" },
 		{},
-		{ cmd = "install", ex = nil,         color = "yellow",  desc = "Install project dependencies" },
-		{ cmd = "add",     ex = "gfx",       color = "yellow",  desc = "Add a dependency (--path <path> or --git <url>)" },
-		{ cmd = "remove",  ex = "json",      color = "yellow",  desc = "Remove a dependency" },
+		{ cmd = "install", ex = nil,           color = "yellow",  desc = "Install project dependencies" },
+		{ cmd = "add",     ex = "gfx",         color = "yellow",  desc = "Add a dependency (--path <path> or --git <url>)" },
+		{ cmd = "remove",  ex = "json",        color = "yellow",  desc = "Remove a dependency" },
 		{},
-		{ cmd = "compile", ex = nil,         color = "magenta", desc = "Compile current project into an executable" },
-		{ cmd = "bundle",  ex = nil,         color = "magenta", desc = "Bundle current project into a single lua file" }
+		{ cmd = "compile", ex = nil,           color = "magenta", desc = "Compile current project into an executable" },
+		{ cmd = "bundle",  ex = nil,           color = "magenta", desc = "Bundle current project into a single lua file" }
 	}
 
 	print("lpm is a package manager for Lua, written in Lua.\n")

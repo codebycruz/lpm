@@ -123,6 +123,7 @@ commands.new = require("lpm.commands.new")
 commands.upgrade = require("lpm.commands.upgrade")
 commands.add = require("lpm.commands.add")
 commands.run = require("lpm.commands.run")
+commands.x = require("lpm.commands.x")
 commands.install = require("lpm.commands.install")
 commands.i = commands.install
 commands.bundle = require("lpm.commands.bundle")
