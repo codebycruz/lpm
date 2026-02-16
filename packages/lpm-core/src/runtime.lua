@@ -1,4 +1,7 @@
 local env = require("env")
+local ffi = require("ffi")
+
+local originalCdef = ffi.cdef
 
 local builtinModules = {
 	package = true,
@@ -23,6 +26,32 @@ local builtinModules = {
 ---@field packagePath string?
 ---@field packageCPath string?
 
+--- Clears non-builtin entries from a table, returning the saved contents.
+---@param t table
+---@return table saved
+local function clearNonBuiltins(t)
+	local saved = {}
+	for k, v in pairs(t) do
+		saved[k] = v
+		if not builtinModules[k] then
+			t[k] = nil
+		end
+	end
+	return saved
+end
+
+--- Restores a table's contents from a saved snapshot.
+---@param t table
+---@param saved table
+local function restore(t, saved)
+	for k in pairs(t) do
+		t[k] = nil
+	end
+	for k, v in pairs(saved) do
+		t[k] = v
+	end
+end
+
 ---@param scriptPath string
 ---@param opts lpm.ExecuteOptions?
 local function executeFile(scriptPath, opts)
@@ -43,27 +72,15 @@ local function executeFile(scriptPath, opts)
 		end
 	end
 
-	-- Isolate the package library from currently running code and target scripts.
-	local oldLoaded = package.loaded
-	local oldPreload = package.preload
+	-- Mutate these in place since at least package.loaded is just a reference to the internally used _R._LOADED
+	local savedLoaded = clearNonBuiltins(package.loaded)
+	local savedPreload = clearNonBuiltins(package.preload)
 
 	local newG = {}
 	setmetatable(newG, { __index = _G })
 	setfenv(callback, newG)
 
-	local freshLoaded = { _G = newG }
-	for k, v in pairs(oldLoaded) do
-		if builtinModules[k] then
-			freshLoaded[k] = v
-		end
-	end
-
-	local freshPreload = {}
-	for k, v in pairs(oldPreload) do
-		if builtinModules[k] then
-			freshPreload[k] = v
-		end
-	end
+	package.loaded._G = newG
 
 	-- Wrap package.loaders so that any chunk loaded via require()
 	-- also gets its environment set to newG, preventing global pollution.
@@ -79,8 +96,6 @@ local function executeFile(scriptPath, opts)
 		end
 	end
 
-	package.loaded = freshLoaded
-	package.preload = freshPreload
 	package.loaders = freshLoaders
 
 	local ok, err = pcall(function()
@@ -97,8 +112,11 @@ local function executeFile(scriptPath, opts)
 		env.set(k, v)
 	end
 
-	package.loaded = oldLoaded
-	package.preload = oldPreload
+	ffi.cdef = originalCdef
+
+	restore(package.loaded, savedLoaded)
+	restore(package.preload, savedPreload)
+
 	package.loaders = oldLoaders
 	package.path, package.cpath = oldPath, oldCPath
 	return ok, err
