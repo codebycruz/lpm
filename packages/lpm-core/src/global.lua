@@ -82,6 +82,26 @@ function global.getOrInitGitRepo(repoName, repoUrl, branch, commit)
 	return repoDir
 end
 
+---@param repoDir string
+---@return string
+function global.getGitCommit(repoDir)
+	local ok, output = process.exec("git", { "rev-parse", "HEAD" }, { cwd = repoDir })
+	if not ok then
+		error("Failed to get git commit: " .. (output or "unknown error"))
+	end
+	return output:gsub("%s+$", "")
+end
+
+---@param repoDir string
+---@return string
+function global.getGitBranch(repoDir)
+	local ok, output = process.exec("git", { "rev-parse", "--abbrev-ref", "HEAD" }, { cwd = repoDir })
+	if not ok then
+		error("Failed to get git branch: " .. (output or "unknown error"))
+	end
+	return output:gsub("%s+$", "")
+end
+
 function global.init()
 	local dir = global.getDir()
 	if not fs.exists(dir) then

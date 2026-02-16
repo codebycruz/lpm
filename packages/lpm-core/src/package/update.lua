@@ -2,6 +2,7 @@ local fs = require("fs")
 local process = require("process")
 
 local global = require("lpm-core.global")
+local Lockfile = require("lpm-core.lockfile")
 
 --- Updates a single git dependency by pulling latest changes.
 --- Only applies to git dependencies without a pinned commit.
@@ -32,6 +33,7 @@ local function updateDependency(name, depInfo)
 end
 
 --- Updates all git dependencies (without pinned commits) for a package.
+--- Updates the lockfile with new commit hashes after pulling.
 ---@param package lpm.Package
 ---@param dependencies table<string, lpm.Config.Dependency>?
 ---@return table<string, { updated: boolean, message: string }>
@@ -43,6 +45,29 @@ local function updateDependencies(package, dependencies)
 		local updated, message = updateDependency(name, depInfo)
 		results[name] = { updated = updated, message = message }
 	end
+
+	-- Update lockfile with new commit hashes
+	local lockfilePath = package:getLockfilePath()
+	local lockfile = nil ---@type lpm.Lockfile?
+	local lockEntries = {}
+
+	if fs.exists(lockfilePath) then
+		lockfile = Lockfile.open(lockfilePath)
+		lockEntries = lockfile:getDependencies()
+	end
+
+	for name, depInfo in pairs(dependencies) do
+		if depInfo.git and results[name] and results[name].updated then
+			local repoDir = global.getGitRepoDir(name, depInfo.branch, depInfo.commit)
+			lockEntries[name] = {
+				git = depInfo.git,
+				commit = global.getGitCommit(repoDir),
+				branch = global.getGitBranch(repoDir),
+			}
+		end
+	end
+
+	Lockfile.new(lockfilePath, lockEntries):save()
 
 	return results
 end

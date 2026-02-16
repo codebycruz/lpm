@@ -5,7 +5,7 @@ local path = require("path")
 ---@class lpm.Lockfile.Raw.GitDependency
 ---@field git string
 ---@field commit string
----@field ref string
+---@field branch string
 
 ---@class lpm.Lockfile.Raw.PathDependency
 ---@field path string
