@@ -98,6 +98,14 @@ local function executeFile(scriptPath, opts)
 
 	package.loaders = freshLoaders
 
+	-- Allow re-requiring of modules that declare C definitions
+	ffi.cdef = function(def)
+		local ok, err = pcall(originalCdef, def)
+		if not ok and not string.find(err, "attempt to redefine", 1, true) then
+			error(err, 2)
+		end
+	end
+
 	local ok, err = pcall(function()
 		package.path, package.cpath = opts.packagePath, opts.packageCPath
 		if opts.args then
