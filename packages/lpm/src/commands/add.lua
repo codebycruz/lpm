@@ -58,14 +58,17 @@ local function add(args)
 		return
 	end
 
+	local dep
 	if depType == "path" then
-		dependencyTable[name] = { path = depValue }
+		dep = { path = depValue }
 	elseif depType == "git" then
 		local branch = args:option("branch")
 		local commit = args:option("commit")
 
-		dependencyTable[name] = { git = depValue, branch = branch, commit = commit }
+		dep = { git = depValue, branch = branch, commit = commit }
 	end
+
+	json.addField(dependencyTable, name, dep)
 
 	fs.write(configPath, json.encode(config))
 	ansi.printf("{green}Added dependency: %s{reset} ({cyan}%s: %s{reset})", name, depType, depValue)

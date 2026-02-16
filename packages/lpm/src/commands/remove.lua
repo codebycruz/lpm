@@ -26,7 +26,7 @@ local function remove(args)
 		return
 	end
 
-	config.dependencies[name] = nil
+	json.removeField(config.dependencies, name)
 
 	fs.write(configPath, json.encode(config))
 
