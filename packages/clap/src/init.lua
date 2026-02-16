@@ -27,9 +27,13 @@ function Args:option(desiredKey)
 				end
 			else
 				local key = string.sub(raw, 3)
+
 				if key == desiredKey and self.raw[i + 1] ~= nil then
 					local _key = table.remove(self.raw, i)
 					return table.remove(self.raw, i), i - 2
+				elseif key == "" then
+					-- All arguments after are positional
+					break
 				end
 			end
 		end
@@ -70,9 +74,13 @@ function Args:flag(desiredKey)
 			local eq = string.find(arg, "=", 1, true)
 			if eq == nil then
 				local key = string.sub(arg, 3)
+
 				if key == desiredKey then
 					table.remove(self.raw, i)
 					return true, i - 1
+				elseif key == "" then
+					-- All arguments after are positional
+					break
 				end
 			end
 		end
