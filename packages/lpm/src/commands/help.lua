@@ -15,6 +15,7 @@ local function help(args)
 		{ cmd = "add",     ex = "gfx",         color = "yellow",  desc = "Add a dependency (--path <path> or --git <url>)" },
 		{ cmd = "remove",  ex = "json",        color = "yellow",  desc = "Remove a dependency" },
 		{ cmd = "tree",    ex = nil,           color = "yellow",  desc = "Show the dependency tree" },
+		{ cmd = "update",  ex = "[name]",      color = "yellow",  desc = "Update git dependencies" },
 		{},
 		{ cmd = "compile", ex = nil,           color = "magenta", desc = "Compile current project into an executable" },
 		{ cmd = "bundle",  ex = nil,           color = "magenta", desc = "Bundle current project into a single lua file" }

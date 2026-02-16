@@ -122,6 +122,12 @@ function Package:installDevDependencies()
 	self:installDependencies(self:getDevDependencies())
 end
 
+Package.updateDependencies = require("lpm-core.package.update")
+
+function Package:updateDevDependencies()
+	return self:updateDependencies(self:getDevDependencies())
+end
+
 Package.compile = require("lpm-core.package.compile")
 Package.runScript = require("lpm-core.package.run")
 

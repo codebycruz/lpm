@@ -130,6 +130,7 @@ commands.bundle = require("lpm.commands.bundle")
 commands.compile = require("lpm.commands.compile")
 commands.test = require("lpm.commands.test")
 commands.tree = require("lpm.commands.tree")
+commands.update = require("lpm.commands.update")
 
 local ok, err = xpcall(function()
 	if args:count() == 0 then
