@@ -22,6 +22,30 @@ local function escapeString(s)
 	return (string.gsub(s, '[\\\"\n\r\t\a\b\f\v]', stringEscapes))
 end
 
+---@param s string
+---@return string
+local function escapeBytes(s)
+	return (string.gsub(s, ".", function(c)
+		local b = string.byte(c)
+		if b >= 32 and b < 127 and c ~= '"' and c ~= '\\' then
+			return c
+		end
+
+		return string.format("\\x%02x", b)
+	end))
+end
+
+---@param content string
+---@param chunkName string
+---@return string
+local function compileBytecode(content, chunkName)
+	local fn, err = loadstring(content, chunkName)
+	if not fn then
+		error("Failed to compile " .. chunkName .. ": " .. err)
+	end
+	return string.dump(fn)
+end
+
 ---@param projectName string
 ---@param dir string
 ---@param files table<string, string>
@@ -46,6 +70,7 @@ end
 
 ---@param args clap.Args
 local function bundle(args)
+	local useBytecode = args:flag("bytecode")
 	local outFile = args:option("outfile")
 
 	local pkg, err = Package.open()
@@ -72,10 +97,18 @@ local function bundle(args)
 
 	local parts = {}
 	for moduleName, content in pairs(files) do
-		parts[#parts + 1] = string.format(
-			'package.preload["%s"] = load("%s", "@%s")',
-			moduleName, escapeString(content), moduleName
-		)
+		if useBytecode then
+			local bytecode = compileBytecode(content, "@" .. moduleName)
+			parts[#parts + 1] = string.format(
+				'package.preload["%s"] = load("%s")',
+				moduleName, escapeBytes(bytecode)
+			)
+		else
+			parts[#parts + 1] = string.format(
+				'package.preload["%s"] = load("%s", "@%s")',
+				moduleName, escapeString(content), moduleName
+			)
+		end
 	end
 
 	parts[#parts + 1] = string.format('return package.preload["%s"](...)', pkg:getName())
