@@ -1,0 +1,28 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - "packages/**"
+  pull_request:
+    paths:
+      - "packages/**"
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Setup lpm
+        uses: codebycruz/lpm@master
+
+      - name: Run tests
+        run: |
+          cd packages/lpm
+          lpm test
