@@ -28,6 +28,8 @@ A more in-depth comparison can be found below.
 | Linux | `curl -fsSL https://raw.githubusercontent.com/codebycruz/lpm/master/install.sh \| sh` |
 | Windows | `irm https://raw.githubusercontent.com/codebycruz/lpm/master/install.ps1 \| iex` |
 
+_To upgrade your `lpm` version, simply run `lpm upgrade`!_
+
 ## Quickstart
 
 Create a project with dependencies..
