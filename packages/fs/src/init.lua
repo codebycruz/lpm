@@ -117,6 +117,29 @@ function fs.delete(p)
 	return os.remove(p) ~= nil
 end
 
+--- Recursively removes a directory and all its contents.
+---@param dir string
+---@return boolean
+function fs.rmdir(dir)
+	if not fs.exists(dir) then return false end
+
+	local iter = fs.readdir(dir)
+	if not iter then return false end
+
+	for entry in iter do
+		local full = path.join(dir, entry.name)
+		if entry.type == "symlink" then
+			os.remove(full)
+		elseif entry.type == "dir" then
+			fs.rmdir(full)
+		else
+			os.remove(full)
+		end
+	end
+
+	return os.remove(dir) ~= nil
+end
+
 local sep = string.sub(package.config, 1, 1)
 
 ---@param glob string
