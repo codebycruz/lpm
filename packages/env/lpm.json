@@ -1,5 +1,7 @@
 {
-    "name": "env",
-    "version": "0.1.0",
-    "dependencies": {}
+	"name": "env",
+	"version": "0.1.0",
+	"dependencies": {
+		"path": { "path": "../path" }
+	}
 }
