@@ -5,57 +5,71 @@ local path = require("path")
 local ansi = require("ansi")
 local env = require("env")
 
----@param package lpm.Package
-local function runTests(package)
-	package:installDependencies()
-	package:installDevDependencies()
+---@param packageDir string
+---@param msg string
+local function makeRelative(packageDir, msg)
+	local prefix = packageDir .. path.separator
+	return (msg:gsub(prefix, ""))
+end
 
-	local testDir = package:getTestDir()
-	if not fs.exists(testDir) then
-		return false, "No tests directory found in package: " .. testDir
+---@param results lpm.TestResults
+---@return boolean hadFailures
+local function printResults(results)
+	if results.error then
+		error(results.error)
 	end
 
-	---@type { relativePath: string, msg: string }[]
-	local failures = {}
+	local pkgDir = results.package:getDir()
 
-	local testFiles = fs.scan(testDir, "**" .. path.separator .. "*.lua")
-	for _, relativePath in ipairs(testFiles) do
-		local testFile = path.join(testDir, relativePath)
-
-		local ok, msg = package:runScript(testFile)
-		if not ok then
-			ansi.printf("{red}[FAIL] %s", relativePath)
-			failures[#failures + 1] = { relativePath = relativePath, msg = msg }
-		end
-	end
-
-	local didGetPackageError = false
-	if #failures > 0 then
-		ansi.printf("{red}\nTest Failures:")
-		for _, failure in ipairs(failures) do
-			if string.find(failure.msg, "no field package.preload", 1, true) then
-				didGetPackageError = true
+	for _, file in ipairs(results.files) do
+		if file.error then
+			ansi.printf(" {red}FAIL {white}%s", file.file)
+			ansi.printf("   {red}%s", makeRelative(pkgDir, file.error))
+		else
+			local fileHasFailures = false
+			for _, r in ipairs(file.results) do
+				if not r.ok then
+					fileHasFailures = true
+					break
+				end
 			end
 
-			print("- " .. failure.relativePath .. ": " .. failure.msg)
+			if fileHasFailures then
+				ansi.printf(" {red}FAIL {white}%s", file.file)
+			else
+				ansi.printf(" {green}PASS {white}%s", file.file)
+			end
+
+			for _, r in ipairs(file.results) do
+				if r.ok then
+					ansi.printf("   {green}\xE2\x9C\x93 {gray}%s", r.name)
+				else
+					ansi.printf("   {red}\xE2\x9C\x97 %s", r.name)
+					ansi.printf("     {red}%s", makeRelative(pkgDir, r.error or "unknown error"))
+				end
+			end
 		end
 
-		ansi.printf("{red}%d out of %d test(s) failed.", #failures, #testFiles)
-
-		if didGetPackageError then
-			ansi.printf(
-				"{yellow}\nIt looks like some tests are failing due to missing dependencies. Do you need to run lpm install?")
-		end
-	else
-		ansi.printf("{green}All %d tests passed!", #testFiles)
+		print()
 	end
 
-	return true, #failures > 0
+	local passed = results.total - results.failures
+
+	if results.failures > 0 then
+		ansi.printf("{white}Tests:  {red}%d failed{white}, {green}%d passed{white}, %d total", results.failures, passed,
+			results.total)
+	else
+		ansi.printf("{white}Tests:  {green}%d passed{white}, %d total", passed, results.total)
+	end
+
+	return results.failures > 0
 end
 
 ---@param args clap.Args
 local function test(args)
 	local package = Package.open()
+
+	print()
 
 	-- Running outside of a package, run tests for all packages inside of cwd
 	if not package then
@@ -66,15 +80,11 @@ local function test(args)
 		for _, relativePath in ipairs(fs.scan(cwd, "**" .. path.separator .. "lpm.json")) do
 			local configPath = path.join(cwd, relativePath)
 
-			local package = Package.open(path.dirname(configPath))
-			if package then
-				local ok, failures = runTests(package)
-				if ok then ---@cast failures boolean
-					if failures then
-						hadFailures = true
-					end
-				else ---@cast failures string # Failed to run at all
-					error(failures)
+			local pkg = Package.open(path.dirname(configPath))
+			if pkg then
+				local results = pkg:runTests()
+				if printResults(results) then
+					hadFailures = true
 				end
 			end
 		end
@@ -86,13 +96,9 @@ local function test(args)
 		return
 	end
 
-	local ok, failures = runTests(package)
-	if ok then ---@cast failures boolean
-		if failures then
-			os.exit(1)
-		end
-	else ---@cast failures string # Failed to run at all
-		error(failures)
+	local results = package:runTests()
+	if printResults(results) then
+		os.exit(1)
 	end
 end
 

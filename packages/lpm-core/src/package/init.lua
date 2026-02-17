@@ -130,5 +130,6 @@ end
 
 Package.compile = require("lpm-core.package.compile")
 Package.runScript = require("lpm-core.package.run")
+Package.runTests = require("lpm-core.package.test")
 
 return Package
