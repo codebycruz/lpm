@@ -13,6 +13,7 @@
 		"env": { "path": "../env" },
 		"util": { "path": "../util" },
 		"http": { "path": "../http" },
-		"semver": { "path": "../semver" }
+		"semver": { "path": "../semver" },
+		"lpm-test": { "path": "../lpm-test" }
 	}
 }

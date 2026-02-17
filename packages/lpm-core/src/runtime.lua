@@ -25,6 +25,7 @@ local builtinModules = {
 ---@field globals table<string, any>?
 ---@field packagePath string?
 ---@field packageCPath string?
+---@field preload table<string, function>?
 
 --- Clears non-builtin entries from a table, returning the saved contents.
 ---@param t table
@@ -75,6 +76,12 @@ local function executeFile(scriptPath, opts)
 	-- Mutate these in place since at least package.loaded is just a reference to the internally used _R._LOADED
 	local savedLoaded = clearNonBuiltins(package.loaded)
 	local savedPreload = clearNonBuiltins(package.preload)
+
+	if opts.preload then
+		for k, v in pairs(opts.preload) do
+			package.preload[k] = v
+		end
+	end
 
 	local newG = {}
 	setmetatable(newG, { __index = _G })

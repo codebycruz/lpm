@@ -14,9 +14,7 @@
 		"util": { "path": "../util" },
 		"http": { "path": "../http" },
 		"semver": { "path": "../semver" },
-		"lpm-core": { "path": "../lpm-core" }
-	},
-	"devDependencies": {
+		"lpm-core": { "path": "../lpm-core" },
 		"lpm-test": { "path": "../lpm-test" }
 	}
 }
