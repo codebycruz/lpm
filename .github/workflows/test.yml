@@ -31,6 +31,7 @@ jobs:
         uses: codebycruz/lpm@master
 
       - name: Run tests
+        shell: bash
         run: |
           cd packages/lpm
           lpm test
