@@ -6,6 +6,7 @@ ffi.cdef([[
 	typedef uint16_t WORD;
 	typedef unsigned char BYTE;
 	typedef int BOOL;
+	typedef unsigned short WCHAR;
 
 	typedef struct {
 		DWORD dwLowDateTime;
@@ -42,6 +43,39 @@ ffi.cdef([[
 	} WIN32_FILE_ATTRIBUTE_DATA;
 
 	BOOL GetFileAttributesExA(const char* lpFileName, int fInfoLevelClass, WIN32_FILE_ATTRIBUTE_DATA* lpFileInformation);
+
+	HANDLE CreateFileA(
+		const char* lpFileName,
+		DWORD dwDesiredAccess,
+		DWORD dwShareMode,
+		void* lpSecurityAttributes,
+		DWORD dwCreationDisposition,
+		DWORD dwFlagsAndAttributes,
+		HANDLE hTemplateFile
+	);
+
+	BOOL DeviceIoControl(
+		HANDLE hDevice,
+		DWORD dwIoControlCode,
+		void* lpInBuffer,
+		DWORD nInBufferSize,
+		void* lpOutBuffer,
+		DWORD nOutBufferSize,
+		DWORD* lpBytesReturned,
+		void* lpOverlapped
+	);
+
+	BOOL CloseHandle(HANDLE hObject);
+
+	DWORD GetFullPathNameA(
+		const char* lpFileName,
+		DWORD nBufferLength,
+		char* lpBuffer,
+		char** lpFilePart
+	);
+
+	BOOL RemoveDirectoryA(const char* lpPathName);
+	BOOL DeleteFileA(const char* lpFileName);
 ]])
 
 local kernel32 = ffi.load("kernel32")
@@ -138,11 +172,138 @@ function fs.mkdir(p)
 	return kernel32.CreateDirectoryA(p, nil) ~= 0
 end
 
+local GENERIC_WRITE = 0x40000000
+local OPEN_EXISTING = 3
+local FILE_FLAG_BACKUP_SEMANTICS = 0x02000000
+local FILE_FLAG_OPEN_REPARSE_POINT = 0x00200000
+local FSCTL_SET_REPARSE_POINT = 0x000900A4
+local IO_REPARSE_TAG_MOUNT_POINT = 0xA0000003
+
+--- Resolves a path to an absolute path using Win32 GetFullPathNameA.
+---@param p string
+---@return string?
+local function getFullPath(p)
+	local buf = ffi.new("char[?]", 1024)
+	local len = kernel32.GetFullPathNameA(p, 1024, buf, nil)
+	if len == 0 or len >= 1024 then
+		return nil
+	end
+	return ffi.string(buf, len)
+end
+
+--- Creates an NTFS junction point (directory only).
+--- Junctions do not require elevated privileges, unlike symlinks.
+---@param src string # Target directory (must be absolute or will be resolved)
+---@param dest string # Junction path to create
+---@return boolean
+local function createJunction(src, dest)
+	-- Junctions require an absolute target path
+	local absTarget = getFullPath(src)
+	if not absTarget then
+		return false
+	end
+
+	-- Create the junction directory
+	if kernel32.CreateDirectoryA(dest, nil) == 0 then
+		return false
+	end
+
+	-- Build the NT path: \??\C:\path\to\target
+	local ntTarget = "\\??\\" .. absTarget
+
+	-- Encode the target as UTF-16LE
+	local ntTargetW = {} ---@type string[]
+	for i = 1, #ntTarget do
+		ntTargetW[#ntTargetW + 1] = string.sub(ntTarget, i, i) .. "\0"
+	end
+	local targetBytes = table.concat(ntTargetW)
+	local targetByteLen = #targetBytes
+
+	-- Build REPARSE_DATA_BUFFER for mount point (junction)
+	-- Layout:
+	--   DWORD ReparseTag
+	--   WORD  ReparseDataLength
+	--   WORD  Reserved
+	--   WORD  SubstituteNameOffset
+	--   WORD  SubstituteNameLength
+	--   WORD  PrintNameOffset
+	--   WORD  PrintNameLength
+	--   WCHAR PathBuffer[...]  (SubstituteName + NUL + PrintName + NUL)
+	local pathBufSize = targetByteLen + 2 + 2 -- substitute name + NUL + print name (empty) + NUL
+	local reparseDataLen = 8 + pathBufSize -- 4 WORDs (8 bytes) + path buffer
+	local totalSize = 8 + reparseDataLen   -- header (tag + length + reserved) + data
+
+	local buf = ffi.new("uint8_t[?]", totalSize)
+	local ptr = ffi.cast("uint8_t*", buf)
+
+	-- ReparseTag (DWORD)
+	ffi.cast("uint32_t*", ptr)[0] = IO_REPARSE_TAG_MOUNT_POINT
+	-- ReparseDataLength (WORD)
+	ffi.cast("uint16_t*", ptr + 4)[0] = reparseDataLen
+	-- Reserved (WORD)
+	ffi.cast("uint16_t*", ptr + 6)[0] = 0
+	-- SubstituteNameOffset (WORD)
+	ffi.cast("uint16_t*", ptr + 8)[0] = 0
+	-- SubstituteNameLength (WORD) - without null terminator
+	ffi.cast("uint16_t*", ptr + 10)[0] = targetByteLen
+	-- PrintNameOffset (WORD) - after substitute name + null terminator
+	ffi.cast("uint16_t*", ptr + 12)[0] = targetByteLen + 2
+	-- PrintNameLength (WORD) - empty print name
+	ffi.cast("uint16_t*", ptr + 14)[0] = 0
+
+	-- PathBuffer: substitute name
+	ffi.copy(ptr + 16, targetBytes, targetByteLen)
+	-- Null terminator for substitute name (2 bytes)
+	ffi.cast("uint16_t*", ptr + 16 + targetByteLen)[0] = 0
+	-- Null terminator for print name (2 bytes)
+	ffi.cast("uint16_t*", ptr + 16 + targetByteLen + 2)[0] = 0
+
+	-- Open the junction directory with reparse point access
+	local handle = kernel32.CreateFileA(
+		dest,
+		GENERIC_WRITE,
+		0,
+		nil,
+		OPEN_EXISTING,
+		FILE_FLAG_BACKUP_SEMANTICS + FILE_FLAG_OPEN_REPARSE_POINT,
+		nil
+	)
+
+	if handle == INVALID_HANDLE_VALUE then
+		kernel32.RemoveDirectoryA(dest)
+		return false
+	end
+
+	local bytesReturned = ffi.new("DWORD[1]")
+	local ok = kernel32.DeviceIoControl(
+		handle,
+		FSCTL_SET_REPARSE_POINT,
+		buf,
+		totalSize,
+		nil,
+		0,
+		bytesReturned,
+		nil
+	)
+
+	kernel32.CloseHandle(handle)
+
+	if ok == 0 then
+		kernel32.RemoveDirectoryA(dest)
+		return false
+	end
+
+	return true
+end
+
 ---@param src string
 ---@param dest string
 function fs.mklink(src, dest)
-	local flags = fs.isdir(src) and 1 or 0
-	return kernel32.CreateSymbolicLinkA(dest, src, flags) ~= 0
+	if fs.isdir(src) then
+		return createJunction(src, dest)
+	end
+
+	return kernel32.CreateSymbolicLinkA(dest, src, 0) ~= 0
 end
 
 ---@param p string
