@@ -8,6 +8,9 @@ local path = require("path")
 
 local tmpBase = path.join(env.tmpdir(), "lpm-init-tests")
 
+-- Clean up from any previous test run
+fs.rmdir(tmpBase)
+
 --
 -- Package.init (initialize)
 --

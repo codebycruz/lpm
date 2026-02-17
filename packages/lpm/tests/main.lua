@@ -10,6 +10,9 @@ local runtime = require("lpm-core.runtime")
 
 local tmpBase = path.join(env.tmpdir(), "lpm-main-tests")
 
+-- Clean up from any previous test run
+fs.rmdir(tmpBase)
+
 --
 -- runtime.executeFile
 --
