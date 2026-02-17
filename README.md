@@ -1,4 +1,4 @@
-# lpm [![Nightly](https://github.com/codebycruz/lpm/actions/workflows/build.yml/badge.svg)](https://github.com/codebycruz/lpm/actions/workflows/build.yml) [![Test](https://github.com/codebycruz/lpm/actions/workflows/test.yml/badge.svg)](https://github.com/codebycruz/lpm/actions/workflows/test.yml) [![Latest Release](https://img.shields.io/github/v/release/codebycruz/lpm)](https://github.com/codebycruz/lpm/releases/latest)
+# lpm [![Nightly](https://github.com/codebycruz/lpm/actions/workflows/build.yml/badge.svg)](https://github.com/codebycruz/lpm/actions/workflows/build.yml) [![Test](https://github.com/codebycruz/lpm/actions/workflows/test.yml/badge.svg)](https://github.com/codebycruz/lpm/actions/workflows/test.yml) [![Latest Release](https://img.shields.io/github/v/release/codebycruz/lpm?labelColor=2d333b)](https://github.com/codebycruz/lpm/releases/latest) [![Discord](https://img.shields.io/discord/1473159418257604752?logo=discord&logoColor=white&label=Discord&labelColor=2d333b)](https://discord.gg/rHgp7DhkHm)
 
 `lpm` is a package manager for Lua, written in Lua.
 
@@ -24,10 +24,10 @@ A more in-depth comparison can be found below.
 
 ## Installation
 
-| OS | Command |
-| --- | --- |
-| Linux | `curl -fsSL https://raw.githubusercontent.com/codebycruz/lpm/master/install.sh \| sh` |
-| Windows | `irm https://raw.githubusercontent.com/codebycruz/lpm/master/install.ps1 \| iex` |
+| OS      | Command                                                                               |
+| ------- | ------------------------------------------------------------------------------------- |
+| Linux   | `curl -fsSL https://raw.githubusercontent.com/codebycruz/lpm/master/install.sh \| sh` |
+| Windows | `irm https://raw.githubusercontent.com/codebycruz/lpm/master/install.ps1 \| iex`      |
 
 _To upgrade your `lpm` version, simply run `lpm upgrade`!_
 
@@ -55,17 +55,17 @@ I made this to the best of my ability with limited information about LuaRocks an
 
 If anyone has any corrections, please do submit a pull request.
 
-| | lpm | lux | luarocks |
-| --- | --- | --- | --- |
-| Written in | Lua | Rust | Teal |
-| Project format | JSON | TOML/Lua | Lua |
-| Add/remove deps | ✓ | ✓ | ❌ |
-| Built-in test runner | ✓ (lpm-test) | ✓ (busted) | ❌ |
-| Comes with luajit | ✓ | ❌ | ❌ |
-| Lua version manager | ❌ | ✓ | ❌ |
-| Compile to executable | ✓ | ❌ | ❌ |
-| Git deps | ✓ | ✓ | ❌ |
-| Registry deps | ❌ (#4) | ✓ (luarocks) | ✓ (luarocks) |
-| Rockspec support | ❌ | ✓ | ✓ |
-| Proper Lockfile Support | ❌ | ✓ | ❌ |
-| Lua build scripts | build.lua | rockspec | rockspec |
+|                         | lpm          | lux          | luarocks     |
+| ----------------------- | ------------ | ------------ | ------------ |
+| Written in              | Lua          | Rust         | Teal         |
+| Project format          | JSON         | TOML/Lua     | Lua          |
+| Add/remove deps         | ✓            | ✓            | ❌           |
+| Built-in test runner    | ✓ (lpm-test) | ✓ (busted)   | ❌           |
+| Comes with luajit       | ✓            | ❌           | ❌           |
+| Lua version manager     | ❌           | ✓            | ❌           |
+| Compile to executable   | ✓            | ❌           | ❌           |
+| Git deps                | ✓            | ✓            | ❌           |
+| Registry deps           | ❌ (#4)      | ✓ (luarocks) | ✓ (luarocks) |
+| Rockspec support        | ❌           | ✓            | ✓            |
+| Proper Lockfile Support | ❌           | ✓            | ❌           |
+| Lua build scripts       | build.lua    | rockspec     | rockspec     |
