@@ -71,35 +71,6 @@ if os.getenv("BOOTSTRAP") then
 			os.execute("ln -sf '" .. relSrcPath .. "' '" .. moduleDistPath .. "'")
 		end
 	end
-
-	local function tmp()
-		if isWindows then
-			return os.getenv("TEMP") or "C:\\Temp"
-		else
-			return "/tmp"
-		end
-	end
-
-	local gitPackages = {
-		{ name = "json", url = "https://github.com/codebycruz/json.lua.git" }
-	}
-
-	for _, pkg in ipairs(gitPackages) do
-		local linkPath = join(lpmModulesDir, pkg.name)
-		local tmpGitPath = join(tmp(), "lpm_bootstrap_" .. pkg.name)
-
-		if not exists(tmpGitPath) then
-			os.execute('git clone "' .. pkg.url .. '" "' .. tmpGitPath .. '"')
-		end
-
-		if not exists(linkPath) then
-			if isWindows then
-				os.execute('mklink /J "' .. linkPath .. '" "' .. join(tmpGitPath, "src") .. '"')
-			else
-				os.execute("ln -sf '" .. join(tmpGitPath, "src") .. "' '" .. linkPath .. "'")
-			end
-		end
-	end
 end
 
 local ansi = require("ansi")
