@@ -1,4 +1,4 @@
-# lpm
+# lpm [![Nightly Build](https://github.com/codebycruz/lpm/actions/workflows/build.yml/badge.svg)](https://github.com/codebycruz/lpm/actions/workflows/build.yml) [![Test](https://github.com/codebycruz/lpm/actions/workflows/test.yml/badge.svg)](https://github.com/codebycruz/lpm/actions/workflows/test.yml) [![Latest Release](https://img.shields.io/github/v/release/codebycruz/lpm)](https://github.com/codebycruz/lpm/releases/latest)
 
 `lpm` is a package manager for Lua, written in Lua.
 
