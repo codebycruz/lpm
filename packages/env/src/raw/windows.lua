@@ -11,6 +11,8 @@ ffi.cdef([[
 	BOOL SetEnvironmentVariableA(const char* lpName, const char* lpValue);
 	DWORD GetCurrentDirectoryA(DWORD nBufferLength, char* lpBuffer);
 	DWORD GetModuleFileNameA(void* hModule, char* lpFilename, DWORD nSize);
+
+	int _putenv_s(const char* name, const char* value);
 ]])
 
 local kernel32 = ffi.load("kernel32")
@@ -43,6 +45,8 @@ end
 ---@param value string?
 function env.set(name, value) ---@return boolean
 	local result = kernel32.SetEnvironmentVariableA(name, value)
+	-- Also update the CRT environment so os.getenv() stays in sync
+	ffi.C._putenv_s(name, value or "")
 	return result ~= 0
 end
 
