@@ -20,6 +20,7 @@ A more in-depth comparison can be found below.
 - `lpm test` - Run project tests with the built-in test framework, [`lpm-test`](./packages/lpm-test)
 - `lpm bundle` - Bundle your project into a single lua file
 - `lpm x` - Execute a project in another location, perfect for CLIs
+- `lpm tree` - View your dependencies at a glance
 
 ## Installation
 
