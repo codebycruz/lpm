@@ -24,8 +24,6 @@ end
 ---@param scriptPath string
 ---@param args string[]?
 ---@param vars table<string, string>? # Env vars
----@param luaPath string
----@param luaCPath string
 local function runScriptWithLPM(package, scriptPath, args, vars)
 	local luaPath, luaCPath = getLuaPathsForPackage(package)
 
