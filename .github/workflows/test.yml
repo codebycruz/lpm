@@ -18,8 +18,17 @@ jobs:
       matrix:
         include:
           - os: ubuntu-22.04
+            platform: linux
+            arch: x86-64
+            libc: gnu
           - os: ubuntu-22.04-arm
+            platform: linux
+            arch: aarch64
+            libc: gnu
           - os: windows-latest
+            platform: windows
+            arch: x86-64
+            libc: gnu
 
     runs-on: ${{ matrix.os }}
 
@@ -27,11 +36,40 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Setup lpm
-        uses: codebycruz/lpm@master
+      - name: Cache LuaJIT
+        id: cache-luajit
+        uses: actions/cache@v5
+        with:
+          path: luajit-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.libc }}
+          key: luajit-${{ matrix.platform }}-${{ matrix.arch }}-latest
 
-      - name: Run tests
-        shell: bash
+      - name: Download LuaJIT
+        if: steps.cache-luajit.outputs.cache-hit != 'true'
+        run: |
+          curl -L -o luajit.tar.gz https://github.com/codebycruz/lj-dist/releases/download/latest/luajit-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.libc }}.tar.gz
+          tar -xzf luajit.tar.gz
+          chmod +x luajit-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.libc }}/luajit${{ matrix.platform == 'windows' && '.exe' || '' }}
+
+      - name: Build lpm (Unix)
+        if: matrix.platform != 'windows'
         run: |
           cd packages/lpm
-          lpm test
+          BOOTSTRAP=1 $GITHUB_WORKSPACE/luajit-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.libc }}/luajit ./src/init.lua compile
+
+      - name: Build lpm (Windows)
+        if: matrix.platform == 'windows'
+        run: |
+          cd packages/lpm
+          $env:BOOTSTRAP=1; & "$env:GITHUB_WORKSPACE/luajit-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.libc }}/luajit.exe" ./src/init.lua compile
+
+      - name: Run tests (Unix)
+        if: matrix.platform != 'windows'
+        run: |
+          cd packages/lpm
+          ./lpm test
+
+      - name: Run tests (Windows)
+        if: matrix.platform == 'windows'
+        run: |
+          cd packages/lpm
+          .\lpm.exe test
