@@ -4,7 +4,7 @@ local fs = require("fs")
 local path = require("path")
 local process = require("process")
 
-global.currentVersion = "0.5.7"
+global.currentVersion = "0.6.0"
 
 ---@param s string
 local function sanitize(s)
