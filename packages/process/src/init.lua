@@ -1,3 +1,5 @@
+local env = require("env")
+
 local process = {}
 
 local isWindows = jit.os == "Windows"
@@ -106,12 +108,12 @@ end
 local function executeCommand(name, args, options, isStdoutEnabled)
 	local command = formatCommand(name, args, options)
 
-	local tmpErrorFile = os.tmpname()
+	local tmpErrorFile = env.tmpfile()
 	command = command .. " 2>" .. escape(tmpErrorFile)
 
 	local tmpInputFile = nil
 	if options and options.stdin then
-		tmpInputFile = os.tmpname()
+		tmpInputFile = env.tmpfile()
 		local f = io.open(tmpInputFile, "wb")
 		if f then
 			f:write(options.stdin)
@@ -122,7 +124,7 @@ local function executeCommand(name, args, options, isStdoutEnabled)
 
 	local tmpOutputFile = nil
 	if isStdoutEnabled then
-		tmpOutputFile = os.tmpname()
+		tmpOutputFile = env.tmpfile()
 		command = command .. " > " .. escape(tmpOutputFile)
 	end
 
