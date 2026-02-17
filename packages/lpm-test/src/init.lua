@@ -1,9 +1,6 @@
----@class lpm.test.Expect
----@field toBe fun(self: lpm.test.Expect, expected: any)
----@field toEqual fun(self: lpm.test.Expect, expected: any)
+---@meta
 
----@class lpm.test
----@field test fun(name: string, fn: fun())
----@field expect fun(value: any): lpm.test.Expect
+---@type lpm.test
+local t = require("lpm-test.test").new()
 
-return {} ---@as lpm.test
+return t
