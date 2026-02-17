@@ -7,39 +7,62 @@ It was created due to my frustration with the current status quo of package mana
 - [LuaRocks](https://luarocks.org) is sorely dated, difficult to manage, and hardly maintained.
 - [Lux](https://github.com/lumen-oss/lux), while promising, is written in Rust and seems to be targeting backwards compatibility with LuaRocks.
 
+A more in-depth comparison can be found below.
+
 ## Features
 
-- Local package management, no venv or global installs.
-- Relative package installation via `lpm add --path <package>` and `lpm install`.
-- Git repository installation via `lpm add --git <repo>` supporting monorepos/subdirectories.
-- `lpm compile` - Create a single executable application from your entire project, easily distributable.
-- `lpm test` - Run test lua scripts in your project.
-
-## Requirements
-
-- glibc 2.35+
-- `gcc` if you plan on using `lpm compile`
-    - This requirement may be lifted at some point in the future.
+- Easy project creation with `lpm new` and `lpm init`
+- Automatic local package management, avoid conflicting global installs
+- `lpm add --path <package>` - Install local dependencies (good for monorepos)
+- `lpm add --git <repo>` - Install git dependencies (supports monorepos)
+- `lpm run` - Runs your project's init file and installs dependencies
+- `lpm compile` - Turn your project into a single executable, easily distributable
+- `lpm test` - Run project tests with the built-in test framework, [`lpm-test`](./packages/lpm-test)
+- `lpm bundle` - Bundle your project into a single lua file
+- `lpm x` - Execute a project in another location, perfect for CLIs
 
 ## Installation
 
-```bash
-curl -fsSL https://raw.githubusercontent.com/codebycruz/lpm/master/install.sh | sh
-```
-
-Windows
-
-```powershell
-irm https://raw.githubusercontent.com/codebycruz/lpm/master/install.ps1 | iex
-```
+| OS | Command |
+| --- | --- |
+| Linux | `curl -fsSL https://raw.githubusercontent.com/codebycruz/lpm/master/install.sh \| sh` |
+| Windows | `irm https://raw.githubusercontent.com/codebycruz/lpm/master/install.ps1 \| iex` |
 
 ## Quickstart
 
+Create a project with dependencies..
+
 ```bash
-lpm new myproject
-cd myproject
+lpm new myproject && cd myproject
 lpm add hood --git https://github.com/codebycruz/hood
 echo "print(require('hood'))" > ./src/init.lua
 lpm run
 # Output: table: 0x7f53326fd030
 ```
+
+Or run a repository's code in a single command!
+
+```bash
+lpm x triangle --git https://github.com/codebycruz/hood
+```
+
+## Comparison to LuaRocks and Lux
+
+I made this to the best of my ability with limited information about LuaRocks and Lux.
+
+If anyone has any corrections, please do submit a pull request.
+
+| | lpm | lux | luarocks |
+| --- | --- | --- | --- |
+| Written in | Lua | Rust | Teal |
+| Project format | JSON | TOML/Lua | Lua |
+| Add/remove deps | ✓ | ✓ | ❌ |
+| Built-in test runner | ✓ (lpm-test) | ✓ (busted) | ❌ |
+| Comes with luajit | ✓ | ❌ | ❌ |
+| Lua version manager | ❌ | ✓ | ❌ |
+| Compile to executable | ✓ | ❌ | ❌ |
+| Git deps | ✓ | ✓ | ❌ |
+| Registry deps | ❌ (#4) | ✓ (luarocks) | ✓ (luarocks) |
+| Rockspec support | ❌ | ✓ | ✓ |
+| Proper Lockfile Support | ❌ | ✓ | ❌ |
+| Lua build scripts | build.lua | rockspec | rockspec |
