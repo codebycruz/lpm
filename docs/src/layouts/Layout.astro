@@ -1,5 +1,6 @@
 ---
 import Navbar from "../components/Navbar.astro";
+import Footer from "../components/Footer.astro";
 import "../styles/global.css";
 
 interface Props {
@@ -18,8 +19,11 @@ const { title } = Astro.props;
 		<meta name="generator" content={Astro.generator} />
 		<title>{title ? `${title} - lpm` : "lpm"}</title>
 	</head>
-	<body class="bg-white dark:bg-gray-950 text-black dark:text-white">
+	<body
+		class="bg-white dark:bg-gray-950 text-black dark:text-white flex flex-col min-h-screen"
+	>
 		<Navbar />
 		<slot />
+		<Footer />
 	</body>
 </html>
