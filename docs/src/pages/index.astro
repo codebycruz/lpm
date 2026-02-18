@@ -1,0 +1,38 @@
+---
+import Layout from "../layouts/Layout.astro";
+import InstallTabs from "../components/InstallTabs";
+---
+
+<Layout>
+	<div class="flex flex-col p-8 max-w-[90em] mx-auto justify-center">
+		<div class="p-8 flex flex-row items-center justify-between">
+			<div class="flex flex-col">
+				<h1 class="text-5xl font-semibold w-md">
+					Lua Done
+					<span class="border-b-4 border-blue-500"> Easy </span>
+				</h1>
+
+				<p class="my-8 text-lg w-lg">
+					Lpm is an open-source project providing easy accessibility
+					to a Lua runtime alongside intuitive package management for
+					dependencies.
+				</p>
+
+				<InstallTabs client:only="preact" />
+
+				<a
+					href="https://github.com/codebycruz/lpm/issues/27"
+					target="_blank"
+					rel="noopener noreferrer"
+					class="text-sm mt-4 opacity-40 hover:opacity-100 transition-opacity"
+				>
+					Looking for macOS support?
+				</a>
+			</div>
+
+			<div>
+				<img src="/lpm-small.svg" alt="lpm logo" class="size-96" />
+			</div>
+		</div>
+	</div>
+</Layout>

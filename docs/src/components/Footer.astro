@@ -1,0 +1,28 @@
+---
+import { GITHUB_URL, DISCORD_URL, LICENSE_URL } from "../data/info";
+
+const links = [
+	{ label: "Docs", href: "/docs" },
+	{ label: "Discord", href: DISCORD_URL, external: true },
+	{ label: "GitHub", href: GITHUB_URL, external: true },
+	{ label: "License", href: LICENSE_URL, external: true },
+];
+---
+
+<footer class="border-t border-black/10 dark:border-white/10 mt-auto">
+	<div class="max-w-[90em] mx-auto px-8 py-6 flex items-center justify-between text-sm opacity-60">
+		<span>lpm</span>
+		<div class="flex gap-6">
+			{links.map((link) => (
+				<a
+					href={link.href}
+					target={link.external ? "_blank" : undefined}
+					rel={link.external ? "noopener noreferrer" : undefined}
+					class="hover:opacity-100 opacity-70 transition-opacity"
+				>
+					{link.label}
+				</a>
+			))}
+		</div>
+	</div>
+</footer>

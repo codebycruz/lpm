@@ -1,0 +1,97 @@
+---
+export interface TreeItem {
+	label: string;
+	href?: string;
+	children?: TreeItem[];
+}
+
+interface Props {
+	items: TreeItem[];
+}
+
+const { items } = Astro.props;
+const currentPath = Astro.url.pathname.replace(/\/$/, "");
+
+function isActive(href?: string): boolean {
+	if (!href) return false;
+	return currentPath === href.replace(/\/$/, "");
+}
+---
+
+<nav class="w-56 shrink-0 text-sm">
+	<ul class="flex flex-col gap-1">
+		{
+			items.map((item) => (
+				<li>
+					{item.href ? (
+						<a
+							href={item.href}
+							class:list={[
+								"block px-3 py-1.5 rounded-md transition",
+								isActive(item.href)
+									? "bg-blue-500 text-white font-medium"
+									: "hover:bg-gray-100 dark:hover:bg-gray-800 opacity-70 hover:opacity-100",
+							]}
+						>
+							{item.label}
+						</a>
+					) : (
+						<span class="block px-3 py-1.5 font-semibold">
+							{item.label}
+						</span>
+					)}
+					{item.children && (
+						<ul class="flex flex-col gap-1 ml-3 mt-1 pl-3 border-l border-gray-300 dark:border-gray-700">
+							{item.children.map((child) => (
+								<li>
+									{child.href ? (
+										<a
+											href={child.href}
+											class:list={[
+												"block px-3 py-1.5 rounded-md transition",
+												isActive(child.href)
+													? "bg-blue-500 text-white font-medium"
+													: "hover:bg-gray-100 dark:hover:bg-gray-800 opacity-70 hover:opacity-100",
+											]}
+										>
+											{child.label}
+										</a>
+									) : (
+										<span class="block px-3 py-1.5 font-semibold">
+											{child.label}
+										</span>
+									)}
+									{child.children && (
+										<ul class="flex flex-col gap-1 ml-3 mt-1 pl-3 border-l border-gray-300 dark:border-gray-700">
+											{child.children.map(
+												(grandchild) => (
+													<li>
+														<a
+															href={
+																grandchild.href
+															}
+															class:list={[
+																"block px-3 py-1.5 rounded-md transition",
+																isActive(
+																	grandchild.href,
+																)
+																	? "bg-blue-500 text-white font-medium"
+																	: "hover:bg-gray-100 dark:hover:bg-gray-800 opacity-70 hover:opacity-100",
+															]}
+														>
+															{grandchild.label}
+														</a>
+													</li>
+												),
+											)}
+										</ul>
+									)}
+								</li>
+							))}
+						</ul>
+					)}
+				</li>
+			))
+		}
+	</ul>
+</nav>

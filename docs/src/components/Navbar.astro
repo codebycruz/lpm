@@ -1,0 +1,54 @@
+---
+import { Icon } from "astro-icon/components";
+import { GITHUB_URL, DISCORD_URL } from "../data/info";
+
+const entries = [{ display: "Docs", href: "/docs" }];
+---
+
+<nav
+	class="h-14 px-6 flex items-center justify-center border-b border-black/50 dark:border-white/50"
+>
+	<div class="flex flex-row items-center h-full w-full max-w-[90em]">
+		<a href="/" class="font-semibold text-2xl p-4 flex items-center gap-2">
+			<img
+				src="/lpm-small.svg"
+				alt="lpm logo"
+				class="size-8 object-contain"
+			/>
+
+			lpm
+		</a>
+
+		<div class="ml-16 h-full flex flex-row items-center gap-4">
+			{
+				entries.map((entry) => (
+					<a
+						href={entry.href}
+						class="hover:bg-gray-800/50 font-medium dark:hover:bg-white/20 p-4 underline-offset-4 transition"
+					>
+						{entry.display}
+					</a>
+				))
+			}
+		</div>
+
+		<div class="ml-auto flex items-center gap-2">
+			<a
+				href={DISCORD_URL}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="opacity-60 hover:opacity-100 p-4 transition-opacity"
+			>
+				<Icon name="simple-icons:discord" class="size-6" />
+			</a>
+			<a
+				href={GITHUB_URL}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="opacity-60 hover:opacity-100 p-4 transition-opacity"
+			>
+				<Icon name="simple-icons:github" class="size-6" />
+			</a>
+		</div>
+	</div>
+</nav>
