@@ -1,0 +1,75 @@
+---
+import { getCollection, render } from "astro:content";
+import Layout from "../../layouts/Layout.astro";
+import SidebarTree from "../../components/SidebarTree.astro";
+import type { TreeItem } from "../../components/SidebarTree.astro";
+
+export async function getStaticPaths() {
+	const entries = await getCollection("learn");
+	return entries.map((entry) => ({
+		params: { slug: entry.id },
+		props: { entry },
+	}));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+
+const allEntries = await getCollection("learn");
+
+function prettifySection(name: string): string {
+	return name
+		.split("-")
+		.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+		.join(" ");
+}
+
+const sections = new Map<
+	string,
+	{
+		label: string;
+		children: { label: string; href: string; order: number }[];
+	}
+>();
+
+for (const e of allEntries) {
+	const parts = e.id.split("/");
+	const sectionKey =
+		parts.length > 1 ? parts.slice(0, -1).join("/") : "_root";
+	const sectionLabel =
+		sectionKey === "_root"
+			? "Learn"
+			: prettifySection(parts[parts.length - 2]);
+
+	if (!sections.has(sectionKey)) {
+		sections.set(sectionKey, { label: sectionLabel, children: [] });
+	}
+
+	sections.get(sectionKey)!.children.push({
+		label: e.data.title,
+		href: `/learn/${e.id}`,
+		order: e.data.order,
+	});
+}
+
+const sidebarItems: TreeItem[] = [...sections.values()]
+	.map((section) => ({
+		label: section.label,
+		minOrder: Math.min(...section.children.map((c) => c.order)),
+		children: section.children.sort((a, b) => a.order - b.order),
+	}))
+	.sort((a, b) => a.minOrder - b.minOrder)
+	.map(({ label, children }) => ({
+		label,
+		children: children.map(({ label, href }) => ({ label, href })),
+	}));
+---
+
+<Layout>
+	<div class="flex max-w-[90em] mx-auto p-8 gap-8">
+		<SidebarTree items={sidebarItems} />
+		<main class="flex-1 min-w-0 markdown">
+			<Content />
+		</main>
+	</div>
+</Layout>
