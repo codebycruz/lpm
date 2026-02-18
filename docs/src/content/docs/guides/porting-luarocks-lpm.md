@@ -1,5 +1,5 @@
 ---
-title: Porting from LuaRocks
+title: Porting luarocks libraries to lpm
 order: 1
 ---
 
