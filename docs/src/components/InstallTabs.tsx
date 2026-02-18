@@ -86,8 +86,8 @@ export default function InstallTabs() {
 	return (
 		<div class="flex flex-col gap-4">
 			<h2 class="text-xl font-medium">Install latest version</h2>
-			<div>
-				<div class="flex">
+			<div class="max-w-full">
+				<div class="flex flex-wrap items-center">
 					{tabs.map((tab, i) => {
 						const isFirst = i === 0;
 						const isActive = active === tab.id;
@@ -120,19 +120,19 @@ export default function InstallTabs() {
 						Or download manually
 					</a>
 				</div>
-				<div class="flex items-center px-4 py-3 bg-gray-900 dark:bg-gray-800 rounded-b-lg rounded-tr-lg">
-					<span class="text-blue-400 mr-3 select-none font-mono text-sm">
+				<div class="flex items-center px-4 py-3 bg-gray-900 dark:bg-gray-800 rounded-b-lg rounded-tr-lg overflow-x-auto">
+					<span class="text-blue-400 mr-3 select-none font-mono text-sm shrink-0">
 						$
 					</span>
-					<div class="relative flex items-center">
-						<code class="text-sm text-gray-200 font-mono whitespace-nowrap invisible">
+					<div class="relative flex items-center min-w-0">
+						<code class="text-sm text-gray-200 font-mono whitespace-nowrap invisible hidden lg:inline">
 							{maxCommand}
 						</code>
-						<code class="text-sm text-gray-200 font-mono whitespace-nowrap absolute inset-0 flex items-center">
+						<code class="text-sm text-gray-200 font-mono whitespace-nowrap lg:absolute lg:inset-0 lg:flex lg:items-center">
 							{activeTab.command}
 						</code>
 					</div>
-					<div class="ml-6">
+					<div class="ml-6 shrink-0">
 						<CopyButton text={activeTab.command} />
 					</div>
 				</div>

@@ -66,9 +66,11 @@ const sidebarItems: TreeItem[] = [...sections.values()]
 ---
 
 <Layout title={entry.data.title}>
-	<div class="flex w-7xl mx-auto p-8 gap-8">
-		<SidebarTree items={sidebarItems} />
-		<main class="w-4xl shrink-0 markdown">
+	<div class="flex w-full lg:w-7xl mx-auto p-4 md:p-8 gap-8">
+		<div class="hidden lg:block">
+			<SidebarTree items={sidebarItems} />
+		</div>
+		<main class="w-full lg:w-4xl shrink-0 min-w-0 markdown">
 			<Content />
 		</main>
 	</div>
