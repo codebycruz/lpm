@@ -1,6 +1,12 @@
 ---
 import Navbar from "../components/Navbar.astro";
 import "../styles/global.css";
+
+interface Props {
+	title?: string;
+}
+
+const { title } = Astro.props;
 ---
 
 <html lang="en">
@@ -10,7 +16,7 @@ import "../styles/global.css";
 		<link rel="icon" href="/lpm-small-text.ico" />
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
-		<title>lpm</title>
+		<title>{title ? `${title} - lpm` : "lpm"}</title>
 	</head>
 	<body class="bg-white dark:bg-gray-950 text-black dark:text-white">
 		<Navbar />
