@@ -22,6 +22,11 @@ const tabs = [
 	},
 ] as const;
 
+const maxCommand = tabs.reduce(
+	(max, t) => (t.command.length > max.length ? t.command : max),
+	"",
+);
+
 function CopyButton({ text }: { text: string }) {
 	const [copied, setCopied] = useState(false);
 
@@ -36,17 +41,17 @@ function CopyButton({ text }: { text: string }) {
 		<button
 			type="button"
 			onClick={handleCopy}
-			class="ml-auto px-2 py-1 rounded cursor-pointer opacity-50 hover:opacity-100 transition-opacity"
+			class="ml-auto shrink-0 p-1.5 rounded-md cursor-pointer opacity-40 hover:opacity-100 transition-opacity"
 			title="Copy to clipboard"
 		>
 			{copied ? (
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
-					class="w-5 h-5 text-green-500"
+					class="w-4 h-4 text-green-400"
 					viewBox="0 0 24 24"
 					fill="none"
 					stroke="currentColor"
-					stroke-width="2"
+					stroke-width="2.5"
 					stroke-linecap="round"
 					stroke-linejoin="round"
 				>
@@ -56,7 +61,7 @@ function CopyButton({ text }: { text: string }) {
 			) : (
 				<svg
 					xmlns="http://www.w3.org/2000/svg"
-					class="w-5 h-5"
+					class="w-4 h-4"
 					viewBox="0 0 24 24"
 					fill="none"
 					stroke="currentColor"
@@ -76,33 +81,30 @@ function CopyButton({ text }: { text: string }) {
 export default function InstallTabs() {
 	const [active, setActive] = useState<string>(detectOS);
 
+	const activeTab = tabs.find((t) => t.id === active) ?? tabs[0];
+
 	return (
 		<div class="flex flex-col gap-4">
 			<h2 class="text-xl font-medium">Install latest version</h2>
-			<div class="w-212">
+			<div>
 				<div class="flex">
 					{tabs.map((tab, i) => {
 						const isFirst = i === 0;
-						const isLast = i === tabs.length - 1;
 						const isActive = active === tab.id;
-
-						let rounding = "rounded-t-lg";
-						if (isFirst)
-							rounding =
-								"rounded-tl-lg rounded-tr-lg rounded-bl-none";
-						if (isLast)
-							rounding =
-								"rounded-tl-lg rounded-tr-lg rounded-br-none";
 
 						return (
 							<button
 								key={tab.id}
 								type="button"
 								onClick={() => setActive(tab.id)}
-								class={`px-4 py-2 cursor-pointer ${rounding} ${
+								class={`px-4 py-2 cursor-pointer transition-colors ${
+									isFirst ? "rounded-tl-lg" : ""
+								} ${
+									i === tabs.length - 1 ? "rounded-tr-lg" : ""
+								} ${
 									isActive
-										? "bg-gray-100 dark:bg-gray-800"
-										: "bg-gray-300 dark:bg-gray-700"
+										? "bg-gray-900 text-gray-200 dark:bg-gray-800 dark:text-gray-200"
+										: "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
 								}`}
 							>
 								{tab.label}
@@ -113,20 +115,27 @@ export default function InstallTabs() {
 						href={GITHUB_RELEASES_URL}
 						target="_blank"
 						rel="noopener noreferrer"
-						class="px-4 py-2 text-sm opacity-40 hover:opacity-100 transition-opacity cursor-pointer"
+						class="px-4 py-2 text-sm opacity-40 hover:opacity-100 transition-opacity cursor-pointer flex items-center"
 					>
 						Or download manually
 					</a>
 				</div>
-				{tabs.map((tab) => (
-					<div
-						key={tab.id}
-						class={`flex items-center p-4 gap-2 bg-gray-100 dark:bg-gray-800 rounded-b-lg rounded-tr-lg ${active !== tab.id ? "hidden" : ""}`}
-					>
-						<code>{tab.command}</code>
-						<CopyButton text={tab.command} />
+				<div class="flex items-center px-4 py-3 bg-gray-900 dark:bg-gray-800 rounded-b-lg rounded-tr-lg">
+					<span class="text-blue-400 mr-3 select-none font-mono text-sm">
+						$
+					</span>
+					<div class="relative flex items-center">
+						<code class="text-sm text-gray-200 font-mono whitespace-nowrap invisible">
+							{maxCommand}
+						</code>
+						<code class="text-sm text-gray-200 font-mono whitespace-nowrap absolute inset-0 flex items-center">
+							{activeTab.command}
+						</code>
 					</div>
-				))}
+					<div class="ml-6">
+						<CopyButton text={activeTab.command} />
+					</div>
+				</div>
 			</div>
 		</div>
 	);
