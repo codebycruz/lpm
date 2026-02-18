@@ -1,6 +1,6 @@
 ---
 import { Icon } from "astro-icon/components";
-import { GITHUB_URL, DISCORD_URL } from "../data/info";
+import { GITHUB_URL, GITHUB_RELEASES_URL, DISCORD_URL } from "../data/info";
 
 const entries = [
 	{ display: "Docs", href: "/docs/getting-started/introduction/" },
@@ -41,7 +41,9 @@ const entries = [
 
 		<div class="ml-auto flex items-center gap-0 md:gap-2">
 			<a
-				href="/download"
+				href={GITHUB_RELEASES_URL}
+				target="_blank"
+				rel="noopener noreferrer"
 				class="px-3 py-1.5 bg-blue-500/10 border border-blue-500/30 text-blue-500 text-sm font-medium rounded-lg backdrop-blur-md"
 			>
 				Download

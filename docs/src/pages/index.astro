@@ -1,6 +1,7 @@
 ---
 import Layout from "../layouts/Layout.astro";
 import InstallTabs from "../components/InstallTabs";
+import { GITHUB_RELEASES_URL } from "../data/info";
 ---
 
 <Layout>
@@ -25,7 +26,9 @@ import InstallTabs from "../components/InstallTabs";
 				</div>
 
 				<a
-					href="/download"
+					href={GITHUB_RELEASES_URL}
+					target="_blank"
+					rel="noopener noreferrer"
 					class="lg:hidden inline-flex items-center justify-center px-6 py-3 bg-blue-500/10 border border-blue-500/30 text-blue-500 font-medium rounded-lg backdrop-blur-md w-fit"
 				>
 					Download
