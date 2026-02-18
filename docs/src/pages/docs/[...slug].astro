@@ -5,7 +5,7 @@ import SidebarTree from "../../components/SidebarTree.astro";
 import type { TreeItem } from "../../components/SidebarTree.astro";
 
 export async function getStaticPaths() {
-	const entries = await getCollection("learn");
+	const entries = await getCollection("docs");
 	return entries.map((entry) => ({
 		params: { slug: entry.id },
 		props: { entry },
@@ -15,7 +15,7 @@ export async function getStaticPaths() {
 const { entry } = Astro.props;
 const { Content } = await render(entry);
 
-const allEntries = await getCollection("learn");
+const allEntries = await getCollection("docs");
 
 function prettifySection(name: string): string {
 	return name
@@ -38,7 +38,7 @@ for (const e of allEntries) {
 		parts.length > 1 ? parts.slice(0, -1).join("/") : "_root";
 	const sectionLabel =
 		sectionKey === "_root"
-			? "Learn"
+			? "Docs"
 			: prettifySection(parts[parts.length - 2]);
 
 	if (!sections.has(sectionKey)) {
@@ -47,7 +47,7 @@ for (const e of allEntries) {
 
 	sections.get(sectionKey)!.children.push({
 		label: e.data.title,
-		href: `/learn/${e.id}`,
+		href: `/docs/${e.id}`,
 		order: e.data.order,
 	});
 }

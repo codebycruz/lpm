@@ -101,4 +101,4 @@ There are two types of dependencies:
 
 ## Next steps
 
-Head to [Installation](/learn/getting-started/installation) to get lpm on your machine, or jump straight to the [Quick Start](/learn/getting-started/quick-start) if you've already installed it.
+Head to [Installation](/docs/getting-started/installation) to get lpm on your machine, or jump straight to the [Quick Start](/docs/getting-started/quick-start) if you've already installed it.
