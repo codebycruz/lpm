@@ -73,7 +73,8 @@
 }
 
 .markdown code:not(pre code) {
-	@apply text-sm px-1.5 py-0.5 rounded bg-gray-100;
+	@apply px-1.5 py-0.5 rounded bg-gray-100 align-middle;
+	font-size: 0.875em;
 
 	@variant dark {
 		@apply bg-gray-800;
