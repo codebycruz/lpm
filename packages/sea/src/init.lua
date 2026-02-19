@@ -88,6 +88,30 @@ local CEscapes = {
 	["\\"] = "\\\\",
 }
 
+---Compute a simple 32-bit FNV-1a hash of a string, returned as an 8-char hex string.
+local function fnv1a(s)
+	local h = 2166136261
+	for i = 1, #s do
+		h = bit.bxor(h, string.byte(s, i))
+		h = bit.band(h * 16777619, 0xFFFFFFFF)
+	end
+	return string.format("%08x", bit.band(h, 0xFFFFFFFF))
+end
+
+---Convert binary content to a C uint8_t array initialiser string, e.g. "0x41,0x42,..."
+local function toByteLiteral(content)
+	local t = {}
+	for i = 1, #content do
+		t[i] = string.format("0x%02x", string.byte(content, i))
+	end
+	return table.concat(t, ",")
+end
+
+---Sanitise a library name so it is safe to use as a C identifier.
+local function safeIdent(name)
+	return string.gsub(name, "[^%w]", "_")
+end
+
 ---@param content string
 ---@param chunkName string
 function sea.bytecode(content, chunkName)
@@ -102,11 +126,13 @@ end
 
 ---@param main string
 ---@param files { path: string, content: string }[]
+---@param sharedLibs? { name: string, content: string }[]
 ---@return string
-function sea.compile(main, files)
+function sea.compile(main, files, sharedLibs)
 	local outPath = path.join(env.tmpdir(), "sea.out")
+	sharedLibs = sharedLibs or {}
 
-
+	-- Build preload entries for Lua source modules.
 	local filePreloads = {}
 	for i, file in ipairs(files) do
 		local escapedName = file.path:gsub(".", CEscapes)
@@ -120,51 +146,128 @@ function sea.compile(main, files)
 			)
 	end
 
-	local code = [[
-		#include <stdio.h>
-		#include "lauxlib.h"
-		#include "lualib.h"
+	-- For each shared library, emit a uint8_t array and the write+preload logic.
+	-- The path is deterministic: /tmp/lpm-lib-<name>-<hash>.so so that
+	-- the file is only written once across runs with identical content.
+	local libDecls = {} -- top-level C declarations (arrays + path strings)
+	local libStartup = {} -- code that runs before lua_State is created
+	local libPreloads = {} -- package.preload registrations
 
-		int traceback(lua_State* L) {
-			const char* msg = lua_tostring(L, 1);
-			if (msg == NULL) {
-				msg = "(error object is not a string)";
-			}
+	for _, lib in ipairs(sharedLibs) do
+		local id                      = safeIdent(lib.name)
+		local hash                    = fnv1a(lib.content)
+		local ext                     = process.platform == "win32" and "dll"
+			or process.platform == "darwin" and "dylib"
+			or "so"
+		local libPath                 = string.format("/tmp/lpm-lib-%s-%s.%s", lib.name, hash, ext)
 
-			luaL_traceback(L, L, msg, 1);
-			return 1;
+		libDecls[#libDecls + 1]       = string.format(
+			"static const uint8_t %sLibrary[] = {%s};",
+			id, toByteLiteral(lib.content)
+		)
+		libDecls[#libDecls + 1]       = string.format(
+			'static const char* %sLibraryPath = "%s";',
+			id, libPath
+		)
+
+		libStartup[#libStartup + 1]   = string.format([[
+	{
+		FILE* f = fopen(%sLibraryPath, "rb");
+		if (f == NULL) {
+			f = fopen(%sLibraryPath, "wb");
+			if (f == NULL) { perror("lpm-sea: cannot write %s"); return 1; }
+			fwrite(%sLibrary, 1, sizeof(%sLibrary), f);
+			fclose(f);
+		} else {
+			fclose(f);
 		}
+	}]], id, id, lib.name, id, id)
 
-		int main(int argc, char** argv) {
-			lua_State* L = luaL_newstate();
-			luaL_openlibs(L);
+		libPreloads[#libPreloads + 1] = string.format([[
+	lua_pushstring(L, %sLibraryPath);
+	lua_pushcclosure(L, lpm_loadlib_loader, 1);
+	lua_setfield(L, -2, "%s");]], id, string.gsub(lib.name, ".", CEscapes))
+	end
 
-			lua_getglobal(L, "package");
-			lua_getfield(L, -1, "preload");
+	local libDeclsStr    = table.concat(libDecls, "\n")
+	local libStartupStr  = table.concat(libStartup, "\n")
+	local libPreloadsStr = table.concat(libPreloads, "\n")
 
-			]] .. table.concat(filePreloads, "\n") .. [[
+	local hasLibs        = #sharedLibs > 0
+	local stdintInclude  = hasLibs and "#include <stdint.h>" or ""
 
-			lua_getfield(L, -1, "]] .. main:gsub(".", CEscapes) .. [[");
+	-- lpm_loadlib_loader: a C closure that calls package.loadlib(upvalue1, "*").
+	-- Only emitted when there are shared libs to avoid dead-code warnings.
+	local loadlibHelper  = ""
+	if hasLibs then
+		loadlibHelper = [[
+static int lpm_loadlib_loader(lua_State* L) {
+	const char* soPath = lua_tostring(L, lua_upvalueindex(1));
+	lua_getglobal(L, "package");
+	lua_getfield(L, -1, "loadlib");
+	lua_pushstring(L, soPath);
+	lua_pushstring(L, "*");
+	if (lua_pcall(L, 2, 1, 0) != LUA_OK) {
+		return luaL_error(L, "loadlib failed for %s: %s", soPath, lua_tostring(L, -1));
+	}
+	return 1;
+}
+]]
+	end
 
-			for (int i = 1; i < argc; i++) {
-				lua_pushstring(L, argv[i]);
-			}
+	local code = stdintInclude .. [[
+#include <stdio.h>
+#include "lauxlib.h"
+#include "lualib.h"
 
-			int base = lua_gettop(L) - (argc - 1);
-			lua_pushcfunction(L, traceback);
-			lua_insert(L, base);
+]] .. libDeclsStr .. [[
 
-			int result = lua_pcall(L, argc - 1, 0, base);
-			if (result != LUA_OK) {
-				fprintf(stderr, "%s\n", lua_tostring(L, -1));
-				lua_close(L);
-				return 1;
-			}
+]] .. loadlibHelper .. [[
 
-			lua_close(L);
-			return 0;
-		}
-	]]
+int traceback(lua_State* L) {
+	const char* msg = lua_tostring(L, 1);
+	if (msg == NULL) {
+		msg = "(error object is not a string)";
+	}
+
+	luaL_traceback(L, L, msg, 1);
+	return 1;
+}
+
+int main(int argc, char** argv) {
+]] .. libStartupStr .. [[
+
+	lua_State* L = luaL_newstate();
+	luaL_openlibs(L);
+
+	lua_getglobal(L, "package");
+	lua_getfield(L, -1, "preload");
+
+	]] .. table.concat(filePreloads, "\n\t") .. [[
+
+	]] .. libPreloadsStr .. [[
+
+	lua_getfield(L, -1, "]] .. main:gsub(".", CEscapes) .. [[");
+
+	for (int i = 1; i < argc; i++) {
+		lua_pushstring(L, argv[i]);
+	}
+
+	int base = lua_gettop(L) - (argc - 1);
+	lua_pushcfunction(L, traceback);
+	lua_insert(L, base);
+
+	int result = lua_pcall(L, argc - 1, 0, base);
+	if (result != LUA_OK) {
+		fprintf(stderr, "%s\n", lua_tostring(L, -1));
+		lua_close(L);
+		return 1;
+	}
+
+	lua_close(L);
+	return 0;
+}
+]]
 
 	local ljPath = getLuajitPath()
 	local includePath = path.join(ljPath, "include")
