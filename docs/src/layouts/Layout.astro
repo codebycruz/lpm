@@ -2,13 +2,20 @@
 import Navbar from "../components/Navbar.astro";
 import Footer from "../components/Footer.astro";
 import CodeBlocks from "../components/CodeBlocks.tsx";
+import { SITE_URL } from "../data/info";
 import "../styles/global.css";
 
 interface Props {
 	title?: string;
+	description?: string;
 }
 
-const { title } = Astro.props;
+const DEFAULT_DESCRIPTION =
+	"Lpm is an open-source project providing easy accessibility to a Lua runtime alongside intuitive package management for dependencies.";
+
+const { title, description = DEFAULT_DESCRIPTION } = Astro.props;
+const pageTitle = title ? `${title} - lpm` : "lpm";
+const ogImage = `${SITE_URL}/lpm-small.svg`;
 ---
 
 <html lang="en" class="overflow-y-scroll">
@@ -18,8 +25,29 @@ const { title } = Astro.props;
 		<link rel="icon" href="/lpm-small-text.ico" />
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
-		<title>{title ? `${title} - lpm` : "lpm"}</title>
-		<link rel="alternate" type="application/rss+xml" title="lpm blog" href="/rss.xml" />
+		<title>{pageTitle}</title>
+		<meta name="description" content={description} />
+
+		<!-- Open Graph -->
+		<meta property="og:type" content="website" />
+		<meta property="og:site_name" content="lpm" />
+		<meta property="og:title" content={pageTitle} />
+		<meta property="og:description" content={description} />
+		<meta property="og:image" content={ogImage} />
+		<meta property="og:url" content={SITE_URL + Astro.url.pathname} />
+
+		<!-- Twitter Card -->
+		<meta name="twitter:card" content="summary" />
+		<meta name="twitter:title" content={pageTitle} />
+		<meta name="twitter:description" content={description} />
+		<meta name="twitter:image" content={ogImage} />
+
+		<link
+			rel="alternate"
+			type="application/rss+xml"
+			title="lpm blog"
+			href="/rss.xml"
+		/>
 	</head>
 	<body
 		class="bg-white dark:bg-gray-950 text-black dark:text-white flex flex-col min-h-screen lg:min-w-fit"
