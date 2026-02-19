@@ -18,6 +18,7 @@ const { title } = Astro.props;
 		<meta name="viewport" content="width=device-width" />
 		<meta name="generator" content={Astro.generator} />
 		<title>{title ? `${title} - lpm` : "lpm"}</title>
+		<link rel="alternate" type="application/rss+xml" title="lpm blog" href="/rss.xml" />
 	</head>
 	<body
 		class="bg-white dark:bg-gray-950 text-black dark:text-white flex flex-col min-h-screen lg:min-w-fit"

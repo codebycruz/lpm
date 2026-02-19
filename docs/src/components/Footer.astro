@@ -1,4 +1,5 @@
 ---
+import { Icon } from "astro-icon/components";
 import { GITHUB_URL, DISCORD_URL, LICENSE_URL } from "../data/info";
 
 const links = [
@@ -27,6 +28,13 @@ const links = [
 					</a>
 				))
 			}
+			<a
+				href="/rss.xml"
+				class="hover:opacity-100 opacity-70 transition-opacity flex items-center gap-1.5"
+			>
+				<Icon name="simple-icons:rss" class="size-3.5" />
+				Blog
+			</a>
 		</div>
 	</div>
 </footer>

@@ -10,6 +10,7 @@
 	},
 	"dependencies": {
 		"@astrojs/preact": "^4.1.3",
+		"@astrojs/rss": "^4.0.15",
 		"@iconify-json/simple-icons": "^1.2.71",
 		"@tailwindcss/vite": "^4.1.18",
 		"astro": "^5.17.1",

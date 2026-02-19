@@ -10,7 +10,11 @@ const docs = defineCollection({
 });
 
 const blog = defineCollection({
-	loader: glob({ pattern: "**/*.{md,mdx}", base: "./src/content/blog" }),
+	loader: glob({
+		pattern: "**/*.{md,mdx}",
+		base: "./src/content/blog",
+		generateId: ({ entry }) => entry.replace(/\.(md|mdx)$/, ""),
+	}),
 	schema: z.object({
 		title: z.string(),
 		author: z.string(),
