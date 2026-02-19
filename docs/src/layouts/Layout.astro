@@ -21,6 +21,17 @@ const ogImage = `${SITE_URL}/lpm-small.svg`;
 <html lang="en" class="overflow-y-scroll">
 	<head>
 		<meta charset="utf-8" />
+		<script is:inline>
+			(function () {
+				const stored = localStorage.getItem("theme");
+				const prefersDark = window.matchMedia(
+					"(prefers-color-scheme: dark)",
+				).matches;
+				if (stored === "dark" || (!stored && prefersDark)) {
+					document.documentElement.classList.add("dark");
+				}
+			})();
+		</script>
 		<link rel="icon" type="image/svg+xml" href="/lpm-small-text.svg" />
 		<link rel="icon" href="/lpm-small-text.ico" />
 		<meta name="viewport" content="width=device-width" />

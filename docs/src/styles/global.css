@@ -1,5 +1,7 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
 	--astro-code-color-text: #24292e;
 	--astro-code-color-background: transparent;
