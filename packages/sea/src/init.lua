@@ -180,6 +180,7 @@ function sea.compile(main, files)
 	if process.platform == "linux" then
 		args[#args + 1] = "-lm"
 		args[#args + 1] = "-ldl"
+		args[#args + 1] = "-Wl,--export-dynamic" -- expose lua symbols for lua dependencies
 	end
 
 	local success, output = process.exec("gcc", args, { stdin = code })
