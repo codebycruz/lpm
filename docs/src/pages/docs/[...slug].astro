@@ -52,13 +52,19 @@ for (const e of allEntries) {
 	});
 }
 
-const sidebarItems: TreeItem[] = [...sections.values()]
-	.map((section) => ({
+const SECTION_ORDER: Record<string, number> = {
+	"getting-started": 0,
+	"features": 1,
+	"guides": 2,
+};
+
+const sidebarItems: TreeItem[] = [...sections.entries()]
+	.map(([key, section]) => ({
 		label: section.label,
-		minOrder: Math.min(...section.children.map((c) => c.order)),
+		sectionOrder: SECTION_ORDER[key] ?? 99,
 		children: section.children.sort((a, b) => a.order - b.order),
 	}))
-	.sort((a, b) => a.minOrder - b.minOrder)
+	.sort((a, b) => a.sectionOrder - b.sectionOrder)
 	.map(({ label, children }) => ({
 		label,
 		children: children.map(({ label, href }) => ({ label, href })),
