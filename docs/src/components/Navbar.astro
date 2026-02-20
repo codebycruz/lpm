@@ -1,6 +1,7 @@
 ---
 import { Icon } from "astro-icon/components";
 import { GITHUB_URL, GITHUB_RELEASES_URL, DISCORD_URL } from "../data/info";
+import Search from "./Search.tsx";
 
 const entries = [
 	{ display: "Docs", href: "/docs/getting-started/introduction/" },
@@ -40,7 +41,11 @@ const entries = [
 			}
 		</div>
 
-		<div class="ml-auto flex items-center gap-0 md:gap-2">
+		<div class="ml-auto mr-2 md:mr-4">
+			<Search client:load />
+		</div>
+
+		<div class="flex items-center gap-0 md:gap-2">
 			<a
 				href={GITHUB_RELEASES_URL}
 				target="_blank"
