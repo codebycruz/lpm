@@ -20,6 +20,10 @@ function global.getGitCacheDir()
 	return path.join(global.getDir(), "git")
 end
 
+function global.getToolsDir()
+	return path.join(global.getDir(), "tools")
+end
+
 --- Builds the cache directory name for a git repo.
 --- Format: name, name-branch, or name-branch-commit
 ---@param repoName string
@@ -91,6 +95,11 @@ function global.init()
 	local gitCacheDir = global.getGitCacheDir()
 	if not fs.exists(gitCacheDir) then
 		fs.mkdir(gitCacheDir)
+	end
+
+	local toolsDir = global.getToolsDir()
+	if not fs.exists(toolsDir) then
+		fs.mkdir(toolsDir)
 	end
 end
 

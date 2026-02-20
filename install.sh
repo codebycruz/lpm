@@ -55,7 +55,7 @@ mv "$TMP_FILE" "$LPM_DIR/$BINARY_NAME"
 # Add to PATH if not already there
 add_to_path() {
     local shell_rc="$1"
-    local path_line="export PATH=\"\$HOME/.lpm:\$PATH\""
+    local path_line="export PATH=\"\$HOME/.lpm:\$HOME/.lpm/tools:\$PATH\""
 
     # Create if DNE
     touch "$shell_rc"

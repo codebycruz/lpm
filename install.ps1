@@ -55,15 +55,24 @@ try {
 
 # Add to PATH if not already there
 $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
+$lpmToolsDir = "$lpmDir\tools"
 $pathAdded = $false
 
-if ($userPath -notlike "*$lpmDir*") {
-    Write-Host "Adding $lpmDir to PATH..."
+$needsLpmDir = $userPath -notlike "*$lpmDir*"
+$needsToolsDir = $userPath -notlike "*$lpmToolsDir*"
+
+if ($needsLpmDir -or $needsToolsDir) {
+    Write-Host "Adding lpm directories to PATH..."
     try {
+        $dirsToAdd = @()
+        if ($needsLpmDir) { $dirsToAdd += $lpmDir }
+        if ($needsToolsDir) { $dirsToAdd += $lpmToolsDir }
+
+        $suffix = $dirsToAdd -join ";"
         if ($userPath -and -not $userPath.EndsWith(";")) {
-            $newPath = "$userPath;$lpmDir"
+            $newPath = "$userPath;$suffix"
         } else {
-            $newPath = "$userPath$lpmDir"
+            $newPath = "$userPath$suffix"
         }
         [Environment]::SetEnvironmentVariable("Path", $newPath, "User")
         $pathAdded = $true

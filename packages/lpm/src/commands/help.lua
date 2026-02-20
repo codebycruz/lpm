@@ -3,22 +3,23 @@ local ansi = require("ansi")
 ---@param args clap.Args
 local function help(args)
 	local commands = {
-		{ cmd = "run",     ex = nil,           color = "green",   desc = "Execute an lpm project" },
-		{ cmd = "x",       ex = "--git <url>", color = "green",   desc = "Run a package from a git repo or path" },
-		{ cmd = "test",    ex = nil,           color = "green",   desc = "Run project tests" },
+		{ cmd = "run",       ex = nil,           color = "green",   desc = "Execute an lpm project" },
+		{ cmd = "x",         ex = "--git <url>", color = "green",   desc = "Run a package from a git repo or path" },
+		{ cmd = "test",      ex = nil,           color = "green",   desc = "Run project tests" },
 		{},
-		{ cmd = "new",     ex = "myproject",   color = "red",     desc = "Create a new lpm project" },
-		{ cmd = "init",    ex = nil,           color = "red",     desc = "Initialize current directory as lpm project" },
-		{ cmd = "upgrade", ex = nil,           color = "red",     desc = "Upgrade lpm to the latest version" },
+		{ cmd = "new",       ex = "myproject",   color = "red",     desc = "Create a new lpm project" },
+		{ cmd = "init",      ex = nil,           color = "red",     desc = "Initialize current directory as lpm project" },
+		{ cmd = "upgrade",   ex = nil,           color = "red",     desc = "Upgrade lpm to the latest version" },
 		{},
-		{ cmd = "install", ex = nil,           color = "yellow",  desc = "Install project dependencies" },
-		{ cmd = "add",     ex = "gfx",         color = "yellow",  desc = "Add a dependency (--path <path> or --git <url>)" },
-		{ cmd = "remove",  ex = "json",        color = "yellow",  desc = "Remove a dependency" },
-		{ cmd = "tree",    ex = nil,           color = "yellow",  desc = "Show the dependency tree" },
-		{ cmd = "update",  ex = "[name]",      color = "yellow",  desc = "Update git dependencies" },
+		{ cmd = "install",   ex = nil,           color = "yellow",  desc = "Install deps, or a tool to PATH with --git/--path" },
+		{ cmd = "uninstall", ex = "busted",      color = "yellow",  desc = "Uninstall a tool from PATH" },
+		{ cmd = "add",       ex = "hood",        color = "yellow",  desc = "Add a dependency (--path <path> or --git <url>)" },
+		{ cmd = "remove",    ex = "json",        color = "yellow",  desc = "Remove a dependency" },
+		{ cmd = "tree",      ex = nil,           color = "yellow",  desc = "Show the dependency tree" },
+		{ cmd = "update",    ex = "clap",        color = "yellow",  desc = "Update git dependencies" },
 		{},
-		{ cmd = "compile", ex = nil,           color = "magenta", desc = "Compile current project into an executable" },
-		{ cmd = "bundle",  ex = nil,           color = "magenta", desc = "Bundle current project into a single lua file" }
+		{ cmd = "compile",   ex = nil,           color = "magenta", desc = "Compile current project into an executable" },
+		{ cmd = "bundle",    ex = nil,           color = "magenta", desc = "Bundle current project into a single lua file" }
 	}
 
 	print("lpm is a package manager for Lua, written in Lua.\n")
