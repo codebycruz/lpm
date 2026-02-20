@@ -16,20 +16,18 @@
 	--astro-code-token-link: #032f62;
 }
 
-@variant dark {
-	:root {
-		--astro-code-color-text: #e1e4e8;
-		--astro-code-color-background: transparent;
-		--astro-code-token-constant: #79b8ff;
-		--astro-code-token-string: #9ecbff;
-		--astro-code-token-comment: #6a737d;
-		--astro-code-token-keyword: #f97583;
-		--astro-code-token-parameter: #e1e4e8;
-		--astro-code-token-function: #b392f0;
-		--astro-code-token-string-expression: #9ecbff;
-		--astro-code-token-punctuation: #e1e4e8;
-		--astro-code-token-link: #9ecbff;
-	}
+.dark {
+	--astro-code-color-text: #e1e4e8;
+	--astro-code-color-background: transparent;
+	--astro-code-token-constant: #79b8ff;
+	--astro-code-token-string: #9ecbff;
+	--astro-code-token-comment: #6a737d;
+	--astro-code-token-keyword: #f97583;
+	--astro-code-token-parameter: #e1e4e8;
+	--astro-code-token-function: #b392f0;
+	--astro-code-token-string-expression: #9ecbff;
+	--astro-code-token-punctuation: #e1e4e8;
+	--astro-code-token-link: #9ecbff;
 }
 
 .markdown {
