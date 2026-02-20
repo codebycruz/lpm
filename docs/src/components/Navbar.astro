@@ -10,9 +10,9 @@ const entries = [
 ---
 
 <nav
-	class="h-14 px-4 md:px-6 flex items-center justify-center border-b border-black/10 dark:border-white/10"
+	class="relative px-4 md:px-6 flex flex-col items-center justify-center border-b border-black/10 dark:border-white/10"
 >
-	<div class="flex flex-row items-center h-full w-full max-w-[90em]">
+	<div class="flex flex-row items-center h-14 w-full max-w-[90em]">
 		<a
 			href="/"
 			class="font-semibold text-2xl p-2 md:p-4 flex items-center gap-2"
@@ -22,18 +22,16 @@ const entries = [
 				alt="lpm logo"
 				class="size-8 object-contain"
 			/>
-
 			lpm
 		</a>
 
-		<div
-			class="ml-6 md:ml-16 h-full flex flex-row items-center gap-2 md:gap-4"
-		>
+		<!-- Desktop nav links -->
+		<div class="hidden md:flex ml-16 h-full flex-row items-center gap-4">
 			{
 				entries.map((entry) => (
 					<a
 						href={entry.href}
-						class="hover:bg-gray-800/50 font-medium dark:hover:bg-white/20 px-2 py-1 md:p-4 underline-offset-4 transition rounded-md md:rounded-none"
+						class="hover:bg-gray-800/50 font-medium dark:hover:bg-white/20 p-4 underline-offset-4 transition"
 					>
 						{entry.display}
 					</a>
@@ -50,7 +48,7 @@ const entries = [
 				href={GITHUB_RELEASES_URL}
 				target="_blank"
 				rel="noopener noreferrer"
-				class="px-3 py-1.5 bg-blue-500/10 border border-blue-500/30 text-blue-500 text-sm font-medium rounded-lg backdrop-blur-md"
+				class="hidden md:inline-flex px-3 py-1.5 bg-blue-500/10 border border-blue-500/30 text-blue-500 text-sm font-medium rounded-lg backdrop-blur-md"
 			>
 				Download
 			</a>
@@ -58,7 +56,7 @@ const entries = [
 				href={DISCORD_URL}
 				target="_blank"
 				rel="noopener noreferrer"
-				class="opacity-60 hover:opacity-100 p-2 md:p-4 transition-opacity"
+				class="hidden md:inline-flex opacity-60 hover:opacity-100 p-2 md:p-4 transition-opacity"
 			>
 				<Icon name="simple-icons:discord" class="size-5 md:size-6" />
 			</a>
@@ -66,7 +64,7 @@ const entries = [
 				href={GITHUB_URL}
 				target="_blank"
 				rel="noopener noreferrer"
-				class="opacity-60 hover:opacity-100 p-2 md:p-4 transition-opacity"
+				class="hidden md:inline-flex opacity-60 hover:opacity-100 p-2 md:p-4 transition-opacity"
 			>
 				<Icon name="simple-icons:github" class="size-5 md:size-6" />
 			</a>
@@ -75,11 +73,9 @@ const entries = [
 				aria-label="Toggle dark/light mode"
 				class="opacity-60 hover:opacity-100 p-2 md:p-4 transition-opacity cursor-pointer"
 			>
-				<!-- Moon: shown in light mode -->
 				<svg class="icon-moon size-5 md:size-6" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
 					<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
 				</svg>
-				<!-- Sun: shown in dark mode -->
 				<svg class="icon-sun size-5 md:size-6 hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor">
 					<circle cx="12" cy="12" r="5"/>
 					<line x1="12" y1="1" x2="12" y2="3" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -92,9 +88,72 @@ const entries = [
 					<line x1="18.36" y1="5.64" x2="19.78" y2="4.22" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
 				</svg>
 			</button>
+
+			<!-- Burger button (mobile only) -->
+			<button
+				id="nav-burger"
+				aria-label="Toggle menu"
+				aria-expanded="false"
+				class="md:hidden opacity-60 hover:opacity-100 p-2 transition-opacity cursor-pointer"
+			>
+				<svg id="burger-icon" class="size-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<line x1="3" y1="6" x2="21" y2="6"/>
+					<line x1="3" y1="12" x2="21" y2="12"/>
+					<line x1="3" y1="18" x2="21" y2="18"/>
+				</svg>
+				<svg id="close-icon" class="size-5 hidden" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<line x1="18" y1="6" x2="6" y2="18"/>
+					<line x1="6" y1="6" x2="18" y2="18"/>
+				</svg>
+			</button>
 		</div>
+	</div>
+
+	<!-- Mobile dropdown -->
+	<div
+		id="mobile-menu"
+		class="hidden md:hidden w-full border-t border-black/10 dark:border-white/10 py-2"
+	>
+		{
+			entries.map((entry) => (
+				<a
+					href={entry.href}
+					class="flex items-center px-2 py-3 font-medium hover:bg-black/5 dark:hover:bg-white/5 rounded-md transition"
+				>
+					{entry.display}
+				</a>
+			))
+		}
+		<div class="flex items-center gap-3 px-2 pt-3 pb-1 border-t border-black/10 dark:border-white/10 mt-1">
+			<a
+				href={GITHUB_RELEASES_URL}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="px-3 py-1.5 bg-blue-500/10 border border-blue-500/30 text-blue-500 text-sm font-medium rounded-lg"
+			>
+				Download
+			</a>
+			<a
+				href={DISCORD_URL}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="opacity-60 hover:opacity-100 p-1 transition-opacity"
+			>
+				<Icon name="simple-icons:discord" class="size-5" />
+			</a>
+			<a
+				href={GITHUB_URL}
+				target="_blank"
+				rel="noopener noreferrer"
+				class="opacity-60 hover:opacity-100 p-1 transition-opacity"
+			>
+				<Icon name="simple-icons:github" class="size-5" />
+			</a>
+		</div>
+	</div>
 
 <script>
+	// Theme toggle
 	const btn = document.getElementById("theme-toggle")!;
 	const html = document.documentElement;
 
@@ -111,6 +170,18 @@ const entries = [
 		localStorage.setItem("theme", html.classList.contains("dark") ? "dark" : "light");
 		updateIcon();
 	});
+
+	// Burger toggle
+	const burger = document.getElementById("nav-burger")!;
+	const menu = document.getElementById("mobile-menu")!;
+	const burgerIcon = document.getElementById("burger-icon")!;
+	const closeIcon = document.getElementById("close-icon")!;
+
+	burger.addEventListener("click", () => {
+		const open = menu.classList.toggle("hidden");
+		burger.setAttribute("aria-expanded", String(!open));
+		burgerIcon.classList.toggle("hidden", !open);
+		closeIcon.classList.toggle("hidden", open);
+	});
 </script>
-	</div>
 </nav>
