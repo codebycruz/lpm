@@ -43,6 +43,7 @@ local function compileBytecode(content, chunkName)
 	if not fn then
 		error("Failed to compile " .. chunkName .. ": " .. err)
 	end
+
 	return string.dump(fn)
 end
 
@@ -98,22 +99,26 @@ local function bundle(args)
 	local parts = {}
 	for moduleName, content in pairs(files) do
 		if useBytecode then
-			local bytecode = compileBytecode(content, "@" .. moduleName)
-			parts[#parts + 1] = string.format(
-				'package.preload["%s"] = load("%s")',
-				moduleName, escapeBytes(bytecode)
-			)
+			content = escapeBytes(compileBytecode(content, moduleName))
 		else
-			parts[#parts + 1] = string.format(
-				'package.preload["%s"] = load("%s", "@%s")',
-				moduleName, escapeString(content), moduleName
-			)
+			content = escapeString(content)
 		end
+
+		parts[#parts + 1] = string.format(
+			'package.preload["%s"] = load("%s", "@%s")',
+			moduleName, content, moduleName
+		)
 	end
 
 	parts[#parts + 1] = string.format('return package.preload["%s"](...)', pkg:getName())
 
-	fs.write(outFile, table.concat(parts, "\n") .. "\n")
+	local completeFile = table.concat(parts, "\n") .. "\n"
+
+	if useBytecode then
+		completeFile = compileBytecode(completeFile, pkg:getName())
+	end
+
+	fs.write(outFile, completeFile)
 	ansi.printf("{green}Bundled to %s", outFile)
 end
 
