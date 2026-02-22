@@ -1,7 +1,7 @@
 ---
 title: Release v0.6.2
 author: David Cruz
-published: 2026-02-22
+published: 2026-02-21
 ---
 
 > Upgrade to the latest version with `lpm upgrade`!
