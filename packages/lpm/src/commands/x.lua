@@ -75,11 +75,12 @@ end
 
 ---@param pkg lpm.Package
 ---@param scriptArgs string[]
-local function executePackage(pkg, scriptArgs)
+---@param cwd string
+local function executePackage(pkg, scriptArgs, cwd)
 	pkg:build()
 	pkg:installDependencies()
 
-	local ok, err = pkg:runScript(nil, scriptArgs)
+	local ok, err = pkg:runScript(nil, scriptArgs, nil, cwd)
 	if not ok then
 		error("Failed to run script: " .. err)
 	end
@@ -89,6 +90,7 @@ end
 local function x(args)
 	local gitUrl = args:option("git")
 	local localPath = args:option("path")
+	local userCwd = env.cwd()
 
 	if gitUrl then
 		local cloneUrl, branch = parseGitUrl(gitUrl)
@@ -110,9 +112,9 @@ local function x(args)
 		end
 
 		local scriptArgs = args:drain() or {}
-		executePackage(pkg, scriptArgs)
+		executePackage(pkg, scriptArgs, userCwd)
 	elseif localPath then
-		local resolved = path.isAbsolute(localPath) and localPath or path.resolve(env.cwd(), localPath)
+		local resolved = path.isAbsolute(localPath) and localPath or path.resolve(userCwd, localPath)
 
 		-- Optional package name as first positional arg
 		local packageName = args:pop()
@@ -129,7 +131,7 @@ local function x(args)
 		end
 
 		local scriptArgs = args:drain() or {}
-		executePackage(pkg, scriptArgs)
+		executePackage(pkg, scriptArgs, userCwd)
 	else
 		local name = args:pop()
 		if name then
