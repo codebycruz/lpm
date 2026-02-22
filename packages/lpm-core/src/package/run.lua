@@ -51,7 +51,7 @@ local function runScriptWithLuaCLI(package, scriptPath, args, vars, engine)
 		end
 	end
 
-	return process.exec(engine, { scriptPath }, { cwd = package:getDir(), env = env })
+	return process.exec(engine, { scriptPath }, { cwd = package:getDir(), env = env, stdout = "inherit", stderr = "inherit" })
 end
 
 --- Runs a script within the package context
