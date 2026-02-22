@@ -91,6 +91,63 @@ test.it("end-to-end: init, build, and verify package structure", function()
 end)
 
 --
+-- cwd behavior
+--
+
+test.it("runScript: cwd is the package directory", function()
+	fs.mkdir(tmpBase)
+	local dir = path.join(tmpBase, "cwd-run-test")
+	fs.mkdir(dir)
+
+	fs.write(path.join(dir, "lpm.json"), json.encode({
+		name = "cwd-run-test",
+		version = "0.1.0",
+		dependencies = {},
+	}))
+
+	local srcDir = path.join(dir, "src")
+	fs.mkdir(srcDir)
+	fs.write(path.join(srcDir, "init.lua"), [[
+		local f = assert(io.open("cwd-sentinel.txt", "w"))
+		f:close()
+	]])
+
+	local pkg = Package.open(dir)
+	local ok, err = pkg:runScript(nil, {})
+	test.equal(ok, true)
+	-- sentinel file should be relative to the package dir, not cwd of the test runner
+	test.equal(fs.exists(path.join(dir, "cwd-sentinel.txt")), true)
+end)
+
+test.it("build.lua: cwd is the package directory, not the destination", function()
+	fs.mkdir(tmpBase)
+	local dir = path.join(tmpBase, "cwd-build-test")
+	fs.mkdir(dir)
+
+	fs.write(path.join(dir, "lpm.json"), json.encode({
+		name = "cwd-build-test",
+		version = "0.1.0",
+		dependencies = {},
+	}))
+
+	local srcDir = path.join(dir, "src")
+	fs.mkdir(srcDir)
+	fs.write(path.join(srcDir, "init.lua"), 'return true')
+	-- build.lua writes a sentinel file relative to cwd
+	fs.write(path.join(dir, "build.lua"), [[
+		local f = assert(io.open("build-cwd-sentinel.txt", "w"))
+		f:close()
+	]])
+
+	local pkg = Package.open(dir)
+	pkg:build()
+
+	-- sentinel should be in the package dir, not the destination (target/cwd-build-test/)
+	test.equal(fs.exists(path.join(dir, "build-cwd-sentinel.txt")), true)
+	test.equal(fs.exists(path.join(dir, "target", "cwd-build-test", "build-cwd-sentinel.txt")), false)
+end)
+
+--
 -- pkg:runScript bin field resolution
 --
 

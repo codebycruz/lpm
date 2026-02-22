@@ -30,6 +30,7 @@ local function runScriptWithLPM(package, scriptPath, args, vars)
 	return runtime.executeFile(scriptPath, {
 		args = args,
 		env = vars,
+		cwd = package:getDir(),
 		packagePath = luaPath,
 		packageCPath = luaCPath,
 	})
