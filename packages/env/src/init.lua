@@ -5,6 +5,7 @@ local path = require("path")
 ---@field set fun(name: string, value: string?): boolean
 ---@field tmpdir fun(): string
 ---@field cwd fun(): string
+---@field chdir fun(dir: string): boolean
 ---@field execPath fun(): string?
 
 local rawenv ---@type env.raw

@@ -10,6 +10,7 @@ ffi.cdef([[
 	DWORD GetEnvironmentVariableA(const char* lpName, char* lpBuffer, DWORD nSize);
 	BOOL SetEnvironmentVariableA(const char* lpName, const char* lpValue);
 	DWORD GetCurrentDirectoryA(DWORD nBufferLength, char* lpBuffer);
+	BOOL SetCurrentDirectoryA(const char* lpPathName);
 	DWORD GetModuleFileNameA(void* hModule, char* lpFilename, DWORD nSize);
 
 	int _putenv_s(const char* name, const char* value);
@@ -63,6 +64,10 @@ function env.cwd()
 	end
 
 	return ffi.string(buf, len)
+end
+
+function env.chdir(dir) ---@return boolean
+	return kernel32.SetCurrentDirectoryA(dir) ~= 0
 end
 
 function env.execPath()

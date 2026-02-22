@@ -4,6 +4,7 @@ ffi.cdef([[
 	char* getenv(const char* name);
 	int setenv(const char* name, const char* value, int overwrite);
 	char* getcwd(char* buf, size_t size);
+	int chdir(const char* path);
 	ssize_t readlink(const char* path, char* buf, size_t bufsiz);
 ]])
 
@@ -38,6 +39,10 @@ function env.cwd()
 	end
 
 	return ffi.string(buf)
+end
+
+function env.chdir(dir) ---@return boolean
+	return ffi.C.chdir(dir) == 0
 end
 
 function env.execPath()
