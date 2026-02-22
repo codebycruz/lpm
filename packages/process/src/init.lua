@@ -26,11 +26,15 @@ local function escape(arg)
 	end
 end
 
+---@alias process.Stdio "pipe" | "inherit" | "null"
+
 ---@class process.CommandOptions
 ---@field cwd string?
 ---@field env table<string, string>?
 ---@field unsafe boolean? # If true, do not escape command and arguments. Especially useful because windows is completely worthless :)
 ---@field stdin string?
+---@field stdout process.Stdio? # Defaults to "pipe"
+---@field stderr process.Stdio? # Defaults to "pipe"
 
 ---@class process.SpawnOptions: process.CommandOptions
 
@@ -104,12 +108,11 @@ end
 ---@param name string
 ---@param args string[]?
 ---@param options process.CommandOptions?
----@param isStdoutEnabled boolean
-local function executeCommand(name, args, options, isStdoutEnabled)
-	local command = formatCommand(name, args, options)
+local function executeCommand(name, args, options)
+	local stdoutMode = (options and options.stdout) or "pipe"
+	local stderrMode = (options and options.stderr) or "pipe"
 
-	local tmpErrorFile = env.tmpfile()
-	command = command .. " 2>" .. escape(tmpErrorFile)
+	local command = formatCommand(name, args, options)
 
 	local tmpInputFile = nil
 	if options and options.stdin then
@@ -123,9 +126,19 @@ local function executeCommand(name, args, options, isStdoutEnabled)
 	end
 
 	local tmpOutputFile = nil
-	if isStdoutEnabled then
+	if stdoutMode == "pipe" then
 		tmpOutputFile = env.tmpfile()
-		command = command .. " > " .. escape(tmpOutputFile)
+		command = command .. " >" .. escape(tmpOutputFile)
+	elseif stdoutMode == "null" then
+		command = command .. (isWindows and " >nul" or " >/dev/null")
+	end
+
+	local tmpErrorFile = nil
+	if stderrMode == "pipe" then
+		tmpErrorFile = env.tmpfile()
+		command = command .. " 2>" .. escape(tmpErrorFile)
+	elseif stderrMode == "null" then
+		command = command .. (isWindows and " 2>nul" or " 2>/dev/null")
 	end
 
 	local exitCode = os.execute(command)
@@ -133,21 +146,26 @@ local function executeCommand(name, args, options, isStdoutEnabled)
 
 	local catastrophicFailure = nil ---@type string?
 	local output ---@type string?
-	if ranSuccessfully and tmpOutputFile then
-		output = readChunked(tmpOutputFile, 4096, 10)
-		if not output then
-			catastrophicFailure = "Failed to read stdout"
+	if tmpOutputFile then
+		if ranSuccessfully then
+			output = readChunked(tmpOutputFile, 4096, 10)
+			if not output then
+				catastrophicFailure = "Failed to read stdout"
+			end
 		end
-	elseif not ranSuccessfully then
-		output = readChunked(tmpErrorFile, 4096, 10)
-		if not output then
-			catastrophicFailure = "Failed to read stderr"
+		os.remove(tmpOutputFile)
+	end
+	if tmpErrorFile then
+		if not ranSuccessfully and not output then
+			output = readChunked(tmpErrorFile, 4096, 10)
+			if not output then
+				catastrophicFailure = "Failed to read stderr"
+			end
 		end
+		os.remove(tmpErrorFile)
 	end
 
 	if tmpInputFile then os.remove(tmpInputFile) end
-	if tmpOutputFile then os.remove(tmpOutputFile) end
-	os.remove(tmpErrorFile)
 
 	if catastrophicFailure then
 		error(catastrophicFailure)
@@ -160,18 +178,22 @@ end
 ---@param args string[]?
 ---@param options process.CommandOptions?
 ---@return boolean? # Success
----@return string # Output or Fail
+---@return string? # Captured stdout on success, captured stderr on failure
 function process.exec(name, args, options)
-	return executeCommand(name, args, options, true)
+	return executeCommand(name, args, options)
 end
 
 ---@param name string
 ---@param args string[]?
 ---@param options process.CommandOptions?
 ---@return boolean # Success
----@return string # Fail
+---@return string? # Captured stderr on failure
 function process.spawn(name, args, options)
-	return executeCommand(name, args, options, false)
+	options = options or {}
+	if not options.stdout then
+		options = setmetatable({ stdout = "null" }, { __index = options })
+	end
+	return executeCommand(name, args, options)
 end
 
 if isWindows then
