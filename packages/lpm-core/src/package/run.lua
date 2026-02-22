@@ -24,13 +24,14 @@ end
 ---@param scriptPath string
 ---@param args string[]?
 ---@param vars table<string, string>? # Env vars
-local function runScriptWithLPM(package, scriptPath, args, vars)
+---@param cwd string
+local function runScriptWithLPM(package, scriptPath, args, vars, cwd)
 	local luaPath, luaCPath = getLuaPathsForPackage(package)
 
 	return runtime.executeFile(scriptPath, {
 		args = args,
 		env = vars,
-		cwd = package:getDir(),
+		cwd = cwd,
 		packagePath = luaPath,
 		packageCPath = luaCPath,
 	})
@@ -41,7 +42,8 @@ end
 ---@param args string[]?
 ---@param vars table<string, string>? # Env vars
 ---@param engine string
-local function runScriptWithLuaCLI(package, scriptPath, args, vars, engine)
+---@param cwd string
+local function runScriptWithLuaCLI(package, scriptPath, args, vars, engine, cwd)
 	local luaPath, luaCPath = getLuaPathsForPackage(package)
 
 	local env = { LUA_PATH = luaPath, LUA_CPATH = luaCPath }
@@ -51,7 +53,7 @@ local function runScriptWithLuaCLI(package, scriptPath, args, vars, engine)
 		end
 	end
 
-	return process.exec(engine, { scriptPath }, { cwd = package:getDir(), env = env, stdout = "inherit", stderr = "inherit" })
+	return process.exec(engine, { scriptPath }, { cwd = cwd, env = env, stdout = "inherit", stderr = "inherit" })
 end
 
 --- Runs a script within the package context
@@ -60,9 +62,10 @@ end
 ---@param scriptPath string? # Defaults to bin field or target/<name>/init.lua
 ---@param args string[]? # Positional arguments
 ---@param vars table<string, string>? # Additional environment variables
+---@param cwd string? # Working directory for the script. Defaults to the package directory
 ---@return boolean? # Success
 ---@return string # Output
-local function runScript(package, scriptPath, args, vars)
+local function runScript(package, scriptPath, args, vars, cwd)
 	-- Ensure package is built so modules folder exists (and so it can require itself)
 	package:build()
 
@@ -76,12 +79,17 @@ local function runScript(package, scriptPath, args, vars)
 		end
 	end
 
+	cwd = cwd or package:getDir()
+
 	local engine = config.engine or "lpm"
+	local ok, err
 	if engine == "lpm" then
-		return runScriptWithLPM(package, scriptPath, args, vars)
+		ok, err = runScriptWithLPM(package, scriptPath, args, vars, cwd)
 	else
-		return runScriptWithLuaCLI(package, scriptPath, args, vars, engine)
+		ok, err = runScriptWithLuaCLI(package, scriptPath, args, vars, engine, cwd)
 	end
+
+	return ok, err or (not ok and "Script exited with a non-zero exit code") or nil
 end
 
 return runScript
