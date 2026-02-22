@@ -26,6 +26,7 @@ local builtinModules = {
 ---@field packagePath string?
 ---@field packageCPath string?
 ---@field preload table<string, function>?
+---@field cwd string?
 
 --- Clears non-builtin entries from a table, returning the saved contents.
 ---@param t table
@@ -58,9 +59,15 @@ end
 local function executeFile(scriptPath, opts)
 	opts = opts or {}
 
+	local oldCwd = opts.cwd and env.cwd()
+	if opts.cwd then
+		env.chdir(opts.cwd)
+	end
+
 	local oldPath, oldCPath = package.path, package.cpath
 	local callback, err = loadfile(scriptPath, "t")
 	if not callback then
+		if oldCwd then env.chdir(oldCwd) end
 		return false, err or "Failed to compile script"
 	end
 
@@ -125,6 +132,10 @@ local function executeFile(scriptPath, opts)
 	-- Restore old env var values
 	for k, v in pairs(oldEnvVars) do
 		env.set(k, v)
+	end
+
+	if oldCwd then
+		env.chdir(oldCwd)
 	end
 
 	ffi.cdef = originalCdef
