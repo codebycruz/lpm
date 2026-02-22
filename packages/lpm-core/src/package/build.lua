@@ -14,6 +14,12 @@ local function buildPackage(package, destinationPath)
 
 	destinationPath = destinationPath or path.join(package:getModulesDir(), package:getName())
 
+	-- Ensure parent dir (target) exists
+	local target = path.dirname(destinationPath)
+	if not fs.isdir(target) then
+		fs.mkdir(target)
+	end
+
 	local buildScriptPath = package:getBuildScriptPath()
 	if fs.exists(buildScriptPath) then
 		fs.copy(package:getSrcDir(), destinationPath)

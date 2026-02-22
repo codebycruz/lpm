@@ -79,9 +79,7 @@ local function executePackage(pkg, scriptArgs)
 	pkg:build()
 	pkg:installDependencies()
 
-	local scriptPath = path.join(pkg:getTargetDir(), "init.lua")
-
-	local ok, err = pkg:runScript(scriptPath, scriptArgs)
+	local ok, err = pkg:runScript(nil, scriptArgs)
 	if not ok then
 		error("Failed to run script: " .. err)
 	end

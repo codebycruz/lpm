@@ -52,6 +52,10 @@
 				}
 			]
 		},
+		"bin": {
+			"type": "string",
+			"description": "Entry point script to run when using lpm run without a file argument"
+		},
 		"engine": {
 			"type": "string",
 			"enum": ["lua", "luajit", "lpm"],

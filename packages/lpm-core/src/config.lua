@@ -3,6 +3,7 @@
 ---@class lpm.Config
 ---@field name string
 ---@field version string
+---@field bin string?
 ---@field engine string?
 ---@field dependencies lpm.Config.Dependencies?
 ---@field devDependencies lpm.Config.Dependencies?

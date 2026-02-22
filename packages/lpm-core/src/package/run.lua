@@ -56,7 +56,7 @@ end
 --- Runs a script within the package context
 --- This will use the package's engine and set up the LUA_PATH accordingly
 ---@param package lpm.Package
----@param scriptPath string
+---@param scriptPath string? # Defaults to bin field or target/<name>/init.lua
 ---@param args string[]? # Positional arguments
 ---@param vars table<string, string>? # Additional environment variables
 ---@return boolean? # Success
@@ -65,7 +65,17 @@ local function runScript(package, scriptPath, args, vars)
 	-- Ensure package is built so modules folder exists (and so it can require itself)
 	package:build()
 
-	local engine = package:readConfig().engine or "lpm"
+	local config = package:readConfig()
+
+	if not scriptPath then
+		if config.bin then
+			scriptPath = path.join(package:getTargetDir(), config.bin)
+		else
+			scriptPath = path.join(package:getTargetDir(), "init.lua")
+		end
+	end
+
+	local engine = config.engine or "lpm"
 	if engine == "lpm" then
 		return runScriptWithLPM(package, scriptPath, args, vars)
 	else

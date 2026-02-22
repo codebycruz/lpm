@@ -90,6 +90,56 @@ test.it("end-to-end: init, build, and verify package structure", function()
 	test.equal(fs.exists(pkg:getTargetDir()), true)
 end)
 
+--
+-- pkg:runScript bin field resolution
+--
+
+test.it("runScript: uses bin as default entry point when set", function()
+	fs.mkdir(tmpBase)
+	local dir = path.join(tmpBase, "bin-run-test")
+	fs.mkdir(dir)
+
+	fs.write(path.join(dir, "lpm.json"), json.encode({
+		name = "bin-run-test",
+		version = "0.1.0",
+		bin = "cli.lua",
+		dependencies = {},
+	}))
+
+	local srcDir = path.join(dir, "src")
+	fs.mkdir(srcDir)
+	fs.write(path.join(srcDir, "init.lua"), 'error("should not run init.lua")')
+	fs.write(path.join(srcDir, "cli.lua"), 'return true')
+
+	local pkg = Package.open(dir)
+	local ok, err = pkg:runScript(nil, {})
+	test.equal(ok, true)
+end)
+
+test.it("runScript: falls back to init.lua when bin is not set", function()
+	fs.mkdir(tmpBase)
+	local dir = path.join(tmpBase, "bin-run-fallback")
+	fs.mkdir(dir)
+
+	fs.write(path.join(dir, "lpm.json"), json.encode({
+		name = "bin-run-fallback",
+		version = "0.1.0",
+		dependencies = {},
+	}))
+
+	local srcDir = path.join(dir, "src")
+	fs.mkdir(srcDir)
+	fs.write(path.join(srcDir, "init.lua"), 'return true')
+
+	local pkg = Package.open(dir)
+	local ok, err = pkg:runScript(nil, {})
+	test.equal(ok, true)
+end)
+
+--
+-- End-to-end: init + build + verify structure
+--
+
 test.it("end-to-end: package with dependency can install and build", function()
 	fs.mkdir(tmpBase)
 

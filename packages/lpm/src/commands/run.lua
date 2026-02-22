@@ -1,7 +1,5 @@
 local Package = require("lpm-core.package")
 
-local path = require("path")
-
 ---@param args clap.Args
 local function run(args)
 	local pkg, err = Package.open()
@@ -29,8 +27,6 @@ local function run(args)
 	else
 		scriptPath = args:pop()
 	end
-
-	scriptPath = scriptPath or path.join(pkg:getTargetDir(), "init.lua")
 
 	local ok, err = pkg:runScript(scriptPath, scriptArgs)
 	if not ok then
