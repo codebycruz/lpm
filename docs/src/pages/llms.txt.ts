@@ -10,6 +10,12 @@ export async function GET(_context: APIContext) {
 		return a.data.order - b.data.order;
 	});
 
+	const blog = (await getCollection("blog")).sort(
+		(a, b) =>
+			new Date(b.data.published).getTime() -
+			new Date(a.data.published).getTime()
+	);
+
 	const lines: string[] = [
 		`# lpm Documentation`,
 		``,
@@ -24,6 +30,19 @@ export async function GET(_context: APIContext) {
 		lines.push(`URL: ${SITE_URL}/docs/${doc.id}/`);
 		lines.push(``);
 		lines.push(doc.body ?? "");
+		lines.push(``);
+	}
+
+	lines.push(`# lpm Blog`);
+	lines.push(``);
+
+	for (const post of blog) {
+		lines.push(`---`);
+		lines.push(`## ${post.data.title}`);
+		lines.push(`URL: ${SITE_URL}/blog/${post.id}/`);
+		lines.push(`Published: ${post.data.published}`);
+		lines.push(``);
+		lines.push(post.body ?? "");
 		lines.push(``);
 	}
 
