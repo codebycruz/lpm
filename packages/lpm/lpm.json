@@ -15,6 +15,7 @@
 		"http": { "path": "../http" },
 		"semver": { "path": "../semver" },
 		"lpm-core": { "path": "../lpm-core" },
-		"lpm-test": { "path": "../lpm-test" }
+		"lpm-test": { "path": "../lpm-test" },
+		"rocked": { "path": "../rocked" }
 	}
 }
