@@ -53,10 +53,19 @@ function rocked.raw(spec)
 		return false, err
 	end
 
+	local oh, om, oc = debug.gethook()
+	debug.sethook(function() error("Rockspec took too long to run") end, "", 1e7)
+
 	local chunkEnv = setmetatable({}, { __index = baseChunkEnv })
 	local chunk = setfenv(unsafeChunk, chunkEnv)
 
+	-- Debug hooks aren't guaranteed to run with JIT on, also it's safer this way
+	jit.off(chunk)
+
 	local ok, out = pcall(chunk)
+
+	debug.sethook(oh, om, oc)
+
 	if not ok then
 		return false, out
 	end
