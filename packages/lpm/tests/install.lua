@@ -9,8 +9,9 @@ local tmpBase = path.join(env.tmpdir(), "lpm-install-tests")
 fs.rmdir(tmpBase)
 fs.mkdir(tmpBase)
 
--- From packages/lpm (cwd when tests run), go up two levels to the repo root
-local repoRoot = path.join(env.cwd(), "..", "..")
+-- Derive repo root from this file's location (tests/ -> packages/lpm/ -> packages/ -> repo root)
+local thisFile = debug.getinfo(1, "S").source:sub(2)
+local repoRoot = path.join(path.dirname(thisFile), "..", "..", "..")
 
 local isWindows = process.platform == "win32"
 
