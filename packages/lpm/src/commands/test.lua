@@ -13,18 +13,20 @@ local function makeRelative(packageDir, msg)
 end
 
 ---@param results lpm.TestResults
+---@param indent string?
 ---@return boolean hadFailures
-local function printResults(results)
+local function printResults(results, indent)
 	if results.error then
 		error(results.error)
 	end
 
+	indent = indent or ""
 	local pkgDir = results.package:getDir()
 
 	for _, file in ipairs(results.files) do
 		if file.error then
-			ansi.printf(" {red}FAIL {white}%s", file.file)
-			ansi.printf("   {red}%s", makeRelative(pkgDir, file.error))
+			ansi.printf(indent .. " {red}FAIL {white}%s", file.file)
+			ansi.printf(indent .. "   {red}%s", makeRelative(pkgDir, file.error))
 		else
 			local fileHasFailures = false
 			for _, r in ipairs(file.results) do
@@ -35,17 +37,17 @@ local function printResults(results)
 			end
 
 			if fileHasFailures then
-				ansi.printf(" {red}FAIL {white}%s", file.file)
+				ansi.printf(indent .. " {red}FAIL {white}%s", file.file)
 			else
-				ansi.printf(" {green}PASS {white}%s", file.file)
+				ansi.printf(indent .. " {green}PASS {white}%s", file.file)
 			end
 
 			for _, r in ipairs(file.results) do
 				if r.ok then
-					ansi.printf("   {green}\xE2\x9C\x93 {gray}%s", r.name)
+					ansi.printf(indent .. "   {green}\xE2\x9C\x93 {gray}%s", r.name)
 				else
-					ansi.printf("   {red}\xE2\x9C\x97 %s", r.name)
-					ansi.printf("     {red}%s", makeRelative(pkgDir, r.error or "unknown error"))
+					ansi.printf(indent .. "   {red}\xE2\x9C\x97 %s", r.name)
+					ansi.printf(indent .. "     {red}%s", makeRelative(pkgDir, r.error or "unknown error"))
 				end
 			end
 		end
@@ -53,16 +55,19 @@ local function printResults(results)
 		print()
 	end
 
-	local passed = results.total - results.failures
-
-	if results.failures > 0 then
-		ansi.printf("{white}Tests:  {red}%d failed{white}, {green}%d passed{white}, %d total", results.failures, passed,
-			results.total)
-	else
-		ansi.printf("{white}Tests:  {green}%d passed{white}, %d total", passed, results.total)
-	end
-
 	return results.failures > 0
+end
+
+---@param failures number
+---@param passed number
+---@param total number
+local function printSummary(failures, passed, total)
+	if failures > 0 then
+		ansi.printf("{white}Tests:  {red}%d failed{white}, {green}%d passed{white}, {cyan}%d total", failures, passed,
+			total)
+	else
+		ansi.printf("{white}Tests:  {green}%d passed{white}, {cyan}%d total", passed, total)
+	end
 end
 
 ---@param args clap.Args
@@ -75,19 +80,40 @@ local function test(args)
 	if not package then
 		local cwd = env.cwd()
 		local hadFailures = false
+		local totalPassed = 0
+		local totalFailures = 0
 
-		-- Recursively search for packages
+		-- Collect results first so we can print the header with totals
+		local allResults = {}
 		for _, relativePath in ipairs(fs.scan(cwd, "**" .. path.separator .. "lpm.json")) do
 			local configPath = path.join(cwd, relativePath)
-
 			local pkg = Package.open(path.dirname(configPath))
 			if pkg then
 				local results = pkg:runTests()
-				if printResults(results) then
-					hadFailures = true
+				if not results.error then
+					allResults[#allResults + 1] = results
+					totalPassed = totalPassed + (results.total - results.failures)
+					totalFailures = totalFailures + results.failures
 				end
 			end
 		end
+
+		local totalTests = totalPassed + totalFailures
+		ansi.printf("{white}Running {cyan}%d {white}%s from {cyan}%d {white}%s",
+			totalTests, totalTests == 1 and "test" or "tests",
+			#allResults, #allResults == 1 and "package" or "packages")
+
+		print()
+
+		for _, results in ipairs(allResults) do
+			ansi.printf("{gray}%s", results.package:getName())
+			print()
+			if printResults(results, "  ") then
+				hadFailures = true
+			end
+		end
+
+		printSummary(totalFailures, totalPassed, totalTests)
 
 		if hadFailures then
 			os.exit(1)
@@ -97,7 +123,9 @@ local function test(args)
 	end
 
 	local results = package:runTests()
-	if printResults(results) then
+	printResults(results)
+	printSummary(results.failures, results.total - results.failures, results.total)
+	if results.failures > 0 then
 		os.exit(1)
 	end
 end
