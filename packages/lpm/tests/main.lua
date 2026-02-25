@@ -197,6 +197,63 @@ end)
 -- End-to-end: init + build + verify structure
 --
 
+test.it("git dep: installs root package, not a sub-package, when repo has lpm.json at root and in subdirs", function()
+	fs.mkdir(tmpBase)
+
+	-- Simulate a cloned git repo that has lpm.json at root AND in subdirectories.
+	-- This reproduces the bug where the sub-package (e.g. "ansi") was installed
+	-- instead of the root package (e.g. "lpm-test").
+	--
+	-- We pre-populate the real git cache dir so getOrInitGitRepo skips cloning.
+	local global = require("lpm-core.global")
+	local repoDir = global.getGitRepoDir("my-root-pkg")
+	fs.rmdir(repoDir)
+	fs.mkdir(repoDir)
+
+	-- Root lpm.json
+	fs.write(path.join(repoDir, "lpm.json"), json.encode({
+		name = "my-root-pkg",
+		version = "1.0.0",
+		dependencies = {},
+	}))
+	fs.mkdir(path.join(repoDir, "src"))
+	fs.write(path.join(repoDir, "src", "init.lua"), "return {}")
+
+	-- Subdirectory packages (these would be found first by fs.scan's "**/" pattern)
+	local subDir = path.join(repoDir, "packages", "ansi")
+	fs.mkdir(path.join(repoDir, "packages"))
+	fs.mkdir(subDir)
+	fs.write(path.join(subDir, "lpm.json"), json.encode({
+		name = "ansi",
+		version = "0.1.0",
+		dependencies = {},
+	}))
+	fs.mkdir(path.join(subDir, "src"))
+	fs.write(path.join(subDir, "src", "init.lua"), "return {}")
+
+	-- App that depends on the root package via git
+	local appDir = path.join(tmpBase, "git-dep-app")
+	fs.mkdir(appDir)
+	fs.mkdir(path.join(appDir, "src"))
+	fs.write(path.join(appDir, "src", "init.lua"), "return {}")
+	fs.write(path.join(appDir, "lpm.json"), json.encode({
+		name = "git-dep-app",
+		version = "0.1.0",
+		dependencies = {
+			["my-root-pkg"] = { git = "https://example.com/my-root-pkg.git" },
+		},
+	}))
+
+	local app = Package.open(appDir)
+	app:installDependencies()
+
+	-- Should install "my-root-pkg", NOT "ansi"
+	test.equal(fs.exists(path.join(appDir, "target", "my-root-pkg")), true)
+	test.equal(fs.exists(path.join(appDir, "target", "ansi")), false)
+
+	fs.rmdir(repoDir)
+end)
+
 test.it("end-to-end: package with dependency can install and build", function()
 	fs.mkdir(tmpBase)
 
