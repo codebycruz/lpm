@@ -25,10 +25,13 @@ local function upgrade(args)
 	end
 
 	local shouldForce = args:flag("force")
+	local shouldNightly = args:flag("nightly")
 	local desiredVersion = args:option("version")
 
 	local releaseUrl
-	if not desiredVersion then
+	if shouldNightly then
+		releaseUrl = releasesUrl .. "/tags/nightly"
+	elseif not desiredVersion then
 		releaseUrl = releasesUrl .. "/latest"
 	else
 		releaseUrl = releasesUrl .. "/tags/v" .. desiredVersion
@@ -47,15 +50,18 @@ local function upgrade(args)
 	end
 
 	local latestVersion = string.match(releaseInfo.tag_name, "v?(%d+%.%d+%.%d+)")
-	if not latestVersion then
-		ansi.printf("{red}Invalid version format in release tag")
-		return
-	end
 
-	local runningVersion = global.currentVersion
-	if not shouldForce and not desiredVersion and semver.compare(latestVersion, runningVersion) <= 0 then
-		ansi.printf("{green}You are already running the latest version (%s)", runningVersion)
-		return
+	if not shouldNightly then
+		if not latestVersion then
+			ansi.printf("{red}Invalid version format in release tag")
+			return
+		end
+
+		local runningVersion = global.currentVersion
+		if not shouldForce and not desiredVersion and semver.compare(latestVersion, runningVersion) <= 0 then
+			ansi.printf("{green}You are already running the latest version (%s)", runningVersion)
+			return
+		end
 	end
 
 	local binLocation = env.execPath()
@@ -127,7 +133,11 @@ local function upgrade(args)
 	-- Clean up old binary
 	fs.delete(tempOldLocation)
 
-	ansi.printf("{green}Successfully upgraded to version %s!", latestVersion)
+	if shouldNightly then
+		ansi.printf("{green}Successfully upgraded to nightly build!")
+	else
+		ansi.printf("{green}Successfully upgraded to version %s!", latestVersion)
+	end
 end
 
 return upgrade
