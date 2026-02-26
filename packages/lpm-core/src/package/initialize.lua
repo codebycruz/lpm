@@ -74,7 +74,7 @@ local function initPackage(dir)
 					"path": ["./target/?.lua", "./target/?/init.lua"]
 				},
 				"workspace": {
-					"useGitIgnore": false
+					"library": ["target"]
 				}
 			}
 		]]))
