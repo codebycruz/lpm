@@ -21,5 +21,8 @@
 	"runtime": {
 		"version": "LuaJIT",
 		"path": ["./target/?.lua", "./target/?/init.lua"]
+	},
+	"workspace": {
+		"useGitIgnore": false
 	}
 }
