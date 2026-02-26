@@ -48,7 +48,7 @@ function Package:getLockfilePath() return path.join(self.dir, "lpm-lock.json") e
 
 ---@param dir string?
 ---@return lpm.Package?, string?
-function Package.open(dir)
+function Package.openLPM(dir)
 	dir = dir or env.cwd()
 
 	local configPath = configPathAtDir(dir)
@@ -61,20 +61,44 @@ end
 
 Package.openRocks = require("lpm-core.package.rocks")
 
---- Opens a directory using lpm.json if present, falling back to a *.rockspec.
+--- Opens a directory, preferring lpm.json and falling back to a *.rockspec.
 ---@param dir string?
 ---@return lpm.Package?, string?
-function Package.openAny(dir)
+function Package.open(dir)
 	dir = dir or env.cwd()
 
-	local pkg, err = Package.open(dir)
+	local pkg, err = Package.openLPM(dir)
 	if pkg then return pkg, nil end
 
 	local rocksPkg, rocksErr = Package.openRocks(dir)
 	if rocksPkg then return rocksPkg, nil end
 
-	-- Prefer the lpm.json error message as the primary one
 	return nil, err .. "\n" .. rocksErr
+end
+
+--- Scans a directory tree for a package with the given name.
+--- Checks lpm.json files first, then *.rockspec files.
+---@param dir string
+---@param name string
+---@return lpm.Package?, string?
+function Package.findNamed(dir, name)
+	for _, config in ipairs(fs.scan(dir, "**" .. path.separator .. "lpm.json")) do
+		local parentDir = path.join(dir, path.dirname(config))
+		local pkg = Package.openLPM(parentDir)
+		if pkg and pkg:getName() == name then
+			return pkg, nil
+		end
+	end
+
+	for _, spec in ipairs(fs.scan(dir, "**" .. path.separator .. "*.rockspec")) do
+		local parentDir = path.join(dir, path.dirname(spec))
+		local pkg = Package.openRocks(parentDir)
+		if pkg and pkg:getName() == name then
+			return pkg, nil
+		end
+	end
+
+	return nil, "No package named '" .. name .. "' found in: " .. dir
 end
 
 ---@return lpm.Config

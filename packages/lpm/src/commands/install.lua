@@ -54,22 +54,7 @@ local function getOrCloneRepo(repoName, cloneUrl, branch)
 	return repoDir
 end
 
---- Finds a named package inside a directory by scanning for lpm.json files.
----@param dir string
----@param name string
----@return lpm.Package?
----@return string?
-local function findNamedPackageIn(dir, name)
-	for _, config in ipairs(fs.scan(dir, "**" .. path.separator .. "lpm.json")) do
-		local parentDir = path.join(dir, path.dirname(config))
-		local pkg = Package.open(parentDir)
-		if pkg and pkg:getName() == name then
-			return pkg, nil
-		end
-	end
-
-	return nil, "No package named '" .. name .. "' found in: " .. dir
-end
+local findNamedPackageIn = Package.findNamed
 
 --- Writes the platform-appropriate wrapper script into ~/.lpm/tools/.
 ---@param toolName string

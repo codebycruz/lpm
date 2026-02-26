@@ -29,21 +29,12 @@ local function dependencyToPackage(name, depInfo, relativeTo)
 	if depInfo.git then
 		local repoDir = global.getOrInitGitRepo(name, depInfo.git, depInfo.branch, depInfo.commit)
 
-		local gitDependencyPackage = Package.open(repoDir)
-		if gitDependencyPackage and gitDependencyPackage:getName() == name then
-			return gitDependencyPackage
+		local gitDependencyPackage, err = Package.findNamed(repoDir, name)
+		if not gitDependencyPackage then
+			error(err)
 		end
 
-		for _, config in ipairs(fs.scan(repoDir, "**" .. path.separator .. "lpm.json")) do
-			local parentDir = path.join(repoDir, path.dirname(config))
-
-			gitDependencyPackage = Package.open(parentDir)
-			if gitDependencyPackage and gitDependencyPackage:getName() == name then
-				return gitDependencyPackage
-			end
-		end
-
-		error("No lpm.json with name '" .. name .. "' found in git repository")
+		return gitDependencyPackage
 	elseif depInfo.path then
 		local normalized = path.normalize(depInfo.path)
 		local localPackage, err = Package.open(path.resolve(relativeTo, normalized))
