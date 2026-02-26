@@ -10,10 +10,15 @@ local path = require("path")
 
 ---@class lpm.Package
 ---@field dir string
+---@field buildfn fun(outDir: string)? # Optional build 'function' in place of a build script.
 ---@field cachedConfig lpm.Config?
 ---@field cachedConfigMtime number?
 local Package = {}
 Package.__index = Package
+
+function Package:__tostring()
+	return "Package(" .. self.dir .. ")"
+end
 
 -- Add this since files in . will want access to the `Package` class.
 package.loaded[(...)] = Package
@@ -85,21 +90,11 @@ end
 
 Package.init = require("lpm-core.package.initialize")
 
-function Package:__tostring()
-	return "Package(" .. self.dir .. ")"
-end
+function Package:getDependencies() return self:readConfig().dependencies or {} end
 
-function Package:getDependencies()
-	return self:readConfig().dependencies or {}
-end
+function Package:getDevDependencies() return self:readConfig().devDependencies or {} end
 
-function Package:getDevDependencies()
-	return self:readConfig().devDependencies or {}
-end
-
-function Package:getName()
-	return self:readConfig().name
-end
+function Package:getName() return self:readConfig().name end
 
 Package.build = require("lpm-core.package.build")
 
@@ -107,29 +102,39 @@ Package.build = require("lpm-core.package.build")
 ---@param info lpm.Config.Dependency
 ---@param relativeTo string?
 function Package:getDependencyPath(dir, info, relativeTo)
-	relativeTo = relativeTo or self.dir
-
 	if info.git then
 		return global.getGitRepoDir(dir, info.branch, info.commit)
 	elseif info.path then
+		relativeTo = relativeTo or self.dir
 		return path.normalize(path.join(relativeTo, info.path))
 	end
 end
 
 Package.installDependencies = require("lpm-core.package.install")
-
-function Package:installDevDependencies()
-	self:installDependencies(self:getDevDependencies())
-end
+function Package:installDevDependencies() self:installDependencies(self:getDevDependencies()) end
 
 Package.updateDependencies = require("lpm-core.package.update")
-
-function Package:updateDevDependencies()
-	return self:updateDependencies(self:getDevDependencies())
-end
+function Package:updateDevDependencies() return self:updateDependencies(self:getDevDependencies()) end
 
 Package.compile = require("lpm-core.package.compile")
 Package.runScript = require("lpm-core.package.run")
 Package.runTests = require("lpm-core.package.test")
+
+function Package:hasBuildScript()
+	if self.buildfn then
+		return true
+	end
+
+	return fs.exists(self:getBuildScriptPath())
+end
+
+---@param outputDir string
+function Package:runBuildScript(outputDir)
+	if self.buildfn then
+		return self.buildfn(outputDir)
+	end
+
+	return self:runScript(self:getBuildScriptPath(), nil, { LPM_OUTPUT_DIR = outputDir })
+end
 
 return Package
