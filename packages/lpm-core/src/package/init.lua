@@ -70,10 +70,10 @@ function Package.open(dir)
 	local pkg, err = Package.openLPM(dir)
 	if pkg then return pkg, nil end
 
-	local rocksPkg, rocksErr = Package.openRocks(dir)
+	local rocksPkg, _rocksErr = Package.openRocks(dir)
 	if rocksPkg then return rocksPkg, nil end
 
-	return nil, err .. "\n" .. rocksErr
+	return nil, err
 end
 
 --- Scans a directory tree for a package with the given name.
