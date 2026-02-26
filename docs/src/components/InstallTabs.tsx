@@ -12,14 +12,12 @@ const tabs = [
 	{
 		id: "linux",
 		label: "Linux",
-		command:
-			"curl -fsSL https://raw.githubusercontent.com/codebycruz/lpm/HEAD/install.sh | sh",
+		command: "curl -fsSL https://lualpm.com/install | sh",
 	},
 	{
 		id: "windows",
 		label: "Windows",
-		command:
-			"irm https://raw.githubusercontent.com/codebycruz/lpm/HEAD/install.ps1 | iex",
+		command: "irm https://lualpm.com/install.ps1 | iex",
 	},
 ] as const;
 
