@@ -10,13 +10,13 @@ Install lpm using the command for your platform.
 ## Linux & macOS
 
 ```sh
-curl -fsSL https://raw.githubusercontent.com/codebycruz/lpm/HEAD/install.sh | sh
+curl -fsSL https://lualpm.com/install | sh
 ```
 
 ## Windows
 
 ```powershell
-irm https://raw.githubusercontent.com/codebycruz/lpm/HEAD/install.ps1 | iex
+irm https://lualpm.com/install.ps1 | iex
 ```
 
 ## Verify

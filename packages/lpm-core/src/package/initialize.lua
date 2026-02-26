@@ -72,6 +72,9 @@ local function initPackage(dir)
 				"runtime": {
 					"version": "LuaJIT",
 					"path": ["./target/?.lua", "./target/?/init.lua"]
+				},
+				"workspace": {
+					"library": ["target"]
 				}
 			}
 		]]))

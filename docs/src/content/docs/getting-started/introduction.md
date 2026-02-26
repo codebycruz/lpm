@@ -9,22 +9,12 @@ Lpm is a package manager and runtime for Lua, written in Lua. It ships as a sing
 
 The days of fiddling with getting both Lua and Luarocks installed are over. We extend this to users of your projects too, just run `lpm compile` to ship a binary that runs your project on any machine without Lua!
 
-## Why lpm?
-
-The Lua ecosystem has historically lacked a modern, ergonomic package manager.
-
-- [LuaRocks](https://luarocks.org) is very old, lacks a lot of features you'd want out of a modern package manager, and is notoriously difficult to set up. It is 'the standard', but it has never been perfect, leading to sharding in the ecosystem with the likes of other runtimes like love2d, luvit, etc, opting to deal with dependencies on their own way.
-- [Lux](https://github.com/lumen-oss/lux) is actually quite promising and was created recently, before LPM. But it is targeting backwards compatibility with luarocks, and is written in Rust. Our goals don't quite align. But I encourage you to check it out if lpm isn't a fit!
-
-LPM takes a different approach. It's written in Lua itself (if you're using lua, you can contribute!), and was designed to create rigid standards for project structure and dependency management. It is not targeting backwards compatibility with luarocks in the forseeable future, but it is worth looking into if you're writing a mostly Lua project and have dependencies of your own.
-
 ## What can it do?
 
 LPM can create new lua projects with `lpm new`, which will create a folder and initialize a git repo for you. Or do that in an existing directory with `lpm init`.
 
 ```sh
-lpm new myproject
-cd myproject
+lpm new myproject && cd myproject
 echo "print('Hello, world!')" > ./src/init.lua
 ```
 
