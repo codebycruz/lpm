@@ -8,6 +8,9 @@ on:
       - "packages/**"
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     strategy:
@@ -50,26 +53,23 @@ jobs:
         if: matrix.platform != 'windows'
         run: |
           cd packages/lpm
-          BOOTSTRAP=1 $GITHUB_WORKSPACE/luajit-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.libc }}/luajit ./src/init.lua compile
+          BOOTSTRAP=1 $GITHUB_WORKSPACE/luajit-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.libc }}/luajit ./src/init.lua compile --outfile lpm-${{ matrix.platform }}-${{ matrix.arch }}
 
       - name: Build lpm (Windows)
         if: matrix.platform == 'windows'
         run: |
           cd packages/lpm
-          $env:BOOTSTRAP=1; & "$env:GITHUB_WORKSPACE/luajit-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.libc }}/luajit.exe" ./src/init.lua compile
+          $env:BOOTSTRAP=1; & "$env:GITHUB_WORKSPACE/luajit-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.libc }}/luajit.exe" ./src/init.lua compile --outfile lpm-${{ matrix.platform }}-${{ matrix.arch }}.exe
 
-      - name: Upload artifact (Unix)
-        if: matrix.platform != 'windows'
-        uses: actions/upload-artifact@v6
+      - name: Upload nightly release asset
+        uses: softprops/action-gh-release@v2
         with:
-          name: lpm-${{ matrix.platform }}-${{ matrix.arch }}
-          path: packages/lpm/lpm
-          if-no-files-found: error
-
-      - name: Upload artifact (Windows)
-        if: matrix.platform == 'windows'
-        uses: actions/upload-artifact@v6
-        with:
-          name: lpm-${{ matrix.platform }}-${{ matrix.arch }}
-          path: ${{ github.workspace }}\packages\lpm\lpm.exe
-          if-no-files-found: error
+          tag_name: nightly
+          name: Nightly Build
+          prerelease: true
+          body: |
+            Automated nightly build from master.
+            Commit: ${{ github.sha }}
+            Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          files: packages/lpm/lpm-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.platform == 'windows' && '.exe' || '' }}
+          fail_on_unmatched_files: true
