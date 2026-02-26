@@ -34,10 +34,9 @@ export default function InstallTabs() {
 	return (
 		<div class="flex flex-col gap-4">
 			<h2 class="text-xl font-medium">Install latest version</h2>
-			<div class="max-w-full">
-				<div class="flex flex-wrap items-center">
-					{tabs.map((tab, i) => {
-						const isFirst = i === 0;
+			<div class="max-w-full border border-gray-700 rounded-lg overflow-hidden">
+				<div class="flex items-center border-b border-gray-700">
+					{tabs.map((tab) => {
 						const isActive = active === tab.id;
 
 						return (
@@ -45,14 +44,10 @@ export default function InstallTabs() {
 								key={tab.id}
 								type="button"
 								onClick={() => setActive(tab.id)}
-								class={`px-4 py-2 cursor-pointer transition-colors ${
-									isFirst ? "rounded-tl-lg" : ""
-								} ${
-									i === tabs.length - 1 ? "rounded-tr-lg" : ""
-								} ${
+								class={`px-4 py-2 cursor-pointer transition-colors text-sm border-b-2 -mb-px ${
 									isActive
-										? "bg-gray-900 text-gray-200 dark:bg-gray-800 dark:text-gray-200"
-										: "bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600"
+										? "border-blue-500 text-gray-200"
+										: "border-transparent text-gray-400 hover:text-gray-200"
 								}`}
 							>
 								{tab.label}
@@ -63,12 +58,12 @@ export default function InstallTabs() {
 						href={GITHUB_RELEASES_URL}
 						target="_blank"
 						rel="noopener noreferrer"
-						class="px-4 py-2 text-sm opacity-40 hover:opacity-100 transition-opacity cursor-pointer flex items-center"
+						class="ml-auto px-4 py-2 text-sm opacity-40 hover:opacity-100 transition-opacity cursor-pointer flex items-center"
 					>
 						Or download manually
 					</a>
 				</div>
-				<div class="flex items-center px-4 py-3 bg-gray-900 dark:bg-gray-800 rounded-b-lg rounded-tr-lg overflow-x-auto">
+				<div class="flex items-center px-4 py-3 bg-gray-900 dark:bg-gray-900 overflow-x-auto">
 					<span class="text-blue-400 mr-3 select-none font-mono text-sm shrink-0">
 						$
 					</span>
@@ -80,7 +75,7 @@ export default function InstallTabs() {
 							{activeTab.command}
 						</code>
 					</div>
-					<div class="ml-6 shrink-0">
+					<div class="ml-auto shrink-0">
 						<CopyButton getText={() => activeTab.command} />
 					</div>
 				</div>
