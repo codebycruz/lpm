@@ -52,11 +52,29 @@ function Package.open(dir)
 	dir = dir or env.cwd()
 
 	local configPath = configPathAtDir(dir)
-	if not fs.exists(configPath) then
-		return nil, "No lpm.json found in directory: " .. dir
+	if fs.exists(configPath) then
+		return setmetatable({ dir = dir }, Package), nil
 	end
 
-	return setmetatable({ dir = dir }, Package), nil
+	return nil, "No lpm.json found in directory: " .. dir
+end
+
+Package.openRocks = require("lpm-core.package.rocks")
+
+--- Opens a directory using lpm.json if present, falling back to a *.rockspec.
+---@param dir string?
+---@return lpm.Package?, string?
+function Package.openAny(dir)
+	dir = dir or env.cwd()
+
+	local pkg, err = Package.open(dir)
+	if pkg then return pkg, nil end
+
+	local rocksPkg, rocksErr = Package.openRocks(dir)
+	if rocksPkg then return rocksPkg, nil end
+
+	-- Prefer the lpm.json error message as the primary one
+	return nil, err .. "\n" .. rocksErr
 end
 
 ---@return lpm.Config
@@ -65,6 +83,10 @@ function Package:readConfig()
 
 	local s = fs.stat(configPath)
 	if not s then
+		-- No lpm.json on disk (e.g. rockspec-based package); return cached config if available.
+		if self.cachedConfig then
+			return self.cachedConfig
+		end
 		error("Could not read lpm.json: " .. configPath)
 	end
 
@@ -131,7 +153,8 @@ end
 ---@param outputDir string
 function Package:runBuildScript(outputDir)
 	if self.buildfn then
-		return self.buildfn(outputDir)
+		self.buildfn(outputDir)
+		return true
 	end
 
 	return self:runScript(self:getBuildScriptPath(), nil, { LPM_OUTPUT_DIR = outputDir })
