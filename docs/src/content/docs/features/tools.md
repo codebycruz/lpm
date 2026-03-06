@@ -17,6 +17,12 @@ You can run any package from git or a local path.
 lpm x triangle --git https://github.com/codebycruz/hood
 ```
 
+For short, lpm registers a `lpx` alias for `lpm x`, so you can also run:
+
+```bash
+lpx triangle --git https://github.com/codebycruz/hood
+```
+
 This clones the hood repository, resolves the triangle package, and then instantly runs the package. You can do this with --path dependencies as well.
 
 ## lpm install

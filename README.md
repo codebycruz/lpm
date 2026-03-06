@@ -29,7 +29,7 @@ A more in-depth comparison can be found below.
 - `lpm compile` - Turn your project into a single executable, easily distributable
 - `lpm test` - Run project tests with the built-in test framework, [`lpm-test`](./packages/lpm-test)
 - `lpm bundle` - Bundle your project into a single lua file
-- `lpm x` - Execute a project in another location, perfect for CLIs
+- `lpm x` - Execute a project in another location, perfect for CLIs (alias: `lpx`)
 - `lpm tree` - View your dependencies at a glance
 
 ## Installation
@@ -56,7 +56,7 @@ lpm run
 Or run a repository's code in a single command!
 
 ```bash
-lpm x triangle --git https://github.com/codebycruz/hood
+lpx triangle --git https://github.com/codebycruz/hood
 ```
 
 ## Comparison to LuaRocks and Lux

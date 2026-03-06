@@ -31,10 +31,10 @@ lpm run
 # 'Hello, world!' is printed to the console
 ```
 
-LPM can also run remote projects directly with `lpm x`. If you're familiar with Node.js, this is `npx` for Lua! Run this command to see a window rendering a triangle with OpenGL from the `hood` rendering library example!
+LPM can also run remote projects directly with `lpx`. If you're familiar with Node.js, this is `npx` for Lua! Run this command to see a window rendering a triangle with OpenGL from the `hood` rendering library example!
 
 ```sh
-lpm x triangle --git https://github.com/codebycruz/hood
+lpx triangle --git https://github.com/codebycruz/hood
 ```
 
 LPM can **test** your code with `lpm test`. LPM ships a minimal built-in test framework, required as `lpm-test`, which accompanies the default test executor which simply runs every file inside of your `tests` folder.
