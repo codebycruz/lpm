@@ -6,12 +6,13 @@ local Package = require("lpm-core.package")
 
 ---@param package lpm.Package
 ---@param dependency lpm.Package
-local function installDependency(package, dependency)
+---@param alias string # The name to install under (may differ from dependency:getName() when aliasing)
+local function installDependency(package, dependency, alias)
 	-- Recursively install dependencies of the dependency first
 	package:installDependencies(dependency:getDependencies(), dependency:getDir())
 
 	local modulesDir = package:getModulesDir()
-	local destinationPath = path.join(modulesDir, dependency:getName())
+	local destinationPath = path.join(modulesDir, alias)
 	if fs.islink(destinationPath) then
 		-- If its a symlink it should already be at the latest version.
 		return
@@ -25,15 +26,18 @@ end
 --- Gets a proper lpm.Package instance from dependency info.
 --- For git dependencies, this will clone it to the global git cache.
 --- For path dependencies, this will resolve the path and load the package from there.
----@param name string
+---@param alias string # The key in the dependencies table (used as the install name)
 ---@param depInfo lpm.Config.Dependency
 ---@param relativeTo string
-local function dependencyToPackage(name, depInfo, relativeTo)
+local function dependencyToPackage(alias, depInfo, relativeTo)
+	-- depInfo.package overrides the lookup name (aliasing support)
+	local packageName = depInfo.package or alias
+
 	if depInfo.git then
-		local repoDir = global.getOrInitGitRepo(name, depInfo.git, depInfo.branch, depInfo.commit)
+		local repoDir = global.getOrInitGitRepo(packageName, depInfo.git, depInfo.branch, depInfo.commit)
 
 		local gitDependencyPackage = Package.open(repoDir)
-		if gitDependencyPackage and gitDependencyPackage:getName() == name then
+		if gitDependencyPackage and gitDependencyPackage:getName() == packageName then
 			return gitDependencyPackage
 		end
 
@@ -41,23 +45,23 @@ local function dependencyToPackage(name, depInfo, relativeTo)
 			local parentDir = path.join(repoDir, path.dirname(config))
 
 			gitDependencyPackage = Package.open(parentDir)
-			if gitDependencyPackage and gitDependencyPackage:getName() == name then
+			if gitDependencyPackage and gitDependencyPackage:getName() == packageName then
 				return gitDependencyPackage
 			end
 		end
 
-		error("No lpm.json with name '" .. name .. "' found in git repository")
+		error("No lpm.json with name '" .. packageName .. "' found in git repository")
 	elseif depInfo.path then
 		local normalized = path.normalize(depInfo.path)
 		local localPackage, err = Package.open(path.resolve(relativeTo, normalized))
 
 		if not localPackage then
-			error("Failed to load local dependency package for: " .. name .. "\nError: " .. err)
+			error("Failed to load local dependency package for: " .. alias .. "\nError: " .. err)
 		end
 
 		return localPackage
 	else
-		error("Unsupported dependency type for: " .. name)
+		error("Unsupported dependency type for: " .. alias)
 	end
 end
 
@@ -75,7 +79,7 @@ local function installDependencies(package, dependencies, relativeTo)
 
 	for name, depInfo in pairs(dependencies) do
 		local dependencyPackage = dependencyToPackage(name, depInfo, relativeTo)
-		installDependency(package, dependencyPackage)
+		installDependency(package, dependencyPackage, name)
 	end
 end
 

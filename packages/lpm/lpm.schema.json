@@ -14,6 +14,10 @@
 							"path": {
 								"type": "string",
 								"description": "Local filesystem path to dependency"
+							},
+							"package": {
+								"type": "string",
+								"description": "Actual package name at the path, when aliasing (key is the require name)"
 							}
 						},
 						"additionalProperties": false
@@ -24,6 +28,18 @@
 							"git": {
 								"type": "string",
 								"description": "Git repository URL"
+							},
+							"branch": {
+								"type": "string",
+								"description": "Git branch to use"
+							},
+							"commit": {
+								"type": "string",
+								"description": "Git commit hash to pin"
+							},
+							"package": {
+								"type": "string",
+								"description": "Actual package name in the repository, when aliasing (key is the require name)"
 							}
 						},
 						"additionalProperties": false
