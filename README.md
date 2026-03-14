@@ -77,7 +77,7 @@ If anyone has any corrections, please do submit a pull request.
 | Git deps                | ✓              | ✓            | ❌           |
 | Registry deps           | ❌ ([#4][4])   | ✓ (luarocks) | ✓ (luarocks) |
 | Rockspec support        | ❌ ([#53][53]) | ✓            | ✓            |
-| Proper Lockfile Support | ❌ ([#16][16]) | ✓            | ❌           |
+| Proper Lockfile Support | ✓              | ✓            | ❌           |
 | Lua build scripts       | build.lua      | rockspec     | rockspec     |
 
 [4]: https://github.com/codebycruz/lpm/issues/4
