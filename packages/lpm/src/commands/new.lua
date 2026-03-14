@@ -13,6 +13,11 @@ local function new(args)
 		error("Directory " .. name .. " already exists")
 	end
 
+	local parent = path.dirname(name)
+	if parent ~= "" and parent ~= "." and not fs.isdir(parent) then
+		error("Cannot create '" .. name .. "': parent directory does not exist")
+	end
+
 	fs.mkdir(name)
 	ansi.printf("{green}Created directory: %s", name)
 
