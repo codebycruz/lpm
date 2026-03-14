@@ -12,10 +12,13 @@ local function installDependency(package, dependency)
 
 	local modulesDir = package:getModulesDir()
 	local destinationPath = path.join(modulesDir, dependency:getName())
-	if fs.exists(destinationPath) then
+	if fs.islink(destinationPath) then
+		-- If its a symlink it should already be at the latest version.
 		return
 	end
 
+	-- Otherwise, always assume it is dirty and needs to be updated.
+	-- In the future this could potentially do a modification diff.
 	dependency:build(destinationPath)
 end
 
@@ -71,16 +74,8 @@ local function installDependencies(package, dependencies, relativeTo)
 	end
 
 	for name, depInfo in pairs(dependencies) do
-		local destinationPath = path.join(modulesDir, name)
-		if fs.exists(destinationPath) then
-			-- TODO: replace with update logic..
-			goto skip
-		end
-
 		local dependencyPackage = dependencyToPackage(name, depInfo, relativeTo)
 		installDependency(package, dependencyPackage)
-
-		::skip::
 	end
 end
 
