@@ -3,6 +3,8 @@
 ---@class lpm.Config
 ---@field name string
 ---@field version string
+---@field description string?
+---@field authors string[]?
 ---@field bin string?
 ---@field engine string?
 ---@field scripts table<string, string>?

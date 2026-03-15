@@ -72,6 +72,15 @@
 			"pattern": "^\\d+\\.\\d+\\.\\d+$",
 			"description": "Semantic version number"
 		},
+		"description": {
+			"type": "string",
+			"description": "Short description of the package"
+		},
+		"authors": {
+			"type": "array",
+			"items": { "type": "string" },
+			"description": "List of package authors"
+		},
 		"dependencies": {
 			"allOf": [
 				{

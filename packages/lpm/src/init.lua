@@ -112,6 +112,7 @@ commands.test = require("lpm.commands.test")
 commands.tree = require("lpm.commands.tree")
 commands.update = require("lpm.commands.update")
 commands.uninstall = require("lpm.commands.uninstall")
+commands.publish = require("lpm.commands.publish")
 
 local ok, err = xpcall(function()
 	if args:count() == 0 then
