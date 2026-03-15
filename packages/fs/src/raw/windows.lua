@@ -296,6 +296,17 @@ local function createJunction(src, dest)
 	return true
 end
 
+--- Removes a symlink or junction without following it.
+---@param p string
+---@return boolean
+function fs.rmlink(p)
+	local attrs = getFileAttrs(p)
+	if attrs ~= nil and bit.band(attrs, FILE_ATTRIBUTE_DIRECTORY) ~= 0 then
+		return kernel32.RemoveDirectoryA(p) ~= 0
+	end
+	return kernel32.DeleteFileA(p) ~= 0
+end
+
 ---@param src string
 ---@param dest string
 function fs.mklink(src, dest)

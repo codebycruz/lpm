@@ -199,6 +199,12 @@ function fs.mklink(src, dest)
 end
 
 ---@param p string
+---@return boolean
+function fs.rmlink(p)
+	return os.remove(p) ~= nil
+end
+
+---@param p string
 function fs.islink(p)
 	local s = lstat(p)
 	if s == nil then

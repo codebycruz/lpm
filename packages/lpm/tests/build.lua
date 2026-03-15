@@ -277,7 +277,7 @@ test.it("installDependencies uses lockfile to pin dependency on reinstall", func
 		["pinned-dep"] = { path = "../other-dep" },
 	}):save()
 
-	-- Remove the installed symlink so reinstall actually runs
+	-- Remove the installed symlink/junction so reinstall actually runs
 	fs.rmdir(path.join(mainDir, "target", "pinned-dep"))
 
 	-- Reinstall — should use the lockfile's path, getting other-dep's init.lua

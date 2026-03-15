@@ -22,6 +22,7 @@ local path = require("path")
 ---@field readdir fun(p: string): (fun(): fs.DirEntry?)?
 ---@field mkdir fun(p: string): boolean
 ---@field mklink fun(src: string, dest: string): boolean
+---@field rmlink fun(p: string): boolean
 ---@field stat fun(p: string): fs.Stat?
 ---@field lstat fun(p: string): fs.Stat?
 
@@ -123,13 +124,19 @@ end
 function fs.rmdir(dir)
 	if not fs.exists(dir) then return false end
 
+	-- Symlinks/junctions: remove the link itself without recursing into the target.
+	-- On Windows, junctions require RemoveDirectoryA (not DeleteFileA/os.remove).
+	if fs.islink(dir) then
+		return fs.rmlink(dir)
+	end
+
 	local iter = fs.readdir(dir)
 	if not iter then return false end
 
 	for entry in iter do
 		local full = path.join(dir, entry.name)
 		if entry.type == "symlink" then
-			os.remove(full)
+			fs.rmlink(full)
 		elseif entry.type == "dir" then
 			fs.rmdir(full)
 		else
