@@ -25,10 +25,10 @@ jobs:
             platform: windows
             artifact: luajit-windows-x86-64-gnu
             outfile: lpm-windows-x86-64
-          - os: macos-15-intel
-            platform: macos
-            artifact: luajit-macos-x86-64
-            outfile: lpm-macos-x86-64
+          # - os: macos-15-intel
+          #   platform: macos
+          #   artifact: luajit-macos-x86-64
+          #   outfile: lpm-macos-x86-64
           - os: macos-15
             platform: macos
             artifact: luajit-macos-aarch64
