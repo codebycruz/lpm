@@ -18,10 +18,10 @@ const posts = (await getCollection("blog")).sort(
 							href={`/blog/${post.id}`}
 							class="flex flex-col gap-1 py-4 group"
 						>
-							<span class="font-medium group-hover:text-blue-500 transition-colors">
+							<span class="text-lg font-medium group-hover:text-blue-500 transition-colors">
 								{post.data.title}
 							</span>
-							<span class="text-sm text-gray-500 dark:text-gray-400">
+							<span class="text-base text-gray-500 dark:text-gray-400">
 								{post.data.author} &middot;{" "}
 								{post.data.published.toLocaleDateString("en-US", {
 									year: "numeric",
