@@ -9,7 +9,7 @@
 		"astro": "astro"
 	},
 	"dependencies": {
-		"@astrojs/cloudflare": "^12.6.13",
+		"@astrojs/cloudflare": "^13.1.1",
 		"@astrojs/preact": "^5.0.0",
 		"@astrojs/rss": "^4.0.17",
 		"@iconify-json/lucide": "^1.2.98",
