@@ -10,14 +10,11 @@
 
 </div>
 
-`lpm` is a package manager for Lua, written in Lua.
+`lpm` is a modern package manager and toolkit for Lua, written in Lua.
 
-It was created due to my frustration with the current status quo of package management in the Lua ecosystem.
+It includes a LuaJIT runtime for any operating system, a test runner, and the ability to compile your Lua programs into single executables users can run in **<1mB**. All of this alongside a package manager and package registry to easily share and reuse lua code, properly version locked and isolated to your individual projects.
 
-- [LuaRocks](https://luarocks.org) is sorely dated, difficult to manage, and hardly maintained.
-- [Lux](https://github.com/lumen-oss/lux), while promising, is written in Rust and seems to be targeting backwards compatibility with LuaRocks.
-
-A more in-depth comparison can be found below.
+To get started, [read the docs](https://lualpm.com/docs/getting-started/introduction).
 
 ## Features
 
