@@ -17,7 +17,7 @@ ARCH="$(uname -m)"
 case "$OS-$ARCH" in
     Linux-x86_64)          BIN="lpm-linux-x86-64" ;;
     Linux-aarch64)         BIN="lpm-linux-aarch64" ;;
-    Darwin-x86_64)         BIN="lpm-macos-x86-64" ;;
+    Darwin-x86_64)         echo "Intel macOS is currently unsupported."; exit 1 ;;
     Darwin-arm64)          BIN="lpm-macos-aarch64" ;;
     *) echo "Unsupported platform: $OS $ARCH"; exit 1 ;;
 esac
