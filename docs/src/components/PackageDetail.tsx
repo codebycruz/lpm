@@ -44,6 +44,12 @@ function saveCache(name: string, data: Portfile) {
 	} catch {}
 }
 
+function parseAuthor(author: string) {
+	const match = author.match(/^(.*?)\s*<([^>]+)>\s*$/);
+	if (match) return { name: match[1].trim(), email: match[2] };
+	return { name: author, email: null };
+}
+
 function sortedVersions(versions: Record<string, string>) {
 	return Object.entries(versions).sort(([a], [b]) => {
 		const parse = (v: string) => v.split(".").map(Number);
@@ -98,7 +104,20 @@ export default function PackageDetail({ pkg }: { pkg: PackageSummary }) {
 
 				<div class="flex flex-wrap gap-x-4 gap-y-1 text-sm text-black/40 dark:text-white/40">
 					{pkg.authors && pkg.authors.length > 0 && (
-						<span>by {pkg.authors.join(", ")}</span>
+						<span>
+							by{" "}
+							{pkg.authors.map((a, i) => {
+								const { name, email } = parseAuthor(a);
+								return (
+									<span key={i}>
+										{i > 0 && ", "}
+										{email ? (
+											<a href={`mailto:${email}`} class="text-blue-500 hover:underline">{name}</a>
+										) : name}
+									</span>
+								);
+							})}
+						</span>
 					)}
 					{license && (
 						<span class="px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/5 text-xs font-mono">
