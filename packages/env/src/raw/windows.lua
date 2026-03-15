@@ -18,6 +18,7 @@ ffi.cdef([[
 
 local kernel32 = ffi.load("kernel32")
 
+---@class env.raw.windows
 local env = {}
 
 ---@param name string
