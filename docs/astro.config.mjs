@@ -4,24 +4,14 @@ import { defineConfig } from "astro/config";
 import tailwindcss from "@tailwindcss/vite";
 import preact from "@astrojs/preact";
 import icon from "astro-icon";
+import cloudflare from "@astrojs/cloudflare";
 
 // https://astro.build/config
 export default defineConfig({
 	site: "https://lualpm.com",
+	adapter: cloudflare(),
 	vite: {
-		plugins: [
-			tailwindcss(),
-			{
-				name: "registry-rewrite",
-				configureServer(server) {
-					server.middlewares.use((req, _, next) => {
-						if (req.url?.startsWith("/registry/"))
-							req.url = "/registry/index.html";
-						next();
-					});
-				},
-			},
-		],
+		plugins: [tailwindcss()],
 	},
 
 	markdown: {
