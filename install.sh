@@ -4,10 +4,15 @@ set -e
 DIR="$HOME/.lpm"
 REPO="codebycruz/lpm"
 
-case "$(uname -m)" in
-    x86_64)        BIN="lpm-linux-x86-64" ;;
-    aarch64|arm64) BIN="lpm-linux-aarch64" ;;
-    *) echo "Unsupported arch: $(uname -m)"; exit 1 ;;
+OS="$(uname -s)"
+ARCH="$(uname -m)"
+
+case "$OS-$ARCH" in
+    Linux-x86_64)          BIN="lpm-linux-x86-64" ;;
+    Linux-aarch64)         BIN="lpm-linux-aarch64" ;;
+    Darwin-x86_64)         BIN="lpm-macos-x86-64" ;;
+    Darwin-arm64)          BIN="lpm-macos-aarch64" ;;
+    *) echo "Unsupported platform: $OS $ARCH"; exit 1 ;;
 esac
 
 TAG=$(curl -sf "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
