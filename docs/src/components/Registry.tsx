@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "preact/hooks";
+import { useState, useEffect, useMemo, useRef, useCallback } from "preact/hooks";
 import { CopyButton } from "./CopyButton";
 
 interface Package {
@@ -60,6 +60,22 @@ export default function Registry() {
 	const [query, setQuery] = useState("");
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState<string | null>(null);
+	const searchRef = useRef<HTMLInputElement>(null);
+
+	const handleKeyDown = useCallback((e: KeyboardEvent) => {
+		const target = e.target as HTMLElement;
+		const tag = target.tagName;
+		if (tag === "INPUT" || tag === "TEXTAREA" || target.isContentEditable) return;
+		if (e.metaKey || e.ctrlKey || e.altKey) return;
+		if (e.key.length === 1) {
+			searchRef.current?.focus();
+		}
+	}, []);
+
+	useEffect(() => {
+		document.addEventListener("keydown", handleKeyDown);
+		return () => document.removeEventListener("keydown", handleKeyDown);
+	}, [handleKeyDown]);
 
 	useEffect(() => {
 		fetch(REGISTRY_URL)
@@ -104,6 +120,7 @@ export default function Registry() {
 					<line x1="21" y1="21" x2="16.65" y2="16.65" />
 				</svg>
 				<input
+					ref={searchRef}
 					type="text"
 					placeholder="Search packages..."
 					value={query}
