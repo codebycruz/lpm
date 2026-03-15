@@ -3,6 +3,13 @@ set -e
 
 DIR="$HOME/.lpm"
 REPO="codebycruz/lpm"
+NIGHTLY=0
+
+for arg in "$@"; do
+    case "$arg" in
+        --nightly) NIGHTLY=1 ;;
+    esac
+done
 
 OS="$(uname -s)"
 ARCH="$(uname -m)"
@@ -15,7 +22,11 @@ case "$OS-$ARCH" in
     *) echo "Unsupported platform: $OS $ARCH"; exit 1 ;;
 esac
 
-TAG=$(curl -sf "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+if [ "$NIGHTLY" = "1" ]; then
+    TAG="nightly"
+else
+    TAG=$(curl -sf "https://api.github.com/repos/$REPO/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
+fi
 
 mkdir -p "$DIR"
 curl -fL "https://github.com/$REPO/releases/download/$TAG/$BIN" -o "$DIR/lpm"
