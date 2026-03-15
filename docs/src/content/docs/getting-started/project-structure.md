@@ -1,6 +1,6 @@
 ---
 title: Project Structure
-order: 3
+order: 2
 ---
 
 # Project Structure

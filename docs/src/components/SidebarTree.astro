@@ -1,7 +1,10 @@
 ---
+import { Icon } from "astro-icon/components";
+
 export interface TreeItem {
 	label: string;
 	href?: string;
+	icon?: string;
 	children?: TreeItem[];
 }
 
@@ -36,7 +39,8 @@ function isActive(href?: string): boolean {
 							{item.label}
 						</a>
 					) : (
-						<span class="block px-3 py-1.5 font-semibold">
+						<span class="flex items-center gap-2 px-3 py-1.5 font-semibold">
+							{item.icon && <Icon name={item.icon} class="size-4 shrink-0 opacity-60" />}
 							{item.label}
 						</span>
 					)}
