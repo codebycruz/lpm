@@ -71,8 +71,7 @@ If anyone has any corrections, please do submit a pull request.
 | Project format        | JSON         | TOML/Lua     | Lua          |
 | Add/remove deps       | ✓            | ✓            | ❌           |
 | Built-in test runner  | ✓ (lpm-test) | ✓ (busted)   | ❌           |
-| Comes with luajit     | ✓            | ❌           | ❌           |
-| Lua version manager   | ❌           | ✓            | ❌           |
+| Ships with LuaJIT     | ✓            | ❌           | ❌           |
 | Compile to executable | ✓            | ❌           | ❌           |
 | Git deps              | ✓            | ✓            | ❌           |
 | Registry deps         | ❌ ([#4][4]) | ✓ (luarocks) | ✓ (luarocks) |
