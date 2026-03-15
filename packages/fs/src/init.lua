@@ -31,6 +31,8 @@ if jit.os == "Windows" then
 	rawfs = require("fs.raw.windows")
 elseif jit.os == "Linux" then
 	rawfs = require("fs.raw.linux")
+elseif jit.os == "OSX" then
+	rawfs = require("fs.raw.macos")
 else
 	error("Unsupported OS: " .. jit.os)
 end
