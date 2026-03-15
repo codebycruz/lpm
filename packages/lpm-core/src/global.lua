@@ -122,8 +122,9 @@ end
 ---@param repoName string
 ---@param repoUrl string
 ---@param branch string?
-function global.cloneDir(repoName, repoUrl, branch)
-	local repoDir = global.getGitRepoDir(repoName, branch)
+---@param commit string?
+function global.cloneDir(repoName, repoUrl, branch, commit)
+	local repoDir = global.getGitRepoDir(repoName, branch, commit)
 	local args = { "clone" }
 
 	if branch then
@@ -144,7 +145,7 @@ end
 function global.getOrInitGitRepo(repoName, repoUrl, branch, commit)
 	local repoDir = global.getGitRepoDir(repoName, branch, commit)
 	if not fs.exists(repoDir) then
-		local ok, err = global.cloneDir(repoName, repoUrl, branch)
+		local ok, err = global.cloneDir(repoName, repoUrl, branch, commit)
 		if not ok then
 			error("Failed to clone git repository: " .. err)
 		end
