@@ -4,6 +4,7 @@ local fs = require("fs")
 local json = require("json")
 local path = require("path")
 local process = require("process")
+local semver = require("semver")
 
 local REGISTRY_URL = "https://github.com/codebycruz/lpm-registry"
 
@@ -63,19 +64,6 @@ function global.lookupRegistryPackage(name)
 	return json.decode(content), nil
 end
 
----@param a string
----@param b string
----@return boolean # true if a < b (semver comparison)
-local function versionLessThan(a, b)
-	local ma, mia, pa = a:match("^(%d+)%.(%d+)%.(%d+)$")
-	local mb, mib, pb = b:match("^(%d+)%.(%d+)%.(%d+)$")
-	ma, mia, pa = tonumber(ma) or 0, tonumber(mia) or 0, tonumber(pa) or 0
-	mb, mib, pb = tonumber(mb) or 0, tonumber(mib) or 0, tonumber(pb) or 0
-	if ma ~= mb then return ma < mb end
-	if mia ~= mib then return mia < mib end
-	return pa < pb
-end
-
 --- Resolves a version string (or nil for latest) to a commit hash.
 ---@param portfile table
 ---@param version string? # nil means latest
@@ -98,7 +86,7 @@ function global.resolveRegistryVersion(portfile, version)
 	-- Find highest semver
 	local latest = nil
 	for v in pairs(versions) do
-		if latest == nil or versionLessThan(latest, v) then
+		if latest == nil or semver.compare(v, latest) > 0 then
 			latest = v
 		end
 	end
