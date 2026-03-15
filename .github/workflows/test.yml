@@ -29,6 +29,9 @@ jobs:
           - os: macos-15-intel
             platform: macos
             artifact: luajit-macos-x86-64
+          - os: macos-15
+            platform: macos
+            artifact: luajit-macos-aarch64
 
     runs-on: ${{ matrix.os }}
 

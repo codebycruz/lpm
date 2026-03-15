@@ -18,16 +18,24 @@ jobs:
         include:
           - os: ubuntu-22.04
             platform: linux
-            arch: x86-64
-            libc: gnu
+            artifact: luajit-linux-x86-64-gnu
+            outfile: lpm-linux-x86-64
           - os: ubuntu-22.04-arm
             platform: linux
-            arch: aarch64
-            libc: gnu
+            artifact: luajit-linux-aarch64-gnu
+            outfile: lpm-linux-aarch64
           - os: windows-latest
             platform: windows
-            arch: x86-64
-            libc: gnu
+            artifact: luajit-windows-x86-64-gnu
+            outfile: lpm-windows-x86-64
+          - os: macos-15-intel
+            platform: macos
+            artifact: luajit-macos-x86-64
+            outfile: lpm-macos-x86-64
+          - os: macos-15
+            platform: macos
+            artifact: luajit-macos-aarch64
+            outfile: lpm-macos-aarch64
 
     runs-on: ${{ matrix.os }}
 
@@ -39,27 +47,27 @@ jobs:
         id: cache-luajit
         uses: actions/cache@v5
         with:
-          path: luajit-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.libc }}
-          key: luajit-${{ matrix.platform }}-${{ matrix.arch }}-latest
+          path: ${{ matrix.artifact }}
+          key: ${{ matrix.artifact }}-latest
 
       - name: Download LuaJIT
         if: steps.cache-luajit.outputs.cache-hit != 'true'
         run: |
-          curl -L -o luajit.tar.gz https://github.com/codebycruz/lj-dist/releases/download/latest/luajit-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.libc }}.tar.gz
+          curl -L -o luajit.tar.gz https://github.com/codebycruz/lj-dist/releases/download/latest/${{ matrix.artifact }}.tar.gz
           tar -xzf luajit.tar.gz
-          chmod +x luajit-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.libc }}/luajit${{ matrix.platform == 'windows' && '.exe' || '' }}
+          chmod +x ${{ matrix.artifact }}/luajit${{ matrix.platform == 'windows' && '.exe' || '' }}
 
       - name: Build lpm (Unix)
         if: matrix.platform != 'windows'
         run: |
           cd packages/lpm
-          BOOTSTRAP=1 $GITHUB_WORKSPACE/luajit-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.libc }}/luajit ./src/init.lua compile --outfile lpm-${{ matrix.platform }}-${{ matrix.arch }}
+          BOOTSTRAP=1 $GITHUB_WORKSPACE/${{ matrix.artifact }}/luajit ./src/init.lua compile --outfile ${{ matrix.outfile }}
 
       - name: Build lpm (Windows)
         if: matrix.platform == 'windows'
         run: |
           cd packages/lpm
-          $env:BOOTSTRAP=1; & "$env:GITHUB_WORKSPACE/luajit-${{ matrix.platform }}-${{ matrix.arch }}-${{ matrix.libc }}/luajit.exe" ./src/init.lua compile --outfile lpm-${{ matrix.platform }}-${{ matrix.arch }}.exe
+          $env:BOOTSTRAP=1; & "$env:GITHUB_WORKSPACE/${{ matrix.artifact }}/luajit.exe" ./src/init.lua compile --outfile ${{ matrix.outfile }}.exe
 
       - name: Upload nightly release asset
         uses: softprops/action-gh-release@v2
@@ -71,5 +79,5 @@ jobs:
             Automated nightly build from master.
             Commit: ${{ github.sha }}
             Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          files: packages/lpm/lpm-${{ matrix.platform }}-${{ matrix.arch }}${{ matrix.platform == 'windows' && '.exe' || '' }}
+          files: packages/lpm/${{ matrix.outfile }}${{ matrix.platform == 'windows' && '.exe' || '' }}
           fail_on_unmatched_files: true
