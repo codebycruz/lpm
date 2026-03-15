@@ -5,9 +5,15 @@ import Search from "./Search.tsx";
 
 const entries = [
 	{ display: "Docs", href: "/docs/getting-started/introduction/" },
-	{ display: "Registry", href: "/registry/" },
 	{ display: "Blog", href: "/blog/" },
+	{ display: "Registry", href: "/registry/" },
 ];
+
+const pathname = Astro.url.pathname;
+function isActive(href: string) {
+	if (href === "/docs/getting-started/introduction/") return pathname.startsWith("/docs/");
+	return pathname.startsWith(href);
+}
 ---
 
 <nav
@@ -32,7 +38,7 @@ const entries = [
 				entries.map((entry) => (
 					<a
 						href={entry.href}
-						class="hover:bg-gray-800/50 font-medium dark:hover:bg-white/20 p-4 underline-offset-4 transition"
+						class={`hover:bg-gray-800/50 font-medium dark:hover:bg-white/20 p-4 transition border-b-2 ${isActive(entry.href) ? "border-blue-500" : "border-transparent"}`}
 					>
 						{entry.display}
 					</a>
@@ -119,7 +125,7 @@ const entries = [
 			entries.map((entry) => (
 				<a
 					href={entry.href}
-					class="flex items-center px-2 py-3 font-medium hover:bg-black/5 dark:hover:bg-white/5 rounded-md transition"
+					class={`flex items-center px-2 py-3 font-medium hover:bg-black/5 dark:hover:bg-white/5 rounded-md transition ${isActive(entry.href) ? "text-blue-500" : ""}`}
 				>
 					{entry.display}
 				</a>
