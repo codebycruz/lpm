@@ -8,7 +8,7 @@ local semver = require("semver")
 
 local REGISTRY_URL = "https://github.com/codebycruz/lpm-registry"
 
-global.currentVersion = "0.6.4"
+global.currentVersion = "0.7.0"
 
 ---@param s string
 local function sanitize(s)
