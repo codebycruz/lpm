@@ -165,7 +165,7 @@ end
 
 ---@param cwd string
 ---@param glob string
----@param opts { absolute: boolean }?
+---@param opts { absolute: boolean, followSymlinks: boolean }?
 ---@return string[]
 function fs.scan(cwd, glob, opts)
 	if not fs.isdir(cwd) then
@@ -173,6 +173,7 @@ function fs.scan(cwd, glob, opts)
 	end
 
 	local absolute = opts and opts.absolute or false
+	local followSymlinks = opts and opts.followSymlinks or false
 
 	local pattern = fs.globToPattern(glob)
 	local entries = {}
@@ -185,10 +186,23 @@ function fs.scan(cwd, glob, opts)
 
 		for entry in dirIter do
 			local entryPath = p .. sep .. entry.name
+			local entryType = entry.type
 
-			if fs.isdir(entryPath) then
+			-- d_type can be DT_UNKNOWN on some filesystems; fall back to lstat
+			if entryType == "unknown" then
+				local s = fs.lstat(entryPath)
+				entryType = s and s.type or "unknown"
+			end
+
+			-- Resolve symlinks when followSymlinks is set
+			if entryType == "symlink" and followSymlinks then
+				local s = fs.stat(entryPath)
+				entryType = s and s.type or "unknown"
+			end
+
+			if entryType == "dir" then
 				dir(entryPath)
-			elseif fs.isfile(entryPath) then
+			elseif entryType == "file" then
 				if string.find(entryPath, pattern) then
 					if absolute then
 						entries[#entries + 1] = entryPath
