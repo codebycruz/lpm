@@ -2,6 +2,7 @@
 	"name": "lpm",
 	"compatibility_date": "2026-02-18",
 	"main": "./dist/_worker.js",
+	"compatibility_flags": ["nodejs_compat"],
 	"assets": {
 		"directory": "./dist",
 	},
