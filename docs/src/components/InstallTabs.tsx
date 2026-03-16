@@ -3,6 +3,7 @@ import { GITHUB_RELEASES_URL } from "../data/info";
 import { CopyButton } from "./CopyButton";
 
 function detectOS(): string {
+	if (typeof navigator === "undefined") return "linux";
 	const p = navigator.platform.toLowerCase();
 	if (p.includes("win")) return "windows";
 	return "linux";
