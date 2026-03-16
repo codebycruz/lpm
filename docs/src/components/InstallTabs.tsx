@@ -1,9 +1,8 @@
-import { useState } from "preact/hooks";
+import { useState, useEffect } from "preact/hooks";
 import { GITHUB_RELEASES_URL } from "../data/info";
 import { CopyButton } from "./CopyButton";
 
 function detectOS(): string {
-	if (typeof navigator === "undefined") return "linux";
 	const p = navigator.platform.toLowerCase();
 	if (p.includes("win")) return "windows";
 	return "linux";
@@ -28,7 +27,11 @@ const maxCommand = tabs.reduce(
 );
 
 export default function InstallTabs() {
-	const [active, setActive] = useState<string>(detectOS);
+	const [active, setActive] = useState<string>("linux");
+
+	useEffect(() => {
+		setActive(detectOS());
+	}, []);
 
 	const activeTab = tabs.find((t) => t.id === active) ?? tabs[0];
 
