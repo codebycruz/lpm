@@ -23,9 +23,9 @@ local function help(args)
 		{ cmd = "bundle",    ex = nil,           color = "magenta", desc = "Bundle current project into a single lua file" }
 	}
 
-	print("lpm is a package manager for Lua, written in Lua.\n")
-	print("Usage: lpm <command> [options]")
-	print("Available commands:")
+	ansi.printf("{blue}lpm{reset} is a package manager for Lua, written in Lua.\n")
+	ansi.printf("Usage: lpm <command> {magenta}[options]")
+	ansi.printf("\nCommands:")
 	for _, command in ipairs(commands) do
 		if not command.cmd then -- Separator
 			print("")
@@ -36,6 +36,9 @@ local function help(args)
 			print(string.format("  %-18s %-20s %s", cmd, ex, command.desc))
 		end
 	end
+
+	ansi.printf("%-23s {blue} %s", "\nLearn more:", "https://lualpm.com")
+	ansi.printf("%-22s {blue} %s", "Join the discord:", "https://discord.gg/rHgp7DhkHm")
 end
 
 return help
