@@ -14,47 +14,21 @@ runs:
       if: runner.os != 'Windows'
       shell: bash
       run: |
-        OS="$(uname -s)"
-        ARCH="$(uname -m)"
-
-        case "$OS-$ARCH" in
-          Linux-x86_64)   ARTIFACT="lpm-linux-x86-64" ;;
-          Linux-aarch64)  ARTIFACT="lpm-linux-aarch64" ;;
-          Darwin-arm64)   ARTIFACT="lpm-macos-aarch64" ;;
-          Darwin-x86_64)  echo "Intel macOS is currently unsupported."; exit 1 ;;
-          *) echo "Unsupported platform: $OS $ARCH"; exit 1 ;;
+        case "${{ inputs.version }}" in
+          nightly) ARGS="--nightly" ;;
+          latest)  ARGS="" ;;
+          *)       ARGS="--version ${{ inputs.version }}" ;;
         esac
-
-        if [ "${{ inputs.version }}" = "nightly" ]; then
-          TAG="nightly"
-        elif [ "${{ inputs.version }}" = "latest" ]; then
-          TAG=$(curl -sf "https://api.github.com/repos/codebycruz/lpm/releases/latest" | grep '"tag_name":' | sed -E 's/.*"([^"]+)".*/\1/')
-        else
-          TAG="v${{ inputs.version }}"
-        fi
-
-        mkdir -p "$HOME/.lpm"
-        curl -fL "https://github.com/codebycruz/lpm/releases/download/$TAG/$ARTIFACT" -o "$HOME/.lpm/lpm"
-        chmod +x "$HOME/.lpm/lpm"
+        sh "${{ github.action_path }}/install.sh" $ARGS
         echo "$HOME/.lpm" >> "$GITHUB_PATH"
-        "$HOME/.lpm/lpm" --setup
 
     - name: Install lpm (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
-        $ARTIFACT = "lpm-windows-x86-64.exe"
-
-        if ("${{ inputs.version }}" -eq "nightly") {
-          $TAG = "nightly"
-        } elseif ("${{ inputs.version }}" -eq "latest") {
-          $TAG = (Invoke-RestMethod "https://api.github.com/repos/codebycruz/lpm/releases/latest").tag_name
-        } else {
-          $TAG = "v${{ inputs.version }}"
-        }
-
-        $lpmDir = "$env:USERPROFILE\.lpm"
-        New-Item -ItemType Directory $lpmDir -Force | Out-Null
-        Invoke-WebRequest "https://github.com/codebycruz/lpm/releases/download/$TAG/$ARTIFACT" -OutFile "$lpmDir\lpm.exe"
-        echo "$lpmDir" >> $env:GITHUB_PATH
-        & "$lpmDir\lpm.exe" --setup
+        $version = "${{ inputs.version }}"
+        $args = if ($version -eq "nightly") { @("--nightly") }
+                elseif ($version -eq "latest") { @() }
+                else { @("--version", $version) }
+        & "${{ github.action_path }}/install.ps1" @args
+        echo "$env:USERPROFILE\.lpm" >> $env:GITHUB_PATH
