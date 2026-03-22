@@ -22,7 +22,7 @@ jobs:
           - os: ubuntu-22.04-arm
             outfile: lpm-linux-aarch64
           - os: windows-latest
-            outfile: lpm-windows-x86-64
+            outfile: lpm-windows-x86-64.exe
           # - os: macos-15-intel
           #   outfile: lpm-macos-x86-64
           - os: macos-15
@@ -37,17 +37,10 @@ jobs:
       - name: Setup lpm
         uses: codebycruz/lpm@master
 
-      - name: Build lpm (Unix)
-        if: runner.os != 'Windows'
+      - name: Build lpm
         run: |
           cd packages/lpm
           lpm compile --outfile ${{ matrix.outfile }}
-
-      - name: Build lpm (Windows)
-        if: runner.os == 'Windows'
-        run: |
-          cd packages/lpm
-          lpm compile --outfile ${{ matrix.outfile }}.exe
 
       - name: Upload nightly release asset
         uses: softprops/action-gh-release@v2
@@ -59,5 +52,5 @@ jobs:
             Automated nightly build from master.
             Commit: ${{ github.sha }}
             Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          files: packages/lpm/${{ matrix.outfile }}${{ runner.os == 'Windows' && '.exe' || '' }}
+          files: packages/lpm/${{ matrix.outfile }}
           fail_on_unmatched_files: true
