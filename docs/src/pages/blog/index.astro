@@ -3,42 +3,47 @@ import { getCollection } from "astro:content";
 import Layout from "../../layouts/Layout.astro";
 
 const posts = (await getCollection("blog")).sort(
-	(a, b) => b.data.published.valueOf() - a.data.published.valueOf(),
+    (a, b) => b.data.published.valueOf() - a.data.published.valueOf(),
 );
 ---
 
 <Layout title="Blog">
-	<div class="w-full max-w-2xl mx-auto px-4 py-12">
-		<h1 class="text-3xl font-bold mb-8">Blog</h1>
-		<ul class="flex flex-col divide-y divide-gray-200 dark:divide-gray-800">
-			{
-				posts.map((post) => (
-					<li>
-						<a
-							href={`/blog/${post.id}`}
-							class="flex flex-col gap-1 py-4 group"
-						>
-							<span class="text-lg font-medium group-hover:text-blue-500 transition-colors">
-								{post.data.title}
-							</span>
-							<span class="text-base text-gray-500 dark:text-gray-400">
-								{post.data.author} &middot;{" "}
-								{post.data.published.toLocaleDateString("en-US", {
-									year: "numeric",
-									month: "long",
-									day: "numeric",
-								})}
-							</span>
-							{post.data.description && (
-								<div class="relative mt-1 text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-h-[3.75rem] overflow-hidden">
-									{post.data.description}
-									<div class="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white dark:from-gray-950 to-transparent" />
-								</div>
-							)}
-						</a>
-					</li>
-				))
-			}
-		</ul>
-	</div>
+    <div class="w-full max-w-3xl mx-auto px-4 py-12">
+        <h1 class="text-4xl font-bold mb-8">Blog</h1>
+        <ul
+            class="flex flex-col gap-4 divide-y divide-gray-200 dark:divide-gray-800"
+        >
+            {
+                posts.map((post) => (
+                    <li>
+                        <a
+                            href={`/blog/${post.id}`}
+                            class="flex flex-col gap-1 py-4 group"
+                        >
+                            <span class="text-xl font-medium group-hover:text-blue-500 transition-colors">
+                                {post.data.title}
+                            </span>
+                            <span class="text-base text-gray-500 dark:text-gray-400">
+                                {post.data.author} &middot;{" "}
+                                {post.data.published.toLocaleDateString(
+                                    "en-US",
+                                    {
+                                        year: "numeric",
+                                        month: "long",
+                                        day: "numeric",
+                                    },
+                                )}
+                            </span>
+                            {post.data.description && (
+                                <div class="relative mt-1 text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-h-[3.75rem] overflow-hidden">
+                                    {post.data.description}
+                                    <div class="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white dark:from-gray-950 to-transparent" />
+                                </div>
+                            )}
+                        </a>
+                    </li>
+                ))
+            }
+        </ul>
+    </div>
 </Layout>
