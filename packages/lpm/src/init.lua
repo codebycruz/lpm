@@ -129,7 +129,7 @@ local ok, err = xpcall(function()
 		if commandHandler then
 			commandHandler(args)
 		else
-			-- Fall back to package scripts before erroring
+			-- Fall back to package scripts, then to a loose file if it exists
 			local pkg = Package.open()
 			local scripts = pkg and pkg:readConfig().scripts
 
@@ -140,6 +140,9 @@ local ok, err = xpcall(function()
 				if not ok then
 					error("Script '" .. commandName .. "' failed: " .. err)
 				end
+			elseif fs.exists(commandName) then
+				table.insert(args.raw, 1, commandName)
+				commands.run(args)
 			else
 				ansi.printf("{red}Unknown command: %s", tostring(commandName))
 			end
