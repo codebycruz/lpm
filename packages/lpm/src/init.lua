@@ -78,14 +78,14 @@ local clap = require("clap")
 local env = require("env")
 local fs = require("fs")
 
-local global = require("lpm-core.global")
-local Package = require("lpm-core.package")
-global.init()
+local lpm = require("lpm-core")
+
+lpm.global.init()
 
 local args = clap.parse({ ... })
 
 if args:flag("version") and args:count() == 0 then
-	print(global.currentVersion)
+	print(lpm.global.currentVersion)
 	return
 end
 
@@ -131,7 +131,7 @@ local ok, err = xpcall(function()
 		commandHandler(args)
 	else
 		-- Fall back to package scripts, then to a loose file if it exists
-		local pkg = Package.open()
+		local pkg = lpm.Package.open()
 		local scripts = pkg and pkg:readConfig().scripts
 
 		if scripts and scripts[commandName] then

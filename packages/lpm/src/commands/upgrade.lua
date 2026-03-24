@@ -7,7 +7,7 @@ local path = require("path")
 local fs = require("fs")
 local env = require("env")
 
-local global = require("lpm-core.global")
+local lpm = require("lpm-core")
 
 local releasesUrl = "https://api.github.com/repos/codebycruz/lpm/releases"
 
@@ -57,7 +57,7 @@ local function upgrade(args)
 			return
 		end
 
-		local runningVersion = global.currentVersion
+		local runningVersion = lpm.global.currentVersion
 		if not shouldForce and not desiredVersion and semver.compare(latestVersion, runningVersion) <= 0 then
 			ansi.printf("{green}You are already running the latest version (%s)", runningVersion)
 			return

@@ -2,7 +2,7 @@ local ansi = require("ansi")
 local fs = require("fs")
 local path = require("path")
 
-local Package = require("lpm-core.package")
+local lpm = require("lpm-core")
 
 local stringEscapes = {
 	["\\"] = "\\\\",
@@ -74,7 +74,7 @@ local function bundle(args)
 	local useBytecode = args:flag("bytecode")
 	local outFile = args:option("outfile")
 
-	local pkg, err = Package.open()
+	local pkg, err = lpm.Package.open()
 	if not pkg then
 		ansi.printf("{red}%s", err)
 		return

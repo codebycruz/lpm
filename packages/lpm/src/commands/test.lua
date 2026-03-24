@@ -1,9 +1,9 @@
-local Package = require("lpm-core.package")
-
 local fs = require("fs")
 local path = require("path")
 local ansi = require("ansi")
 local env = require("env")
+
+local lpm = require("lpm-core")
 
 ---@param packageDir string
 ---@param msg string
@@ -72,7 +72,7 @@ end
 
 ---@param _args clap.Args
 local function test(_args)
-	local package = Package.open()
+	local package = lpm.Package.open()
 
 	print()
 
@@ -87,7 +87,7 @@ local function test(_args)
 		local allResults = {}
 		for _, relativePath in ipairs(fs.scan(cwd, "**" .. path.separator .. "lpm.json")) do
 			local configPath = path.join(cwd, relativePath)
-			local pkg = Package.open(path.dirname(configPath))
+			local pkg = lpm.Package.open(path.dirname(configPath))
 			if pkg then
 				local results = pkg:runTests()
 				if not results.error then

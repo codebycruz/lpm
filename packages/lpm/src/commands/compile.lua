@@ -3,13 +3,13 @@ local fs = require("fs")
 local process = require("process")
 local path = require("path")
 
-local Package = require("lpm-core.package")
+local lpm = require("lpm-core")
 
 ---@param args clap.Args
 local function compile(args)
 	local outFile = args:option("outfile")
 
-	local pkg, err = Package.open()
+	local pkg, err = lpm.Package.open()
 	if not pkg then
 		ansi.printf("{red}%s", err)
 		return

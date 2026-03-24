@@ -1,11 +1,11 @@
-local Package = require("lpm-core.package")
-local runtime = require("lpm-core.runtime")
 local env = require("env")
 local fs = require("fs")
 
+local lpm = require("lpm-core")
+
 ---@param args clap.Args
 local function run(args)
-	local pkg, pkgErr = Package.open()
+	local pkg, pkgErr = lpm.Package.open()
 
 	local scriptArgs = {}
 	local name = nil ---@type string?
@@ -23,11 +23,11 @@ local function run(args)
 
 	if not pkg then
 		if name and fs.exists(name) then
-			local ok, err = runtime.executeFile(name, {
+			local ok, err = lpm.runtime.executeFile(name, {
 				args = scriptArgs,
 				cwd = env.cwd(),
 				packagePath = "",
-				packageCPath = "",
+				packageCPath = ""
 			})
 			if not ok then
 				error("Failed to run script: " .. (err or "Script exited with a non-zero exit code"))

@@ -1,7 +1,7 @@
 local ansi = require("ansi")
 
----@param args clap.Args
-local function help(args)
+---@param _args clap.Args
+local function help(_args)
 	local commands = {
 		{ cmd = "run",       ex = nil,           color = "green",   desc = "Execute an lpm project" },
 		{ cmd = "x",         ex = "--git <url>", color = "green",   desc = "Run a package from a git repo or path" },
