@@ -1,6 +1,6 @@
 local fs = require("fs")
 local json = require("json")
-local process = require("process")
+local git = require("git")
 local semver = require("semver")
 
 local global = require("lpm-core.global")
@@ -21,7 +21,7 @@ local function updateGitDependency(name, depInfo)
 		return false, "skipped (not installed)"
 	end
 
-	local ok, output = process.exec("git", { "pull" }, { cwd = repoDir })
+	local ok, output = git.pull(repoDir)
 	if not ok then
 		return false, "failed: " .. (output or "unknown error")
 	end

@@ -1,6 +1,6 @@
 local path = require("path")
 local fs = require("fs")
-local process = require("process")
+local git = require("git")
 
 local global = require("lpm-core.global")
 local Package = require("lpm-core.package")
@@ -39,7 +39,7 @@ local function dependencyToPackage(alias, depInfo, relativeTo)
 		local repoDir = global.getOrInitGitRepo(packageName, depInfo.git, depInfo.branch, depInfo.commit)
 
 		-- Resolve the exact HEAD commit for pinning in the lockfile
-		local ok, output = process.exec("git", { "rev-parse", "HEAD" }, { cwd = repoDir })
+		local ok, output = git.revParse(repoDir)
 		local resolvedCommit = (ok and output) and string.gsub(output, "%s+$", "") or depInfo.commit
 		if not resolvedCommit then
 			error("Failed to resolve HEAD commit for git dependency")

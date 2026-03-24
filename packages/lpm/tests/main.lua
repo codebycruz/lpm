@@ -5,6 +5,7 @@ local env = require("env")
 local path = require("path")
 local json = require("json")
 local process = require("process")
+local git = require("git")
 
 local lpm = require("lpm-core")
 
@@ -279,7 +280,7 @@ test.it("git dep: installs root package, not a sub-package, when repo has lpm.js
 	fs.mkdir(repoDir)
 
 	-- Initialize the git repo so commit info can be fetched
-	process.exec("git", { "init", "--bare" }, { cwd = repoDir })
+	git.init(repoDir, true)
 
 	-- Root lpm.json
 	fs.write(path.join(repoDir, "lpm.json"), json.encode({

@@ -22,9 +22,10 @@ function git.clone(url, dir, branch, commit)
 	return process.exec("git", args)
 end
 
+---@param cwd string?
 ---@param ref "HEAD" | string?
-function git.revParse(ref)
-	return process.exec("git", { "rev-parse", ref or "HEAD" })
+function git.revParse(cwd, ref)
+	return process.exec("git", { "rev-parse", ref or "HEAD" }, { cwd = cwd })
 end
 
 ---@param repoDir string?
@@ -32,9 +33,14 @@ function git.pull(repoDir)
 	return process.exec("git", { "pull" }, { cwd = repoDir })
 end
 
----@param repoDir string?
-function git.init(repoDir)
-	return process.exec("git", { "init" }, { cwd = repoDir })
+---@param dir string?
+---@param bare boolean?
+function git.init(dir, bare)
+	local args = { "init" }
+	if bare then
+		args[#args + 1] = "--bare"
+	end
+	return process.exec("git", args, { cwd = dir })
 end
 
 ---@param commit string
@@ -50,6 +56,17 @@ end
 ---@param dir string?
 function git.isInsideWorkTree(dir)
 	return process.exec("git", { "rev-parse", "--is-inside-work-tree" }, { cwd = dir })
+end
+
+---@param remoteName string
+---@param cwd string?
+function git.remoteGetUrl(remoteName, cwd)
+	return process.exec("git", { "remote", "get-url", remoteName }, { cwd = cwd })
+end
+
+---@param cwd string?
+function git.getCurrentBranch(cwd)
+	return process.exec("git", { "rev-parse", "--abbrev-ref", "HEAD" }, { cwd = cwd })
 end
 
 return git
