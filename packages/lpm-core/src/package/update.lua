@@ -39,8 +39,7 @@ end
 local function updateRegistryDependency(package, name, depInfo)
 	global.syncRegistry()
 
-	---@diagnostic disable-next-line # 'package' is a keyword so it complains being used as a field
-	local packageName = depInfo.package or name
+	local packageName = depInfo.name or name
 	local portfile, err = global.lookupRegistryPackage(packageName)
 	if not portfile then
 		return false, "registry error: " .. err

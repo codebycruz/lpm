@@ -33,7 +33,7 @@ end
 ---@return lpm.Package, lpm.Lockfile.Dependency
 local function dependencyToPackage(alias, depInfo, relativeTo)
 	-- depInfo.package overrides the lookup name (aliasing support)
-	local packageName = depInfo.package or alias
+	local packageName = depInfo.name or alias
 
 	if depInfo.git then
 		local repoDir = global.getOrInitGitRepo(packageName, depInfo.git, depInfo.branch, depInfo.commit)
@@ -50,7 +50,7 @@ local function dependencyToPackage(alias, depInfo, relativeTo)
 			git = depInfo.git,
 			commit = resolvedCommit,
 			branch = depInfo.branch,
-			package = depInfo.package
+			name = depInfo.name
 		}
 
 		local gitDependencyPackage = Package.open(repoDir)
@@ -79,7 +79,7 @@ local function dependencyToPackage(alias, depInfo, relativeTo)
 		---@type lpm.Lockfile.PathDependency
 		local lockEntry = {
 			path = depInfo.path,
-			package = depInfo.package
+			name = depInfo.name
 		}
 
 		return localPackage, lockEntry
@@ -101,7 +101,7 @@ local function dependencyToPackage(alias, depInfo, relativeTo)
 			git = portfile.git,
 			commit = commit,
 			branch = portfile.branch,
-			package = depInfo.package
+			name = depInfo.name
 		}
 
 		local registryPackage = Package.open(repoDir)
