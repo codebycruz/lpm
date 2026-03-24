@@ -9,14 +9,14 @@ const __dir = dirname(fileURLToPath(import.meta.url));
 
 const logoDataUri = (() => {
 	const b64 = readFileSync(
-		join(__dir, "../../../../assets/lpm-small-text-nospace.svg"),
+		join(__dir, "../../../../public/lpm-small-text-nospace.svg"),
 	).toString("base64");
 	return `data:image/svg+xml;base64,${b64}`;
 })();
 
 const logoSmallDataUri = (() => {
 	const b64 = readFileSync(
-		join(__dir, "../../../../assets/lpm-small-nospace.svg"),
+		join(__dir, "../../../../public/lpm-small-nospace.svg"),
 	).toString("base64");
 	return `data:image/svg+xml;base64,${b64}`;
 })();
@@ -43,7 +43,11 @@ export const getStaticPaths: GetStaticPaths = async () => {
 
 	const docs = docEntries.map((entry) => {
 		const body = entry.body ?? "";
-		const firstParagraph = body.split("\n").find((l) => l.trim() && !l.startsWith("#"))?.trim() ?? "";
+		const firstParagraph =
+			body
+				.split("\n")
+				.find((l) => l.trim() && !l.startsWith("#"))
+				?.trim() ?? "";
 		return {
 			params: { slug: `docs/${entry.id}` },
 			props: {
@@ -84,6 +88,15 @@ export const getStaticPaths: GetStaticPaths = async () => {
 				index: false,
 			},
 		},
+		{
+			params: { slug: "registry" },
+			props: {
+				title: "Registry",
+				description: "Browse and discover Lua packages for lpm.",
+				date: "",
+				index: false,
+			},
+		},
 	];
 
 	return [...blog, ...docs, ...pages];
@@ -109,23 +122,237 @@ export const GET: APIRoute = async ({ props }) => {
 						{
 							type: "div",
 							props: {
-								style: { position: "absolute", inset: 0, display: "flex" },
+								style: {
+									position: "absolute",
+									inset: 0,
+									display: "flex",
+								},
 								children: [
-									{ type: "div", props: { style: { position: "absolute", left: "148px", top: "115px", width: "3px", height: "3px", borderRadius: "9999px", background: "#3b82f6", opacity: "0.7" } } },
-									{ type: "div", props: { style: { position: "absolute", left: "375px", top: "72px", width: "2px", height: "2px", borderRadius: "9999px", background: "#3b82f6", opacity: "0.6" } } },
-									{ type: "div", props: { style: { position: "absolute", left: "595px", top: "188px", width: "3px", height: "3px", borderRadius: "9999px", background: "#3b82f6", opacity: "0.65" } } },
-									{ type: "div", props: { style: { position: "absolute", left: "88px", top: "355px", width: "2px", height: "2px", borderRadius: "9999px", background: "#3b82f6", opacity: "0.55" } } },
-									{ type: "div", props: { style: { position: "absolute", left: "218px", top: "478px", width: "3px", height: "3px", borderRadius: "9999px", background: "#3b82f6", opacity: "0.6" } } },
-									{ type: "div", props: { style: { position: "absolute", left: "732px", top: "58px", width: "2px", height: "2px", borderRadius: "9999px", background: "#3b82f6", opacity: "0.5" } } },
-									{ type: "div", props: { style: { position: "absolute", left: "955px", top: "598px", width: "3px", height: "3px", borderRadius: "9999px", background: "#3b82f6", opacity: "0.55" } } },
-									{ type: "div", props: { style: { position: "absolute", left: "1248px", top: "548px", width: "3px", height: "3px", borderRadius: "9999px", background: "#3b82f6", opacity: "0.65" } } },
-									{ type: "div", props: { style: { position: "absolute", left: "1295px", top: "195px", width: "3px", height: "3px", borderRadius: "9999px", background: "#3b82f6", opacity: "0.6" } } },
-									{ type: "div", props: { style: { position: "absolute", left: "472px", top: "528px", width: "2px", height: "2px", borderRadius: "9999px", background: "#64748b", opacity: "0.6" } } },
-									{ type: "div", props: { style: { position: "absolute", left: "58px", top: "8px", width: "1px", height: "1px", borderRadius: "9999px", background: "#64748b", opacity: "0.6" } } },
-									{ type: "div", props: { style: { position: "absolute", left: "810px", top: "47px", width: "2px", height: "2px", borderRadius: "9999px", background: "#64748b", opacity: "0.6" } } },
-									{ type: "div", props: { style: { position: "absolute", left: "280px", top: "65px", width: "1px", height: "1px", borderRadius: "9999px", background: "#64748b", opacity: "0.6" } } },
-									{ type: "div", props: { style: { position: "absolute", left: "1100px", top: "320px", width: "2px", height: "2px", borderRadius: "9999px", background: "#64748b", opacity: "0.5" } } },
-									{ type: "div", props: { style: { position: "absolute", left: "430px", top: "380px", width: "1px", height: "1px", borderRadius: "9999px", background: "#64748b", opacity: "0.5" } } },
+									{
+										type: "div",
+										props: {
+											style: {
+												position: "absolute",
+												left: "148px",
+												top: "115px",
+												width: "3px",
+												height: "3px",
+												borderRadius: "9999px",
+												background: "#3b82f6",
+												opacity: "0.7",
+											},
+										},
+									},
+									{
+										type: "div",
+										props: {
+											style: {
+												position: "absolute",
+												left: "375px",
+												top: "72px",
+												width: "2px",
+												height: "2px",
+												borderRadius: "9999px",
+												background: "#3b82f6",
+												opacity: "0.6",
+											},
+										},
+									},
+									{
+										type: "div",
+										props: {
+											style: {
+												position: "absolute",
+												left: "595px",
+												top: "188px",
+												width: "3px",
+												height: "3px",
+												borderRadius: "9999px",
+												background: "#3b82f6",
+												opacity: "0.65",
+											},
+										},
+									},
+									{
+										type: "div",
+										props: {
+											style: {
+												position: "absolute",
+												left: "88px",
+												top: "355px",
+												width: "2px",
+												height: "2px",
+												borderRadius: "9999px",
+												background: "#3b82f6",
+												opacity: "0.55",
+											},
+										},
+									},
+									{
+										type: "div",
+										props: {
+											style: {
+												position: "absolute",
+												left: "218px",
+												top: "478px",
+												width: "3px",
+												height: "3px",
+												borderRadius: "9999px",
+												background: "#3b82f6",
+												opacity: "0.6",
+											},
+										},
+									},
+									{
+										type: "div",
+										props: {
+											style: {
+												position: "absolute",
+												left: "732px",
+												top: "58px",
+												width: "2px",
+												height: "2px",
+												borderRadius: "9999px",
+												background: "#3b82f6",
+												opacity: "0.5",
+											},
+										},
+									},
+									{
+										type: "div",
+										props: {
+											style: {
+												position: "absolute",
+												left: "955px",
+												top: "598px",
+												width: "3px",
+												height: "3px",
+												borderRadius: "9999px",
+												background: "#3b82f6",
+												opacity: "0.55",
+											},
+										},
+									},
+									{
+										type: "div",
+										props: {
+											style: {
+												position: "absolute",
+												left: "1248px",
+												top: "548px",
+												width: "3px",
+												height: "3px",
+												borderRadius: "9999px",
+												background: "#3b82f6",
+												opacity: "0.65",
+											},
+										},
+									},
+									{
+										type: "div",
+										props: {
+											style: {
+												position: "absolute",
+												left: "1295px",
+												top: "195px",
+												width: "3px",
+												height: "3px",
+												borderRadius: "9999px",
+												background: "#3b82f6",
+												opacity: "0.6",
+											},
+										},
+									},
+									{
+										type: "div",
+										props: {
+											style: {
+												position: "absolute",
+												left: "472px",
+												top: "528px",
+												width: "2px",
+												height: "2px",
+												borderRadius: "9999px",
+												background: "#64748b",
+												opacity: "0.6",
+											},
+										},
+									},
+									{
+										type: "div",
+										props: {
+											style: {
+												position: "absolute",
+												left: "58px",
+												top: "8px",
+												width: "1px",
+												height: "1px",
+												borderRadius: "9999px",
+												background: "#64748b",
+												opacity: "0.6",
+											},
+										},
+									},
+									{
+										type: "div",
+										props: {
+											style: {
+												position: "absolute",
+												left: "810px",
+												top: "47px",
+												width: "2px",
+												height: "2px",
+												borderRadius: "9999px",
+												background: "#64748b",
+												opacity: "0.6",
+											},
+										},
+									},
+									{
+										type: "div",
+										props: {
+											style: {
+												position: "absolute",
+												left: "280px",
+												top: "65px",
+												width: "1px",
+												height: "1px",
+												borderRadius: "9999px",
+												background: "#64748b",
+												opacity: "0.6",
+											},
+										},
+									},
+									{
+										type: "div",
+										props: {
+											style: {
+												position: "absolute",
+												left: "1100px",
+												top: "320px",
+												width: "2px",
+												height: "2px",
+												borderRadius: "9999px",
+												background: "#64748b",
+												opacity: "0.5",
+											},
+										},
+									},
+									{
+										type: "div",
+										props: {
+											style: {
+												position: "absolute",
+												left: "430px",
+												top: "380px",
+												width: "1px",
+												height: "1px",
+												borderRadius: "9999px",
+												background: "#64748b",
+												opacity: "0.5",
+											},
+										},
+									},
 								],
 							},
 						},
