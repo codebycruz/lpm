@@ -53,7 +53,6 @@
               with pkgs;
               [
                 luajit
-                stylua
                 lua-language-server
               ]
               # inject lpm in the devshell
