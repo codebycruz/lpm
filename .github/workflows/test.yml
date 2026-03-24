@@ -31,7 +31,8 @@ jobs:
 
       - name: Setup lpm
         uses: codebycruz/lpm@master
-        version: nightly
+        with:
+          version: nightly
 
       - name: Run tests
         run: lpm test
