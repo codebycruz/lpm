@@ -50,7 +50,7 @@ local function publish(args)
 		return
 	end
 
-	local commit = trimOutput(git.revParse(pkgDir))
+	local commit = trimOutput(git.getCommitHash(pkgDir))
 	if not commit then
 		ansi.printf("{red}Could not get current commit. Does this repo have any commits?")
 		return

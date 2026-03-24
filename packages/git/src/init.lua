@@ -24,7 +24,7 @@ end
 
 ---@param cwd string?
 ---@param ref "HEAD" | string?
-function git.revParse(cwd, ref)
+function git.getCommitHash(cwd, ref)
 	return process.exec("git", { "rev-parse", ref or "HEAD" }, { cwd = cwd })
 end
 
