@@ -1,6 +1,7 @@
 local ansi = require("ansi")
 local env = require("env")
 local fs = require("fs")
+local git = require("git")
 local path = require("path")
 local process = require("process")
 
@@ -39,12 +40,7 @@ local function getOrCloneRepo(repoName, cloneUrl, branch)
 
 	local repoDir = lpm.global.getGitRepoDir(safeName)
 	if not fs.exists(repoDir) then
-		local gitArgs = { "clone", cloneUrl, repoDir }
-		if branch then
-			gitArgs = { "clone", "--branch", branch, cloneUrl, repoDir }
-		end
-
-		local ok, err = process.spawn("git", gitArgs)
+		local ok, err = git.clone(cloneUrl, repoDir, branch)
 		if not ok then
 			error("Failed to clone git repository: " .. (err or "unknown error"))
 		end

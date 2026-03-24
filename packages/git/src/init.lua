@@ -37,4 +37,19 @@ function git.init(repoDir)
 	return process.exec("git", { "init" }, { cwd = repoDir })
 end
 
+---@param commit string
+---@param repoDir string?
+function git.checkout(commit, repoDir)
+	return process.exec("git", { "checkout", commit }, { cwd = repoDir })
+end
+
+function git.version()
+	return process.exec("git", { "--version" })
+end
+
+---@param dir string?
+function git.isInsideWorkTree(dir)
+	return process.exec("git", { "rev-parse", "--is-inside-work-tree" }, { cwd = dir })
+end
+
 return git

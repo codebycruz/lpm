@@ -1,19 +1,19 @@
 local path = require("path")
 local fs = require("fs")
 local util = require("util")
-local process = require("process")
 local ansi = require("ansi")
+local git = require("git")
 
 local Package = require("lpm-core.package")
 
 local function hasGit()
-	local ok = process.exec("git", { "--version" })
+	local ok = git.version()
 	return ok == true
 end
 
 ---@param dir string
 local function isInsideGitRepo(dir)
-	local ok = process.exec("git", { "rev-parse", "--is-inside-work-tree" }, { cwd = dir })
+	local ok = git.isInsideWorkTree(dir)
 	return ok == true
 end
 
@@ -81,7 +81,7 @@ local function initPackage(dir)
 	end
 
 	if hasGit() and not isInsideGitRepo(dir) then
-		local ok = process.spawn("git", { "init" }, { cwd = dir })
+		local ok = git.init(dir)
 		if not ok then
 			ansi.printf("{yellow}Warning: failed to initialize git repository")
 		end
