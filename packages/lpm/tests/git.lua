@@ -48,7 +48,7 @@ test.it("installDependencies installs a git dependency", function()
 	pkg:installDependencies()
 
 	local fixturePath = path.join(dir, "target", FIXTURE_NAME, "init.lua")
-	test.equal(fs.exists(fixturePath), true)
+	test.truthy(fs.exists(fixturePath))
 	test.equal(fs.read(fixturePath), 'return "lpm-test-fixture"\n')
 end)
 
@@ -58,14 +58,14 @@ test.it("installDependencies writes a resolved commit to the lockfile for git de
 	pkg:installDependencies()
 
 	local lockRaw = fs.read(path.join(dir, "lpm-lock.json"))
-	test.notEqual(lockRaw, nil)
+	test.truthy(lockRaw)
 
 	local lock = json.decode(lockRaw)
 	local entry = lock.dependencies[FIXTURE_NAME]
-	test.notEqual(entry, nil)
-	test.notEqual(entry.commit, nil)
+	test.truthy(entry)
+	test.truthy(entry.commit)
 	-- Commit should be a 40-character hex SHA
-	test.equal(entry.commit:match("^%x+$") ~= nil, true)
+	test.truthy(entry.commit:match("^%x+$"))
 	test.equal(#entry.commit, 40)
 end)
 
@@ -104,5 +104,5 @@ test.it("installDependencies respects a pinned commit in lpm.json", function()
 	test.equal(lock.dependencies[FIXTURE_NAME].commit, headCommit)
 
 	local fixturePath = path.join(dir, "target", FIXTURE_NAME, "init.lua")
-	test.equal(fs.exists(fixturePath), true)
+	test.truthy(fs.exists(fixturePath))
 end)

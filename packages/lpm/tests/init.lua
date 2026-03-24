@@ -22,7 +22,7 @@ test.it("Package.init creates lpm.json in the target directory", function()
 
 	lpm.Package.init(dir)
 
-	test.equal(fs.exists(path.join(dir, "lpm.json")), true)
+	test.truthy(fs.exists(path.join(dir, "lpm.json")))
 end)
 
 test.it("Package.init uses the directory basename as the package name", function()
@@ -55,8 +55,8 @@ test.it("Package.init creates a src directory with init.lua", function()
 
 	lpm.Package.init(dir)
 
-	test.equal(fs.exists(path.join(dir, "src")), true)
-	test.equal(fs.isfile(path.join(dir, "src", "init.lua")), true)
+	test.truthy(fs.exists(path.join(dir, "src")))
+	test.truthy(fs.isfile(path.join(dir, "src", "init.lua")))
 end)
 
 test.it("Package.init creates a .gitignore", function()
@@ -66,11 +66,11 @@ test.it("Package.init creates a .gitignore", function()
 
 	lpm.Package.init(dir)
 
-	test.equal(fs.exists(path.join(dir, ".gitignore")), true)
+	test.truthy(fs.exists(path.join(dir, ".gitignore")))
 
 	local content = fs.read(path.join(dir, ".gitignore"))
-	test.notEqual(content, nil)
-	test.notEqual(string.find(content, "/target/", 1, true), nil)
+	test.truthy(content)
+	test.includes(content, "/target/")
 end)
 
 test.it("Package.init creates a .luarc.json", function()
@@ -80,7 +80,7 @@ test.it("Package.init creates a .luarc.json", function()
 
 	lpm.Package.init(dir)
 
-	test.equal(fs.isfile(path.join(dir, ".luarc.json")), true)
+	test.truthy(fs.isfile(path.join(dir, ".luarc.json")))
 end)
 
 test.it("Package.init errors if lpm.json already exists", function()
@@ -90,8 +90,8 @@ test.it("Package.init errors if lpm.json already exists", function()
 	fs.write(path.join(dir, "lpm.json"), '{"name":"existing","version":"1.0.0"}')
 
 	local ok, err = pcall(lpm.Package.init, dir)
-	test.equal(ok, false)
-	test.notEqual(err, nil)
+	test.falsy(ok)
+	test.truthy(err)
 end)
 
 test.it("Package.init result can be opened as a Package", function()
@@ -100,9 +100,9 @@ test.it("Package.init result can be opened as a Package", function()
 	fs.mkdir(dir)
 
 	local pkg = lpm.Package.init(dir)
-	test.notEqual(pkg, nil)
+	test.truthy(pkg)
 
 	local reopened, err = lpm.Package.open(dir)
-	test.notEqual(reopened, nil)
-	test.equal(err, nil)
+	test.truthy(reopened)
+	test.falsy(err)
 end)

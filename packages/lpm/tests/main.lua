@@ -24,7 +24,7 @@ test.it("runtime.executeFile runs a Lua script", function()
 	fs.write(scriptPath, 'return 42')
 
 	local ok, err = lpm.runtime.executeFile(scriptPath)
-	test.equal(ok, true)
+	test.truthy(ok)
 end)
 
 test.it("runtime.executeFile returns false for scripts that error", function()
@@ -33,8 +33,8 @@ test.it("runtime.executeFile returns false for scripts that error", function()
 	fs.write(scriptPath, 'error("intentional error")')
 
 	local ok, err = lpm.runtime.executeFile(scriptPath)
-	test.equal(ok, false)
-	test.notEqual(err, nil)
+	test.falsy(ok)
+	test.truthy(err)
 end)
 
 test.it("runtime.executeFile supports preloaded modules", function()
@@ -52,7 +52,7 @@ test.it("runtime.executeFile supports preloaded modules", function()
 			["fake-mod"] = function() return { value = 123 } end
 		}
 	})
-	test.equal(ok, true)
+	test.truthy(ok)
 end)
 
 test.it("runtime.executeFile isolates globals between runs", function()
@@ -69,7 +69,7 @@ test.it("runtime.executeFile isolates globals between runs", function()
 
 	lpm.runtime.executeFile(script1)
 	local ok, err = lpm.runtime.executeFile(script2)
-	test.equal(ok, true)
+	test.truthy(ok)
 end)
 
 --
@@ -82,13 +82,13 @@ test.it("end-to-end: init, build, and verify package structure", function()
 	fs.mkdir(dir)
 
 	local pkg = lpm.Package.init(dir)
-	test.notEqual(pkg, nil)
+	test.truthy(pkg)
 	test.equal(pkg:getName(), "e2e-project")
 
 	fs.mkdir(pkg:getModulesDir())
 	pkg:build()
 
-	test.equal(fs.exists(pkg:getTargetDir()), true)
+	test.truthy(fs.exists(pkg:getTargetDir()))
 end)
 
 --
@@ -115,9 +115,9 @@ test.it("runFile: cwd is the package directory", function()
 
 	local pkg = lpm.Package.open(dir)
 	local ok, err = pkg:runFile(nil, {})
-	test.equal(ok, true)
+	test.truthy(ok)
 	-- sentinel file should be relative to the package dir, not cwd of the test runner
-	test.equal(fs.exists(path.join(dir, "cwd-sentinel.txt")), true)
+	test.truthy(fs.exists(path.join(dir, "cwd-sentinel.txt")))
 end)
 
 test.it("build.lua: cwd is the package directory, not the destination", function()
@@ -144,8 +144,8 @@ test.it("build.lua: cwd is the package directory, not the destination", function
 	pkg:build()
 
 	-- sentinel should be in the package dir, not the destination (target/cwd-build-test/)
-	test.equal(fs.exists(path.join(dir, "build-cwd-sentinel.txt")), true)
-	test.equal(fs.exists(path.join(dir, "target", "cwd-build-test", "build-cwd-sentinel.txt")), false)
+	test.truthy(fs.exists(path.join(dir, "build-cwd-sentinel.txt")))
+	test.falsy(fs.exists(path.join(dir, "target", "cwd-build-test", "build-cwd-sentinel.txt")))
 end)
 
 --
@@ -171,8 +171,8 @@ test.it("runFile: runs an explicit relative file path", function()
 
 	local pkg = lpm.Package.open(dir)
 	local ok, err = pkg:runFile("./scripts/hello.lua")
-	test.equal(ok, true)
-	test.equal(fs.exists(path.join(dir, "hello-sentinel.txt")), true)
+	test.truthy(ok)
+	test.truthy(fs.exists(path.join(dir, "hello-sentinel.txt")))
 end)
 
 --
@@ -198,7 +198,7 @@ test.it("runFile: uses bin as default entry point when set", function()
 
 	local pkg = lpm.Package.open(dir)
 	local ok, err = pkg:runFile(nil, {})
-	test.equal(ok, true)
+	test.truthy(ok)
 end)
 
 test.it("runFile: falls back to init.lua when bin is not set", function()
@@ -218,7 +218,7 @@ test.it("runFile: falls back to init.lua when bin is not set", function()
 
 	local pkg = lpm.Package.open(dir)
 	local ok, err = pkg:runFile(nil, {})
-	test.equal(ok, true)
+	test.truthy(ok)
 end)
 
 --
@@ -240,8 +240,8 @@ test.it("runScript: runs a named shell command from lpm.json scripts", function(
 
 	local pkg = lpm.Package.open(dir)
 	local ok, output = pkg:runScript("greet", true)
-	test.equal(ok, true)
-	test.notEqual(output:find("hello"), nil)
+	test.truthy(ok)
+	test.truthy(output:find("hello"))
 end)
 
 
@@ -259,8 +259,8 @@ test.it("runScript: errors when script name is not in lpm.json", function()
 
 	local pkg = lpm.Package.open(dir)
 	local ok, err = pcall(function() pkg:runScript("doesnotexist") end)
-	test.equal(ok, false)
-	test.notEqual(string.find(err, "doesnotexist", 1, true), nil)
+	test.falsy(ok)
+	test.includes(err, "doesnotexist")
 end)
 
 --
@@ -320,8 +320,8 @@ test.it("git dep: installs root package, not a sub-package, when repo has lpm.js
 	app:installDependencies()
 
 	-- Should install "my-root-pkg", NOT "ansi"
-	test.equal(fs.exists(path.join(appDir, "target", "my-root-pkg")), true)
-	test.equal(fs.exists(path.join(appDir, "target", "ansi")), false)
+	test.truthy(fs.exists(path.join(appDir, "target", "my-root-pkg")))
+	test.falsy(fs.exists(path.join(appDir, "target", "ansi")))
 
 	fs.rmdir(repoDir)
 end)
@@ -352,11 +352,11 @@ test.it("end-to-end: package with dependency can install and build", function()
 	}))
 
 	local app = lpm.Package.open(appDir)
-	test.notEqual(app, nil)
+	test.truthy(app)
 
 	app:installDependencies()
 	app:build()
 
-	test.equal(fs.exists(path.join(appDir, "target", "e2e-lib", "init.lua")), true)
-	test.equal(fs.exists(path.join(appDir, "target", "e2e-app")), true)
+	test.truthy(fs.exists(path.join(appDir, "target", "e2e-lib", "init.lua")))
+	test.truthy(fs.exists(path.join(appDir, "target", "e2e-app")))
 end)

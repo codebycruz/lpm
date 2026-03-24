@@ -43,7 +43,7 @@ test.it("Config with no dependencies returns nil for dependencies field", functi
 		version = "0.0.1"
 	})
 
-	test.equal(conf.dependencies, nil)
+	test.falsy(conf.dependencies)
 end)
 
 test.it("Config preserves devDependencies", function()

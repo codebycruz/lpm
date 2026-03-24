@@ -26,8 +26,8 @@ if process.platform == "win32" then
 			env = { USERPROFILE = fakeProfile }
 		})
 
-		test.equal(ok, true)
-		test.equal(fs.exists(path.join(fakeProfile, ".lpm", "lpm.exe")), true)
+		test.truthy(ok)
+		test.truthy(fs.exists(path.join(fakeProfile, ".lpm", "lpm.exe")))
 	end)
 
 	test.it("installed lpm.exe responds to --version", function()
@@ -39,11 +39,11 @@ if process.platform == "win32" then
 		}, {
 			env = { USERPROFILE = fakeProfile }
 		})
-		test.equal(ok, true)
+		test.truthy(ok)
 
 		local lpmBin = path.join(fakeProfile, ".lpm", "lpm.exe")
 		local ok2, _ = process.exec(lpmBin, { "--version" })
-		test.equal(ok2, true)
+		test.truthy(ok2)
 	end)
 elseif process.platform == "linux" then
 	local installScript = path.join(repoRoot, "install.sh")
@@ -56,8 +56,8 @@ elseif process.platform == "linux" then
 			env = { HOME = fakeHome }
 		})
 
-		test.equal(ok, true)
-		test.equal(fs.exists(path.join(fakeHome, ".lpm", "lpm")), true)
+		test.truthy(ok)
+		test.truthy(fs.exists(path.join(fakeHome, ".lpm", "lpm")))
 	end)
 
 	test.it("installed lpm binary responds to --version", function()
@@ -67,10 +67,10 @@ elseif process.platform == "linux" then
 		local ok, _ = process.exec("sh", { installScript }, {
 			env = { HOME = fakeHome }
 		})
-		test.equal(ok, true)
+		test.truthy(ok)
 
 		local lpmBin = path.join(fakeHome, ".lpm", "lpm")
 		local ok2, _ = process.exec(lpmBin, { "--version" })
-		test.equal(ok2, true)
+		test.truthy(ok2)
 	end)
 end

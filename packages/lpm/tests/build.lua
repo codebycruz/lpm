@@ -50,7 +50,7 @@ test.it("Package:build creates a symlink in target/<name>", function()
 	pkg:build()
 
 	local targetDir = pkg:getTargetDir()
-	test.equal(fs.exists(targetDir), true)
+	test.truthy(fs.exists(targetDir))
 end)
 
 test.it("Package:build target contains the source files", function()
@@ -63,8 +63,8 @@ test.it("Package:build target contains the source files", function()
 	pkg:build()
 
 	local targetDir = pkg:getTargetDir()
-	test.equal(fs.exists(path.join(targetDir, "init.lua")), true)
-	test.equal(fs.exists(path.join(targetDir, "helper.lua")), true)
+	test.truthy(fs.exists(path.join(targetDir, "init.lua")))
+	test.truthy(fs.exists(path.join(targetDir, "helper.lua")))
 end)
 
 test.it("Package:build is idempotent (can be called twice)", function()
@@ -76,7 +76,7 @@ test.it("Package:build is idempotent (can be called twice)", function()
 	pkg:build()
 	pkg:build()
 
-	test.equal(fs.exists(pkg:getTargetDir()), true)
+	test.truthy(fs.exists(pkg:getTargetDir()))
 end)
 
 --
@@ -105,8 +105,8 @@ test.it("installDependencies installs a local path dependency", function()
 	pkg:installDependencies()
 
 	local depInTarget = path.join(mainDir, "target", "install-dep")
-	test.equal(fs.exists(depInTarget), true)
-	test.equal(fs.exists(path.join(depInTarget, "init.lua")), true)
+	test.truthy(fs.exists(depInTarget))
+	test.truthy(fs.exists(path.join(depInTarget, "init.lua")))
 end)
 
 test.it("installDependencies installs multiple dependencies", function()
@@ -135,8 +135,8 @@ test.it("installDependencies installs multiple dependencies", function()
 	local pkg = lpm.Package.open(mainDir)
 	pkg:installDependencies()
 
-	test.equal(fs.exists(path.join(mainDir, "target", "multi-dep-a", "init.lua")), true)
-	test.equal(fs.exists(path.join(mainDir, "target", "multi-dep-b", "init.lua")), true)
+	test.truthy(fs.exists(path.join(mainDir, "target", "multi-dep-a", "init.lua")))
+	test.truthy(fs.exists(path.join(mainDir, "target", "multi-dep-b", "init.lua")))
 end)
 
 test.it("installDependencies skips already-installed symlink dependencies", function()
@@ -161,7 +161,7 @@ test.it("installDependencies skips already-installed symlink dependencies", func
 	pkg:installDependencies()
 	pkg:installDependencies()
 
-	test.equal(fs.exists(path.join(mainDir, "target", "skip-dep")), true)
+	test.truthy(fs.exists(path.join(mainDir, "target", "skip-dep")))
 end)
 
 test.it("installDependencies re-runs build script on each call when output is a directory", function()
@@ -241,7 +241,7 @@ test.it("installDependencies writes a lockfile with resolved path dependency", f
 	pkg:installDependencies()
 
 	local lockPath = path.join(mainDir, "lpm-lock.json")
-	test.equal(fs.exists(lockPath), true)
+	test.truthy(fs.exists(lockPath))
 
 	local content = json.decode(fs.read(lockPath))
 	test.equal(content.version, "1")
@@ -324,6 +324,6 @@ test.it("installDependencies installs transitive dependencies", function()
 	local pkg = lpm.Package.open(rootDir)
 	pkg:installDependencies()
 
-	test.equal(fs.exists(path.join(rootDir, "target", "mid-dep")), true)
-	test.equal(fs.exists(path.join(rootDir, "target", "leaf-dep")), true)
+	test.truthy(fs.exists(path.join(rootDir, "target", "mid-dep")))
+	test.truthy(fs.exists(path.join(rootDir, "target", "leaf-dep")))
 end)

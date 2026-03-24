@@ -32,8 +32,8 @@ end
 test.it("Package.open succeeds for a directory with lpm.json", function()
 	local dir = makePackageDir("valid-pkg")
 	local pkg, err = lpm.Package.open(dir)
-	test.notEqual(pkg, nil)
-	test.equal(err, nil)
+	test.truthy(pkg)
+	test.falsy(err)
 end)
 
 test.it("Package.open fails for a directory without lpm.json", function()
@@ -42,14 +42,14 @@ test.it("Package.open fails for a directory without lpm.json", function()
 	fs.mkdir(dir)
 
 	local pkg, err = lpm.Package.open(dir)
-	test.equal(pkg, nil)
-	test.notEqual(err, nil)
+	test.falsy(pkg)
+	test.truthy(err)
 end)
 
 test.it("Package.open fails for a nonexistent directory", function()
 	local pkg, err = lpm.Package.open(path.join(tmpBase, "does-not-exist"))
-	test.equal(pkg, nil)
-	test.notEqual(err, nil)
+	test.falsy(pkg)
+	test.truthy(err)
 end)
 
 --
@@ -155,9 +155,7 @@ test.it("Package:getDependencies returns empty table when none defined", functio
 	local dir = makePackageDir("no-deps")
 	local pkg = lpm.Package.open(dir)
 	local deps = pkg:getDependencies()
-	local count = 0
-	for _ in pairs(deps) do count = count + 1 end
-	test.equal(count, 0)
+	test.equal(test.count(deps), 0)
 end)
 
 test.it("Package:getDevDependencies returns devDependencies from config", function()

@@ -26,9 +26,7 @@ test.it("Lockfile.new with empty dependencies", function()
 
 	test.equal(lf:getVersion(), "1")
 	local deps = lf:getDependencies()
-	local count = 0
-	for _ in pairs(deps) do count = count + 1 end
-	test.equal(count, 0)
+	test.equal(test.count(deps), 0)
 end)
 
 test.it("Lockfile:save writes to disk and Lockfile.open reads it back", function()
@@ -45,7 +43,7 @@ test.it("Lockfile:save writes to disk and Lockfile.open reads it back", function
 
 	lf:save()
 
-	test.equal(fs.exists(lockPath), true)
+	test.truthy(fs.exists(lockPath))
 
 	local loaded = lpm.Lockfile.open(lockPath)
 	test.equal(loaded:getVersion(), "1")
@@ -57,7 +55,7 @@ end)
 
 test.it("Lockfile.open returns nil for a missing file", function()
 	local result = lpm.Lockfile.open(path.join(tmpBase, "does-not-exist.json"))
-	test.equal(result, nil)
+	test.falsy(result)
 end)
 
 test.it("Lockfile:getDependency returns nil for unknown dependency", function()
@@ -65,7 +63,7 @@ test.it("Lockfile:getDependency returns nil for unknown dependency", function()
 		known = { path = "../known" }
 	})
 
-	test.equal(lf:getDependency("unknown"), nil)
+	test.falsy(lf:getDependency("unknown"))
 end)
 
 test.it("Lockfile:save produces valid JSON", function()
