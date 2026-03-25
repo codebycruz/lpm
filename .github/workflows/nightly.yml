@@ -75,7 +75,7 @@ jobs:
           lpm compile --outfile ${{ matrix.outfile }}
 
       - name: Run tests
-        run: ${{ matrix.outfile }} test
+        run: ./${{ matrix.outfile }} test
 
       - name: Upload nightly release asset
         uses: softprops/action-gh-release@v2
