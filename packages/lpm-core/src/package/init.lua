@@ -80,15 +80,17 @@ function Package.openLPM(dir)
 end
 
 ---@param dir string?
+---@param rockspecPath string? # Path to the rockspec file; if nil, scanned from dir
 ---@return lpm.Package?, string?
-function Package.openRockspec(dir)
+function Package.openRockspec(dir, rockspecPath)
 	dir = dir or env.cwd()
 
-	local rockspecPath
-	if fs.isdir(dir) then
-		for _, entry in ipairs(fs.scan(dir, "**.rockspec")) do
-			rockspecPath = path.join(dir, entry)
-			break
+	if not rockspecPath then
+		if fs.isdir(dir) then
+			for _, entry in ipairs(fs.scan(dir, "**.rockspec")) do
+				rockspecPath = path.join(dir, entry)
+				break
+			end
 		end
 	end
 
@@ -161,15 +163,16 @@ function Package.openRockspec(dir)
 end
 
 ---@param dir string?
+---@param rockspec string? # Path to rockspec, forwarded to openRockspec if no lpm.json
 ---@return lpm.Package?, string?
-function Package.open(dir)
+function Package.open(dir, rockspec)
 	dir = dir or env.cwd()
 
 	if fs.exists(configPathAtDir(dir)) then
 		return Package.openLPM(dir)
 	end
 
-	return Package.openRockspec(dir)
+	return Package.openRockspec(dir, rockspec)
 end
 
 ---@return lpm.Config
