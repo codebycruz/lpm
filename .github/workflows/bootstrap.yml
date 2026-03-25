@@ -39,7 +39,9 @@ jobs:
       - name: Build lpm (Windows)
         run: |
           cd packages/lpm
-          $env:BOOTSTRAP=1; & "$env:GITHUB_WORKSPACE/${{ matrix.artifact }}/luajit.exe" ./src/init.lua compile --outfile ${{ matrix.outfile }}.exe
+          $env:BOOTSTRAP=1
+          $env:SEA_CC="clang"
+          & "$env:GITHUB_WORKSPACE/${{ matrix.artifact }}/luajit.exe" ./src/init.lua compile --outfile ${{ matrix.outfile }}.exe
 
       - name: Upload nightly release asset
         uses: softprops/action-gh-release@v2
