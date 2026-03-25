@@ -1,0 +1,55 @@
+name: Bootstrap
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-11-arm
+            platform: windows
+            artifact: luajit-windows-aarch64-gnu
+            outfile: lpm-windows-aarch64
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+
+      - name: Cache LuaJIT
+        id: cache-luajit
+        uses: actions/cache@v5
+        with:
+          path: ${{ matrix.artifact }}
+          key: ${{ matrix.artifact }}-latest
+
+      - name: Download LuaJIT
+        if: steps.cache-luajit.outputs.cache-hit != 'true'
+        run: |
+          curl -L -o luajit.tar.gz https://github.com/codebycruz/lj-dist/releases/download/latest/${{ matrix.artifact }}.tar.gz
+          tar -xzf luajit.tar.gz
+
+      - name: Build lpm (Windows)
+        run: |
+          cd packages/lpm
+          $env:BOOTSTRAP=1; & "$env:GITHUB_WORKSPACE/${{ matrix.artifact }}/luajit.exe" ./src/init.lua compile --outfile ${{ matrix.outfile }}.exe
+
+      - name: Upload nightly release asset
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: nightly
+          name: Nightly Build
+          prerelease: true
+          body: |
+            Automated nightly build from master.
+            Commit: ${{ github.sha }}
+            Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          files: packages/lpm/${{ matrix.outfile }}.exe
+          fail_on_unmatched_files: true
