@@ -19,16 +19,22 @@ jobs:
         include:
           - os: ubuntu-22.04
             outfile: lpm-linux-x86-64
+            sea_cc: gcc
           - os: ubuntu-22.04-arm
             outfile: lpm-linux-aarch64
+            sea_cc: gcc
           - os: windows-latest
             outfile: lpm-windows-x86-64.exe
+            sea_cc: gcc
           - os: windows-11-arm
             outfile: lpm-windows-aarch64.exe
+            sea_cc: clang
           # - os: macos-15-intel
           #   outfile: lpm-macos-x86-64
+          #   sea_cc: gcc
           - os: macos-15
             outfile: lpm-macos-aarch64
+            sea_cc: gcc
 
     runs-on: ${{ matrix.os }}
 
@@ -51,7 +57,7 @@ jobs:
 
       - name: Build lpm
         env:
-          SEA_CC: ${{ matrix.os == 'windows-11-arm' && 'clang' || '' }}
+          SEA_CC: ${{ matrix.sea_cc }}
         run: |
           cd packages/lpm
           lpm compile --outfile ${{ matrix.outfile }}
