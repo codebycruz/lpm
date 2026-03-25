@@ -10,7 +10,7 @@ local function encodeString(s)
 		['\f'] = '\\f',
 		['\n'] = '\\n',
 		['\r'] = '\\r',
-		['\t'] = '\\t',
+		['\t'] = '\\t'
 	}
 	return '"' .. string.gsub(s, '[%z\1-\31"\\]', function(c)
 		return replacements[c] or string.format("\\u%04x", string.byte(c))
@@ -135,7 +135,7 @@ local escapeMap = {
 	['f'] = '\f',
 	['n'] = '\n',
 	['r'] = '\r',
-	['t'] = '\t',
+	['t'] = '\t'
 }
 
 local function decodeString(s, pos)

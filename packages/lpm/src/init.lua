@@ -42,7 +42,7 @@ if os.getenv("BOOTSTRAP") then
 
 	local pathPackages = {
 		"ansi", "clap", "fs", "http", "env", "path", "json", "git",
-		"process", "sea", "semver", "util", "lpm-core", "lpm-test"
+		"process", "sea", "semver", "util", "lpm-core", "lpm-test", "rocked"
 	}
 
 	for _, pkg in ipairs(pathPackages) do
@@ -125,6 +125,7 @@ commands.tree = require("lpm.commands.tree")
 commands.update = require("lpm.commands.update")
 commands.uninstall = require("lpm.commands.uninstall")
 commands.publish = require("lpm.commands.publish")
+commands.repl = require("lpm.commands.repl")
 
 local ok, err = xpcall(function()
 	local commandName = args:pop()

@@ -16,7 +16,7 @@ local builtinModules = {
 	jit = true,
 	ffi = true,
 	["jit.opt"] = true,
-	["jit.util"] = true,
+	["jit.util"] = true
 }
 
 ---@class lpm.ExecuteOptions
@@ -149,5 +149,5 @@ local function executeFile(scriptPath, opts)
 end
 
 return {
-	executeFile = executeFile,
+	executeFile = executeFile
 }

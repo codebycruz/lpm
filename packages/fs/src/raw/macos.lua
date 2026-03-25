@@ -44,6 +44,6 @@ return require("fs.raw.posix")(function(s, modeToStatType)
 		modifyTime = s.st_mtimespec.tv_sec,
 		accessTime = s.st_atimespec.tv_sec,
 		type = modeToStatType[bit.band(s.st_mode, 0xF000)],
-		mode = bit.band(s.st_mode, 0x1FF),
+		mode = bit.band(s.st_mode, 0x1FF)
 	}
 end)

@@ -65,10 +65,7 @@ jobs:
       - name: Setup lpm
         uses: codebycruz/lpm@master
         with:
-          version: 0.7.2
-
-      - name: Run tests
-        run: lpm test
+          version: nightly
 
       - name: Build lpm
         env:
@@ -76,6 +73,9 @@ jobs:
         run: |
           cd packages/lpm
           lpm compile --outfile ${{ matrix.outfile }}
+
+      - name: Run tests
+        run: ./packages/lpm/${{ matrix.outfile }} test
 
       - name: Upload nightly release asset
         uses: softprops/action-gh-release@v2
