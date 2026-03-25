@@ -106,3 +106,37 @@ test.it("installDependencies respects a pinned commit in lpm.json", function()
 	local fixturePath = path.join(dir, "target", FIXTURE_NAME, "init.lua")
 	test.truthy(fs.exists(fixturePath))
 end)
+
+test.it("rockspec git dep: middleclass can be required after install", function()
+	local dir = path.join(tmpBase, "middleclass-consumer")
+	fs.mkdir(dir)
+	fs.mkdir(path.join(dir, "src"))
+	fs.write(path.join(dir, "src", "init.lua"), [[
+		local class = require("middleclass")
+		local Animal = class("Animal")
+		function Animal:initialize(name) self.name = name end
+		local a = Animal("cat")
+		assert(a.name == "cat", "expected name 'cat', got " .. tostring(a.name))
+	]])
+	fs.write(path.join(dir, "lpm.json"), json.encode({
+		name = "middleclass-consumer",
+		version = "0.1.0",
+		dependencies = {
+			middleclass = {
+				git = "https://github.com/kikito/middleclass",
+				branch = "master",
+				rockspec = "rockspecs/middleclass-4.1.1-0.rockspec"
+			}
+		}
+	}))
+
+	local pkg = lpm.Package.open(dir)
+	pkg:installDependencies()
+	pkg:build()
+
+	test.truthy(fs.exists(path.join(dir, "target", "middleclass.lua")))
+
+	local ok, err = pkg:runFile()
+	if not ok then print(err) end
+	test.truthy(ok)
+end)
