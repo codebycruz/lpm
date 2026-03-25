@@ -12,7 +12,7 @@ function semver.parse(v)
 	return {
 		major = tonumber(major) or 0,
 		minor = tonumber(minor) or 0,
-		patch = tonumber(patch) or 0,
+		patch = tonumber(patch) or 0
 	}
 end
 

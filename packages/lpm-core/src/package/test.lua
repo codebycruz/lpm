@@ -47,7 +47,7 @@ local function runTests(package)
 			files = {},
 			total = 0,
 			failures = 0,
-			error = "No tests directory found in package: " .. testDir,
+			error = "No tests directory found in package: " .. testDir
 		}
 	end
 
@@ -68,15 +68,15 @@ local function runTests(package)
 			packagePath = luaPath,
 			packageCPath = luaCPath,
 			preload = {
-				["lpm-test"] = function() return testObj end,
-			},
+				["lpm-test"] = function() return testObj end
+			}
 		})
 
 		if not ok then
 			files[#files + 1] = {
 				file = relativePath,
 				results = {},
-				error = err,
+				error = err
 			}
 		else
 			local results = testObj.run()
@@ -92,7 +92,7 @@ local function runTests(package)
 
 			files[#files + 1] = {
 				file = relativePath,
-				results = results,
+				results = results
 			}
 		end
 	end
@@ -101,7 +101,7 @@ local function runTests(package)
 		package = package,
 		files = files,
 		total = totalTests,
-		failures = totalFailures,
+		failures = totalFailures
 	}
 end
 
