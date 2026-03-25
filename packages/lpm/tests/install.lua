@@ -20,7 +20,7 @@ if process.platform == "win32" then
 		local fakeProfile = path.join(tmpBase, "userprofile")
 		fs.mkdir(fakeProfile)
 
-		local ok, _ = process.exec("powershell", {
+		local ok, _ = process.exec("pwsh", {
 			"-NoProfile", "-ExecutionPolicy", "Bypass", "-File", installScript
 		}, {
 			env = { USERPROFILE = fakeProfile }
@@ -34,7 +34,7 @@ if process.platform == "win32" then
 		local fakeProfile = path.join(tmpBase, "userprofile2")
 		fs.mkdir(fakeProfile)
 
-		local ok, _ = process.exec("powershell", {
+		local ok, _ = process.exec("pwsh", {
 			"-NoProfile", "-ExecutionPolicy", "Bypass", "-File", installScript
 		}, {
 			env = { USERPROFILE = fakeProfile }
