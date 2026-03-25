@@ -1,5 +1,6 @@
 local Config = require("lpm-core.config")
 local Lockfile = require("lpm-core.lockfile")
+local rocked = require("rocked")
 
 local global = require("lpm-core.global")
 
@@ -13,6 +14,7 @@ local process = require("process")
 ---@field dir string
 ---@field cachedConfig lpm.Config?
 ---@field cachedConfigMtime number?
+---@field buildfn (fun(outputDir: string): boolean, string?)?
 local Package = {}
 Package.__index = Package
 
@@ -42,23 +44,31 @@ function Package:getConfigPath() return configPathAtDir(self.dir) end
 
 function Package:getLockfilePath() return path.join(self.dir, "lpm-lock.json") end
 
-function Package:hasBuildScript() return fs.exists(self:getBuildScriptPath()) end
+---@param pkg lpm.Package
+---@param outputDir string
+local function defaultBuildFn(pkg, outputDir)
+	local buildScriptPath = pkg:getBuildScriptPath()
+	if not fs.exists(buildScriptPath) then
+		return nil, "No build script found: " .. buildScriptPath
+	end
+
+	return pkg:runFile(buildScriptPath, nil, { LPM_OUTPUT_DIR = outputDir })
+end
+
+function Package:hasBuildScript()
+	return self.buildfn ~= nil or fs.exists(self:getBuildScriptPath())
+end
 
 ---@param outputDir string
 ---@return boolean? ok
 ---@return string? err
 function Package:runBuildScript(outputDir)
-	local buildScriptPath = self:getBuildScriptPath()
-	if not fs.exists(buildScriptPath) then
-		return nil, "No build script found: " .. buildScriptPath
-	end
-
-	return self:runFile(buildScriptPath, nil, { LPM_OUTPUT_DIR = outputDir })
+	return (self.buildfn or defaultBuildFn)(self, outputDir)
 end
 
 ---@param dir string?
 ---@return lpm.Package?, string?
-function Package.open(dir)
+function Package.openLPM(dir)
 	dir = dir or env.cwd()
 
 	local configPath = configPathAtDir(dir)
@@ -67,6 +77,99 @@ function Package.open(dir)
 	end
 
 	return setmetatable({ dir = dir }, Package), nil
+end
+
+---@param dir string?
+---@return lpm.Package?, string?
+function Package.openRockspec(dir)
+	dir = dir or env.cwd()
+
+	local rockspecPath
+	if fs.isdir(dir) then
+		for _, entry in ipairs(fs.scan(dir, "*.rockspec")) do
+			rockspecPath = path.join(dir, entry)
+			break
+		end
+	end
+
+	if not rockspecPath then
+		return nil, "No rockspec found in directory: " .. dir
+	end
+
+	local content = fs.read(rockspecPath)
+	if not content then
+		return nil, "Could not read rockspec: " .. rockspecPath
+	end
+
+	local ok, spec = rocked.parse(content)
+	if not ok then
+		return nil, "Failed to parse rockspec: " .. (spec or rockspecPath)
+	end ---@cast spec rocked.raw.Output
+
+	local pkg = setmetatable({ dir = dir }, Package)
+
+	-- Collect pure-Lua module_name -> src_path from build.modules and build.install.lua
+	local modules = {}
+	if spec.build then
+		for modname, src in pairs(spec.build.modules or {}) do
+			if type(src) == "string" and src:match("%.lua$") then
+				modules[modname] = src
+			end
+		end
+		for modname, src in pairs((spec.build.install or {}).lua or {}) do
+			modules[modname] = src
+		end
+	end
+
+	local entryModule = spec.package and spec.package:lower()
+
+	pkg.buildfn = function(outputDir)
+		local modulesDir = path.dirname(outputDir)
+
+		for modname, src in pairs(modules) do
+			local srcAbs = path.join(dir, src)
+			local destRel = modname:gsub("%.", path.separator) .. ".lua"
+			local destAbs = path.join(modulesDir, destRel)
+			local destDir = path.dirname(destAbs)
+			if not fs.isdir(destDir) then
+				fs.mkdir(destDir)
+			end
+			fs.copy(srcAbs, destAbs)
+		end
+
+		local lines = {}
+		for modname in pairs(modules) do
+			table.insert(lines, string.format(
+				"package.preload[%q] = package.preload[%q] or function() return require(%q) end",
+				modname, modname, modname
+			))
+		end
+		if entryModule then
+			table.insert(lines, string.format("return require(%q)", entryModule))
+		end
+
+		fs.write(path.join(outputDir, "init.lua"), table.concat(lines, "\n") .. "\n")
+
+		return true
+	end
+
+	pkg.readConfig = function()
+		return Config.new({ name = spec.package, version = spec.version })
+	end
+
+	return pkg, nil
+end
+
+---@param dir string?
+---@return lpm.Package?, string?
+function Package.open(dir)
+	dir = dir or env.cwd()
+
+	if fs.exists(configPathAtDir(dir)) then
+		return Package.openLPM(dir)
+	end
+
+	return Package.openRockspec(dir)
 end
 
 ---@return lpm.Config
