@@ -19,6 +19,8 @@ jobs:
             outfile: lpm-linux-aarch64
           - os: windows-latest
             outfile: lpm-windows-x86-64.exe
+          - os: windows-11-arm
+            outfile: lpm-windows-aarch64.exe
           # - os: macos-15-intel
           #   outfile: lpm-macos-x86-64
           - os: macos-15
