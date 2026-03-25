@@ -36,6 +36,8 @@ jobs:
 
       - name: Setup lpm
         uses: codebycruz/lpm@master
+        with:
+          version: 0.7.1
 
       - name: Build lpm
         run: |
