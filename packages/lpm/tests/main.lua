@@ -463,3 +463,11 @@ test.it("installDependencies: writes a single flat lockfile containing all trans
 	-- No lockfile should have been written inside the middle dep
 	test.falsy(lpm.Lockfile.open(path.join(middleDir, "lpm-lock.json")))
 end)
+
+-- It's undefined behavior for lpm specifically to rely on transitive deps.
+-- But regardless need to ensure it works at runtime for the actual dependencies that will use it.
+test.it("transitive dep: util is resolvable as a dependency of lpm-core", function()
+	local util = require("util")
+	test.truthy(util)
+	test.truthy(util.dedent)
+end)
