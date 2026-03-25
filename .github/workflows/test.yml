@@ -1,15 +1,9 @@
 name: Test
 
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - "packages/**"
   pull_request:
     paths:
       - "packages/**"
-  workflow_dispatch:
 
 jobs:
   test:
