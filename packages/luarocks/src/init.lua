@@ -30,9 +30,13 @@ local function tokenize(content)
 			local j = i + 1
 			while j <= len do
 				local ch = content:sub(j, j)
-				if ch == '\\' then j = j + 2
-				elseif ch == '"' then break
-				else j = j + 1 end
+				if ch == '\\' then
+					j = j + 2
+				elseif ch == '"' then
+					break
+				else
+					j = j + 1
+				end
 			end
 			tokens[#tokens + 1] = { type = "string", value = content:sub(i + 1, j - 1) }
 			i = j + 1
@@ -76,7 +80,8 @@ local function parseManifest(tokens)
 		else
 			return consume("ident")
 		end
-	end	while peek() and not (peek().type == "ident" and peek().value == "repository") do pos = pos + 1 end
+	end
+	while peek() and not (peek().type == "ident" and peek().value == "repository") do pos = pos + 1 end
 	if not peek() then return nil, "No repository block found" end
 
 	consume("ident", "repository")
@@ -146,7 +151,7 @@ function luarocks.getRockspecUrls(name)
 
 	local versions = manifest.repository[name]
 	if not versions then
-		return nil, "Package not found in registry: " .. name
+		return nil, "Package not found in luarocks registry: " .. name
 	end
 
 	local urls = {}
