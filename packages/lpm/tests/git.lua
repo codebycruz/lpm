@@ -140,3 +140,35 @@ test.it("rockspec git dep: middleclass can be required after install", function(
 	if not ok then print(err) end
 	test.truthy(ok)
 end)
+
+test.it("rockspec git dep: luafilesystem native C module works", function()
+	if jit.os == "Windows" then return end
+
+	local dir = path.join(tmpBase, "lfs-consumer")
+	fs.mkdir(dir)
+	fs.mkdir(path.join(dir, "src"))
+	fs.write(path.join(dir, "src", "init.lua"), [[
+		local lfs = require("lfs")
+		local attr = lfs.attributes(".")
+		assert(attr ~= nil, "lfs.attributes returned nil")
+		assert(attr.mode == "directory", "expected directory, got " .. tostring(attr.mode))
+	]])
+	fs.write(path.join(dir, "lpm.json"), json.encode({
+		name = "lfs-consumer",
+		version = "0.1.0",
+		dependencies = {
+			luafilesystem = {
+				git = "https://github.com/lunarmodules/luafilesystem",
+				branch = "master",
+			}
+		}
+	}))
+
+	local pkg = lpm.Package.open(dir)
+	pkg:installDependencies()
+	pkg:build()
+
+	local ok, err = pkg:runFile()
+	if not ok then print(err) end
+	test.truthy(ok)
+end)
