@@ -18,6 +18,7 @@ if ($nightly) {
 $arch = if ($env:RUNNER_ARCH -eq "ARM64") { "aarch64" } else { "x86-64" }
 
 New-Item -ItemType Directory $dir -Force | Out-Null
+Write-Host "Downloading: https://github.com/$repo/releases/download/$tag/lpm-windows-$arch.exe"
 Invoke-WebRequest "https://github.com/$repo/releases/download/$tag/lpm-windows-$arch.exe" -OutFile $bin
 
 & $bin --setup
