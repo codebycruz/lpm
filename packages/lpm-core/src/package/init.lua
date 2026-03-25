@@ -141,12 +141,17 @@ function Package.openRockspec(dir, rockspecPath)
 		for modname, src in pairs(modules) do
 			local srcAbs = path.join(dir, src)
 			local destRel = modname:gsub("%.", path.separator) .. ".lua"
+			-- Mangle if this would collide with the generated init.lua
+			if path.join(modulesDir, destRel) == path.join(outputDir, "init.lua") then
+				destRel = modname:gsub("%.", path.separator):gsub("init$", "__init") .. ".lua"
+			end
 			local destAbs = path.join(modulesDir, destRel)
 			local destDir = path.dirname(destAbs)
 			if not fs.isdir(destDir) then
 				fs.mkdir(destDir)
 			end
 			fs.copy(srcAbs, destAbs)
+			modules[modname] = { destRel = destRel, destAbs = destAbs }
 		end
 
 		for modname, src in pairs(nativeModules) do
@@ -170,15 +175,27 @@ function Package.openRockspec(dir, rockspecPath)
 			end
 		end
 
-		local lines = {}
-		for modname in pairs(modules) do
+		local lines = {
+			"local _dir = debug.getinfo(1,'S').source:sub(2):match('^(.*/)') or './'",
+		}
+		for modname, info in pairs(modules) do
 			table.insert(lines, string.format(
-				"package.preload[%q] = package.preload[%q] or function() return require(%q) end",
-				modname, modname, modname
+				"package.preload[%q] = package.preload[%q] or function() return dofile(_dir .. %q) end",
+				modname, modname, "../" .. info.destRel
 			))
 		end
 		if entryModule then
-			table.insert(lines, string.format("return require(%q)", entryModule))
+			local info = modules[entryModule] or modules[entryModule .. ".init"]
+			if info then
+				table.insert(lines, string.format("return dofile(_dir .. %q)", "../" .. info.destRel))
+			elseif nativeModules[entryModule] then
+				local ext = process.platform == "darwin" and "dylib" or "so"
+				table.insert(lines, string.format(
+					"return package.loadlib(_dir .. %q, %q)()",
+					"../" .. entryModule:gsub("%.", path.separator) .. "." .. ext,
+					"luaopen_" .. entryModule:gsub("%.", "_")
+				))
+			end
 		end
 
 		fs.write(path.join(outputDir, "init.lua"), table.concat(lines, "\n") .. "\n")
