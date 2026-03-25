@@ -1,6 +1,7 @@
 local Config = require("lpm-core.config")
 local Lockfile = require("lpm-core.lockfile")
 local rocked = require("rocked")
+local sea = require("sea")
 
 local global = require("lpm-core.global")
 
@@ -158,6 +159,7 @@ function Package.openRockspec(dir, rockspecPath)
 
 			local ok, err = process.exec("gcc", {
 				"-shared", "-fPIC",
+				"-I" .. path.join(sea.getLuajitPath(), "include"),
 				srcAbs,
 				"-o", destAbs,
 			})

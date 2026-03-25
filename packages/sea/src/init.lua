@@ -77,6 +77,8 @@ end
 
 
 
+sea.getLuajitPath = getLuajitPath
+
 local CEscapes = {
 	["\a"] = "\\a",
 	["\b"] = "\\b",
