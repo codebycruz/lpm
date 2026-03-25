@@ -19,7 +19,6 @@ $rawArch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
 $arch = if ($rawArch -eq "Arm64") { "aarch64" } else { "x86-64" }
 
 New-Item -ItemType Directory $dir -Force | Out-Null
-Write-Host "https://github.com/$repo/releases/download/$tag/lpm-windows-$arch.exe"
 Invoke-WebRequest "https://github.com/$repo/releases/download/$tag/lpm-windows-$arch.exe" -OutFile $bin
 
 & $bin --setup
