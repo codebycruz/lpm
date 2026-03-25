@@ -16,6 +16,7 @@
 		"semver": { "path": "../semver" },
 		"lpm-core": { "path": "../lpm-core" },
 		"lpm-test": { "path": "../lpm-test" },
-		"git": { "path": "../git" }
+		"git": { "path": "../git" },
+		"winapi": { "git": "https://github.com/codebycruz/winapi" }
 	}
 }
