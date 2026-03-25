@@ -13,10 +13,111 @@ local luarocks = {}
 ---@field modules table
 ---@field commands table
 
-local baseEnv = { pairs = pairs, ipairs = ipairs, next = next }
-
 ---@type luarocks.Manifest?
 local cachedManifest
+
+---@alias luarocks.Token { type: "string", value: string } | { type: "ident", value: string } | { type: "sym", value: string }
+
+---@param content string
+---@return luarocks.Token[]
+local function tokenize(content)
+	local tokens = {}
+	local i = 1
+	local len = #content
+	while i <= len do
+		local c = content:sub(i, i)
+		if c == '"' then
+			local j = i + 1
+			while j <= len do
+				local ch = content:sub(j, j)
+				if ch == '\\' then j = j + 2
+				elseif ch == '"' then break
+				else j = j + 1 end
+			end
+			tokens[#tokens + 1] = { type = "string", value = content:sub(i + 1, j - 1) }
+			i = j + 1
+		elseif c:match("[%a_]") then
+			local j = i
+			while j <= len and content:sub(j, j):match("[%w_]") do j = j + 1 end
+			tokens[#tokens + 1] = { type = "ident", value = content:sub(i, j - 1) }
+			i = j
+		elseif c:match("[{}%[%]=,]") then
+			tokens[#tokens + 1] = { type = "sym", value = c }
+			i = i + 1
+		else
+			i = i + 1
+		end
+	end
+	return tokens
+end
+
+---@param tokens luarocks.Token[]
+---@return luarocks.Manifest?, string?
+local function parseManifest(tokens)
+	local pos = 1
+
+	local function peek() return tokens[pos] end
+
+	local function consume(typ, val)
+		local t = tokens[pos]
+		if not t then error("unexpected end of tokens") end
+		if typ and t.type ~= typ then error("expected type " .. typ .. " got " .. t.type .. " (" .. t.value .. ")") end
+		if val and t.value ~= val then error("expected " .. val .. " got " .. t.value) end
+		pos = pos + 1
+		return t.value
+	end
+
+	local function consumeKey()
+		if peek() and peek().value == "[" then
+			consume("sym", "[")
+			local k = consume("string")
+			consume("sym", "]")
+			return k
+		else
+			return consume("ident")
+		end
+	end	while peek() and not (peek().type == "ident" and peek().value == "repository") do pos = pos + 1 end
+	if not peek() then return nil, "No repository block found" end
+
+	consume("ident", "repository")
+	consume("sym", "=")
+	consume("sym", "{")
+
+	local repo = {}
+	while peek() and peek().value ~= "}" do
+		local pkgName = consumeKey()
+		consume("sym", "=")
+		consume("sym", "{")
+
+		local versions = {}
+		while peek() and peek().value ~= "}" do
+			local ver = consumeKey()
+			consume("sym", "=")
+			consume("sym", "{")
+
+			local entries = {}
+			while peek() and peek().value ~= "}" do
+				consume("sym", "{")
+				consume("ident", "arch")
+				consume("sym", "=")
+				local arch = consume("string")
+				entries[#entries + 1] = { arch = arch }
+				consume("sym", "}")
+				if peek() and peek().value == "," then consume("sym", ",") end
+			end
+			consume("sym", "}")
+			if peek() and peek().value == "," then consume("sym", ",") end
+
+			versions[ver] = entries
+		end
+		consume("sym", "}")
+		if peek() and peek().value == "," then consume("sym", ",") end
+
+		repo[pkgName] = versions
+	end
+
+	return { repository = repo, modules = {}, commands = {} }
+end
 
 ---@return luarocks.Manifest?, string?
 local function getManifest()
@@ -27,20 +128,10 @@ local function getManifest()
 		return nil, "Failed to fetch manifest: " .. (err or "")
 	end
 
-	local chunk, lerr = loadstring(content, "t")
-	if not chunk then return nil, lerr end
+	local manifest, perr = parseManifest(tokenize(content))
+	if not manifest then return nil, perr end
 
-	local oh, om, oc = debug.gethook()
-	debug.sethook(function() error("Manifest took too long") end, "", 1e7)
-	local env = setmetatable({}, { __index = baseEnv })
-	setfenv(chunk, env)
-	jit.off(chunk)
-	local ok, out = pcall(chunk)
-	debug.sethook(oh, om, oc)
-
-	if not ok then return nil, tostring(out) end
-
-	cachedManifest = env --[[@as luarocks.Manifest]]
+	cachedManifest = manifest
 	return cachedManifest
 end
 
