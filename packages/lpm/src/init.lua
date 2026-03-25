@@ -125,6 +125,7 @@ commands.tree = require("lpm.commands.tree")
 commands.update = require("lpm.commands.update")
 commands.uninstall = require("lpm.commands.uninstall")
 commands.publish = require("lpm.commands.publish")
+commands.repl = require("lpm.commands.repl")
 
 local ok, err = xpcall(function()
 	local commandName = args:pop()

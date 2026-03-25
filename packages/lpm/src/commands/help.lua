@@ -5,6 +5,7 @@ local function help(_args)
 	local commands = {
 		{ cmd = "run",       ex = nil,           color = "green",   desc = "Execute an lpm project" },
 		{ cmd = "x",         ex = "--git <url>", color = "green",   desc = "Run a package from a git repo or path" },
+		{ cmd = "repl",      ex = nil,           color = "green",   desc = "Start an interactive LuaJIT REPL" },
 		{ cmd = "test",      ex = nil,           color = "green",   desc = "Run project tests" },
 		{},
 		{ cmd = "new",       ex = "myproject",   color = "red",     desc = "Create a new lpm project" },
