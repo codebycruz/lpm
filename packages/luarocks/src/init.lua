@@ -267,4 +267,7 @@ function luarocks.getRockspec(name, version)
 	return content
 end
 
+luarocks._tokenize = tokenize
+luarocks._parseManifest = parseManifest
+
 return luarocks
