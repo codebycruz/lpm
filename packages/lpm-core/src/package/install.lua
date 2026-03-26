@@ -4,6 +4,7 @@ local http = require("http")
 local git = require("git")
 local luarocks = require("luarocks")
 local rocked = require("rocked")
+local util = require("util")
 
 local global = require("lpm-core.global")
 local Package = require("lpm-core.package")
@@ -210,6 +211,19 @@ local function installDependencies(package, dependencies, relativeTo)
 	relativeTo = relativeTo or package.dir
 
 	local modulesDir = package:getModulesDir()
+
+	-- Fast path: if target/.installed hash matches the current lockfile, skip all work
+	if isRoot then
+		local lockfilePath = package:getLockfilePath()
+		local installedPath = path.join(modulesDir, ".installed")
+		if fs.exists(lockfilePath) and fs.exists(installedPath) then
+			local lockfileContent = fs.read(lockfilePath)
+			if lockfileContent and fs.read(installedPath) == util.fnv1a(lockfileContent) then
+				return
+			end
+		end
+	end
+
 	if not fs.exists(modulesDir) then
 		fs.mkdir(modulesDir)
 	end
@@ -233,7 +247,10 @@ local function installDependencies(package, dependencies, relativeTo)
 		for alias, entry in pairs(stack) do
 			lockEntries[alias] = entry.lock
 		end
-		Lockfile.new(package:getLockfilePath(), lockEntries):save()
+		local lockfile = Lockfile.new(package:getLockfilePath(), lockEntries)
+		lockfile:save()
+		local lockfileContent = fs.read(package:getLockfilePath())
+		fs.write(path.join(modulesDir, ".installed"), util.fnv1a(lockfileContent))
 	end
 end
 
