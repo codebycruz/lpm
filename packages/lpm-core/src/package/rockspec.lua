@@ -19,17 +19,15 @@ local function openRockspec(dir, rockspecPath)
 	local content
 	if not rockspecPath then -- Search for a rockspec in the directory
 		if fs.isdir(dir) then
-			local fallback
-			for _, entry in ipairs(fs.scan(dir, "**.rockspec")) do
-				local full = path.join(dir, entry)
-				if not entry:find(path.separator, 1, true) then
-					rockspecPath = full
-					break
-				elseif not fallback then
-					fallback = full
+			local iter = fs.readdir(dir)
+			if iter then
+				for entry in iter do
+					if entry.type == "file" and entry.name:match("%.rockspec$") then
+						rockspecPath = path.join(dir, entry.name)
+						break
+					end
 				end
 			end
-			rockspecPath = rockspecPath or fallback
 		end
 		if not rockspecPath then
 			return nil, "No rockspec found in directory: " .. dir
