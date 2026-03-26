@@ -7,16 +7,16 @@
         ]
       },
       "locked": {
-        "lastModified": 1774436408,
-        "narHash": "sha256-fpXWgj/AsZ7xGtg5R8LqI5VIirQf7N9LIUK8873iE0Q=",
+        "lastModified": 1774517031,
+        "narHash": "sha256-MbPJ4TdFDteQ+HAWZEgkdkX/bwGlzaMEG7MOVl9DtK4=",
         "owner": "Silzinc",
         "repo": "lpm-nix",
-        "rev": "d15081a93d1e2d6d733e271cdb8f234e8e2b419f",
+        "rev": "d887ef46754a7cb1418afe0261863585c9069bdd",
         "type": "github"
       },
       "original": {
         "owner": "Silzinc",
-        "ref": "refs/tags/v0.7.2",
+        "ref": "refs/tags/v0.8.0",
         "repo": "lpm-nix",
         "type": "github"
       }
