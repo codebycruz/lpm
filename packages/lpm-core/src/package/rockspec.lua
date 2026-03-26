@@ -75,9 +75,6 @@ local function openRockspec(dir, rockspecPath)
 				nativeModules[modname] = src
 			end
 		end
-		for modname, src in pairs((spec.build.install or {}).lua or {}) do
-			modules[modname] = src
-		end
 		-- Merge platform-specific modules
 		local platKey = process.platform == "darwin" and "macosx" or process.platform
 		local platBuild = spec.build.platforms and spec.build.platforms[platKey]
@@ -93,9 +90,14 @@ local function openRockspec(dir, rockspecPath)
 	local entryModule = spec.package and spec.package:lower()
 	local binScripts = (spec.build and spec.build.install and spec.build.install.bin) or {}
 	-- Pick the first bin entry as the package entrypoint
+	-- bin can be { "tl" } (array) or { tl = "path/to/tl" } (map)
 	local binEntry, binSrc
 	for k, v in pairs(binScripts) do
-		binEntry, binSrc = k, v
+		if type(k) == "number" then
+			binEntry, binSrc = v, v  -- array style: name == path
+		else
+			binEntry, binSrc = k, v
+		end
 		break
 	end
 
@@ -169,7 +171,8 @@ local function openRockspec(dir, rockspecPath)
 
 		fs.write(path.join(outputDir, "init.lua"), table.concat(lines, "\n") .. "\n")
 
-		for binName, binRelSrc in pairs(binScripts) do
+		for k, v in pairs(binScripts) do
+			local binName, binRelSrc = type(k) == "number" and v or k, v
 			fs.copy(path.join(dir, binRelSrc), path.join(outputDir, binName))
 		end
 
