@@ -133,7 +133,7 @@ test.it("rockspec git dep: middleclass can be required after install", function(
 	pkg:installDependencies()
 	pkg:build()
 
-	test.truthy(fs.exists(path.join(dir, "target", "middleclass/init.lua")))
+	test.truthy(fs.exists(path.join(dir, "target", "middleclass.lua")))
 
 	local ok, err = pkg:runFile()
 	if not ok then print(err) end
@@ -141,7 +141,6 @@ test.it("rockspec git dep: middleclass can be required after install", function(
 end)
 
 test.skipIf(jit.os == "Windows" or jit.os == "OSX")("rockspec git dep: luafilesystem native C module works", function()
-
 	local dir = path.join(tmpBase, "lfs-consumer")
 	fs.mkdir(dir)
 	fs.mkdir(path.join(dir, "src"))

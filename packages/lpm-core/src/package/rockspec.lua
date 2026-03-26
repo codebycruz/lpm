@@ -91,15 +91,10 @@ local function openRockspec(dir, rockspecPath)
 		end
 	end
 
-	local entryModule = spec.package and spec.package:lower()
 	local binScripts = (spec.build and spec.build.install and spec.build.install.bin) or {}
-	local binEntry, binSrc
+	local binEntry
 	for k, v in pairs(binScripts) do
-		if type(k) == "number" then
-			binEntry, binSrc = v, v
-		else
-			binEntry, binSrc = k, v
-		end
+		binEntry = type(k) == "number" and v or k
 		break
 	end
 
@@ -114,6 +109,8 @@ local function openRockspec(dir, rockspecPath)
 	local buildStamp = rockspecHash(content)
 
 	pkg.buildfn = function(_, outputDir)
+		if not fs.isdir(outputDir) then fs.mkdir(outputDir) end
+
 		local stampFile = path.join(outputDir, ".lpm-built")
 		if fs.exists(stampFile) and fs.read(stampFile) == buildStamp then
 			return true
@@ -121,29 +118,16 @@ local function openRockspec(dir, rockspecPath)
 
 		local modulesDir = path.dirname(outputDir)
 
-		local resolved = {}
 		for modname, src in pairs(modules) do
-			local srcAbs = path.join(dir, src)
-			local destRel = modname:gsub("%.", path.separator) .. ".lua"
-			local destAbs = path.join(modulesDir, destRel)
-
-			-- Redirect only if the module would overwrite the generated init.lua inside outputDir
-			if destAbs == path.join(outputDir, "init.lua") then
-				local base = modname:gsub("%.", path.separator)
-				destRel = base:match("(.+)/") and base:match("(.+)/") .. "/__init.lua" or base .. "/__init.lua"
-				destAbs = path.join(modulesDir, destRel)
-			end
-
+			local destAbs = path.join(modulesDir, modname:gsub("%.", path.separator) .. ".lua")
 			local destDir = path.dirname(destAbs)
 			if not fs.isdir(destDir) then fs.mkdir(destDir) end
-			fs.copy(srcAbs, destAbs)
-			resolved[modname] = { destRel = destRel, destAbs = destAbs }
+			fs.copy(path.join(dir, src), destAbs)
 		end
 
 		for modname, src in pairs(nativeModules) do
 			local ext = process.platform == "darwin" and "dylib" or "so"
-			local destRel = modname:gsub("%.", path.separator) .. "." .. ext
-			local destAbs = path.join(modulesDir, destRel)
+			local destAbs = path.join(modulesDir, modname:gsub("%.", path.separator) .. "." .. ext)
 			local destDir = path.dirname(destAbs)
 			if not fs.isdir(destDir) then fs.mkdir(destDir) end
 
@@ -162,33 +146,6 @@ local function openRockspec(dir, rockspecPath)
 				return nil, "Failed to compile native module '" .. modname .. "': " .. (err or "")
 			end
 		end
-
-		if not fs.isdir(outputDir) then fs.mkdir(outputDir) end
-
-		local lines = {
-			"local _dir = debug.getinfo(1,'S').source:sub(2):match('^(.*/)') or './'"
-		}
-		for modname, info in pairs(resolved) do
-			table.insert(lines, string.format(
-				"package.preload[%q] = package.preload[%q] or function() return dofile(_dir .. %q) end",
-				modname, modname, "../" .. info.destRel
-			))
-		end
-		if entryModule then
-			local info = resolved[entryModule] or resolved[entryModule .. ".init"]
-			if info then
-				table.insert(lines, string.format("return dofile(_dir .. %q)", "../" .. info.destRel))
-			elseif nativeModules[entryModule] then
-				local ext = process.platform == "darwin" and "dylib" or "so"
-				table.insert(lines, string.format(
-					"return package.loadlib(_dir .. %q, %q)()",
-					"../" .. entryModule:gsub("%.", path.separator) .. "." .. ext,
-					"luaopen_" .. entryModule:gsub("%.", "_")
-				))
-			end
-		end
-
-		fs.write(path.join(outputDir, "init.lua"), table.concat(lines, "\n") .. "\n")
 
 		for k, v in pairs(binScripts) do
 			local binName, binRelSrc = type(k) == "number" and v or k, v

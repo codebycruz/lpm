@@ -237,15 +237,14 @@ test.it("rockspec dep: can require(packagename) from a consumer package", functi
 	-- buildfn should have copied modules to target/ at their require-able paths
 	test.truthy(fs.exists(path.join(appDir, "target", "rock-dep.lua")))
 	test.truthy(fs.exists(path.join(appDir, "target", "rock-dep", "util.lua")))
-	-- init.lua should have been generated in the package target dir
-	test.truthy(fs.exists(path.join(appDir, "target", "rock-dep", "init.lua")))
 
 	local ok, err = app:runFile()
 	if not ok then print(err) end
 	test.truthy(ok)
 end)
 
-test.skipIf(jit.os == "Windows" or jit.os == "OSX")("rockspec native C module: can require and call a C function returning 52", function()
+test.skipIf(jit.os == "Windows" or jit.os == "OSX")(
+"rockspec native C module: can require and call a C function returning 52", function()
 	fs.mkdir(tmpBase)
 
 	local rockDir = path.join(tmpBase, "native-rock")
