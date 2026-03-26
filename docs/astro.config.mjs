@@ -9,12 +9,16 @@ import cloudflare from "@astrojs/cloudflare";
 // https://astro.build/config
 export default defineConfig({
 	site: "https://lualpm.com",
+	output: "static",
 	server: {
 		allowedHosts: process.env.NODE_ENV !== "production" ? true : undefined,
 	},
-	adapter: cloudflare({
-		prerenderEnvironment: "node",
-	}),
+	adapter:
+		process.env.NODE_ENV == "production"
+			? cloudflare({
+					prerenderEnvironment: "node",
+				})
+			: undefined,
 	vite: {
 		plugins: [tailwindcss()],
 	},
