@@ -1,7 +1,11 @@
 local http = require("http")
+local fs = require("fs")
+local buffer = require("string.buffer")
+local path = require("path")
 
 local MANIFEST_URL = "https://luarocks.org/manifest"
 local ROCKSPEC_BASE = "https://luarocks.org"
+local MANIFEST_TTL = 300 -- 5 minutes
 
 local luarocks = {}
 
@@ -128,6 +132,18 @@ end
 local function getManifest()
 	if cachedManifest then return cachedManifest end
 
+	local home = os.getenv("HOME") or os.getenv("USERPROFILE")
+	local cacheFile = path.join(home, ".lpm", "luarocks-manifest.bin")
+
+	local stat = fs.stat(cacheFile)
+	if stat and (os.time() - stat.modifyTime) < MANIFEST_TTL then
+		local cached = fs.read(cacheFile)
+		if cached then
+			cachedManifest = buffer.decode(cached)
+			return cachedManifest
+		end
+	end
+
 	local content, err = http.get(MANIFEST_URL)
 	if not content then
 		return nil, "Failed to fetch manifest: " .. (err or "")
@@ -136,6 +152,7 @@ local function getManifest()
 	local manifest, perr = parseManifest(tokenize(content))
 	if not manifest then return nil, perr end
 
+	fs.write(cacheFile, buffer.encode(manifest))
 	cachedManifest = manifest
 	return cachedManifest
 end
