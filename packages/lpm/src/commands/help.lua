@@ -17,7 +17,7 @@ local function help(_args)
 		{ cmd = "add",       ex = "hood",        color = "yellow",  desc = "Add a dependency (--path <path> or --git <url>)" },
 		{ cmd = "remove",    ex = "json",        color = "yellow",  desc = "Remove a dependency" },
 		{ cmd = "tree",      ex = nil,           color = "yellow",  desc = "Show the dependency tree" },
-		{ cmd = "update",    ex = "clap",        color = "yellow",  desc = "Update git dependencies" },
+		{ cmd = "update",    ex = "clap",        color = "yellow",  desc = "Update dependencies to their latest versions" },
 		{ cmd = "outdated",  ex = nil,           color = "yellow",  desc = "Show dependencies with newer versions available" },
 		{ cmd = "publish",   ex = nil,           color = "yellow",  desc = "Create a PR to add your package to the registry" },
 		{},

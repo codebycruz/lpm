@@ -2,8 +2,10 @@ local fs = require("fs")
 local json = require("json")
 local git = require("git")
 local semver = require("semver")
+local luarocks = require("luarocks")
 
 local global = require("lpm-core.global")
+local util = require("lpm-core.util")
 
 --- Updates a single git dependency by pulling latest changes.
 --- Only applies to git dependencies without a pinned commit.
@@ -76,6 +78,41 @@ local function updateRegistryDependency(package, name, depInfo)
 	return true, depInfo.version .. " -> " .. best
 end
 
+--- Updates a luarocks dependency to the latest version.
+---@param package lpm.Package
+---@param name string
+---@param depInfo lpm.Config.Dependency
+---@return boolean updated
+---@return string message
+local function updateLuarocksDependency(package, name, depInfo)
+	local manifest, err = util.getManifest()
+	if not manifest then return false, "manifest error: " .. (err or "") end
+
+	local latestUrl = luarocks.getRockspecUrl(manifest, depInfo.luarocks)
+	if not latestUrl then return false, "not found in luarocks registry" end
+
+	local latest = latestUrl:match(depInfo.luarocks .. "%-([^/]+)%.rockspec$")
+	local current = depInfo.version
+
+	if not latest or latest == current then
+		return false, "already up to date" .. (current and (" (" .. current .. ")") or "")
+	end
+
+	local configPath = package:getConfigPath()
+	local configRaw = fs.read(configPath)
+	if not configRaw then return false, "failed to read config" end
+
+	local config = json.decode(configRaw)
+	if config.dependencies and config.dependencies[name] then
+		config.dependencies[name].version = latest
+	elseif config.devDependencies and config.devDependencies[name] then
+		config.devDependencies[name].version = latest
+	end
+
+	fs.write(configPath, json.encode(config))
+	return true, (current or "?") .. " -> " .. latest
+end
+
 --- Updates all dependencies for a package.
 ---@param package lpm.Package
 ---@param dependencies table<string, lpm.Config.Dependency>?
@@ -90,6 +127,8 @@ local function updateDependencies(package, dependencies)
 			updated, message = updateRegistryDependency(package, name, depInfo)
 		elseif depInfo.git then ---@cast depInfo lpm.Config.GitDependency
 			updated, message = updateGitDependency(name, depInfo)
+		elseif depInfo.luarocks then
+			updated, message = updateLuarocksDependency(package, name, depInfo)
 		else
 			updated, message = false, "skipped (path dependency)"
 		end
