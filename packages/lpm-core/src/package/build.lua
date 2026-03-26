@@ -1,5 +1,7 @@
 local fs = require("fs")
 local path = require("path")
+local ansi = require("ansi")
+local lpm = require("lpm-core")
 
 ---@type table<lpm.Package, boolean>
 local currentlyBuilding = setmetatable({}, { __mode = "k" })
@@ -14,17 +16,19 @@ local function buildPackage(package, destinationPath)
 
 	destinationPath = destinationPath or path.join(package:getModulesDir(), package:getName())
 
-	-- Ensure parent dir (target) exists
 	local target = path.dirname(destinationPath)
 	if not fs.isdir(target) then
 		fs.mkdir(target)
 	end
 
 	if package:hasBuildScript() then
+		local p = lpm.verbose and ansi.progress("Building " .. package:getName()) or nil
 		local ok, err = package:runBuildScript(destinationPath)
 		if not ok then
+			if p then p:fail("Building " .. package:getName()) end
 			error("Build script failed for package '" .. package:getName() .. "': " .. err)
 		end
+		if p then p:done("Built " .. package:getName()) end
 	else
 		fs.mklink(package:getSrcDir(), destinationPath)
 	end

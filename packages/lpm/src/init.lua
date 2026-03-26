@@ -89,6 +89,7 @@ if jit.os == "Windows" then
 end
 
 lpm.global.init()
+lpm.verbose = true
 
 local args = clap.parse({ ... })
 

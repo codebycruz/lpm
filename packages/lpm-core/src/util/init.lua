@@ -5,6 +5,7 @@ local fs = require("fs")
 local path = require("path")
 local git = require("git")
 local rocked = require("rocked")
+local ansi = require("ansi")
 local lpm = require("lpm-core")
 local luarocks = require("luarocks")
 
@@ -29,11 +30,16 @@ local function getManifest()
 		end
 	end
 
+	local p = lpm.verbose and ansi.progress("Fetching luarocks manifest") or nil
 	local content, err = http.get(MANIFEST_URL)
-	if not content then return nil, "Failed to fetch manifest: " .. (err or "") end
+	if not content then
+		if p then p:fail() end
+		return nil, "Failed to fetch manifest: " .. (err or "")
+	end
 
 	fs.write(cacheFile, content)
 	cachedManifest = luarocks.Manifest.new(content)
+	if p then p:done() end
 	return cachedManifest
 end
 

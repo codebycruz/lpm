@@ -150,10 +150,13 @@ end
 function global.getOrInitGitRepo(repoName, repoUrl, branch, commit)
 	local repoDir = global.getGitRepoDir(repoName, branch, commit)
 	if not fs.exists(repoDir) then
+		local p = lpm.verbose and ansi.progress("Cloning " .. repoName) or nil
 		local ok, err = global.cloneDir(repoName, repoUrl, branch, commit)
 		if not ok then
+			if p then p:fail("Cloning " .. repoName) end
 			error("Failed to clone git repository: " .. err)
 		end
+		if p then p:done("Cloned " .. repoName) end
 	end
 
 	return repoDir
@@ -167,10 +170,13 @@ function global.getOrInitArchive(url)
 	local key = sanitize(url)
 	local archiveDir = path.join(global.getTarCacheDir(), key)
 	if not fs.exists(archiveDir) then
+		local label = "Downloading " .. (url:match("([^/]+)$") or url)
+		local p = lpm.verbose and ansi.progress(label) or nil
 		fs.mkdir(archiveDir)
 		local archiveFile = archiveDir .. ".archive"
 		local ok, err = process.exec("curl", { "-sL", "-o", archiveFile, url })
 		if not ok then
+			if p then p:fail(label) end
 			error("Failed to download archive '" .. url .. "': " .. (err or ""))
 		end
 		local ok2, err2
@@ -190,9 +196,11 @@ function global.getOrInitArchive(url)
 		if not ok2 then
 			fs.rmdir(archiveDir)
 			fs.delete(archiveFile)
+			if p then p:fail(label) end
 			error("Failed to extract archive '" .. url .. "': " .. (err2 or ""))
 		end
 		fs.delete(archiveFile)
+		if p then p:done(label) end
 	end
 	return archiveDir
 end
