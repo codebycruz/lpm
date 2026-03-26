@@ -127,8 +127,8 @@ local function openRockspec(dir, rockspecPath)
 			local destRel = modname:gsub("%.", path.separator) .. ".lua"
 			local destAbs = path.join(modulesDir, destRel)
 
-			-- Redirect any module that would collide with outputDir or its init.lua
-			if destAbs == outputDir .. ".lua" or destAbs == path.join(outputDir, "init.lua") then
+			-- Redirect only if the module would overwrite the generated init.lua inside outputDir
+			if destAbs == path.join(outputDir, "init.lua") then
 				local base = modname:gsub("%.", path.separator)
 				destRel = base:match("(.+)/") and base:match("(.+)/") .. "/__init.lua" or base .. "/__init.lua"
 				destAbs = path.join(modulesDir, destRel)
@@ -162,6 +162,8 @@ local function openRockspec(dir, rockspecPath)
 				return nil, "Failed to compile native module '" .. modname .. "': " .. (err or "")
 			end
 		end
+
+		if not fs.isdir(outputDir) then fs.mkdir(outputDir) end
 
 		local lines = {
 			"local _dir = debug.getinfo(1,'S').source:sub(2):match('^(.*/)') or './'"
