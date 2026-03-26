@@ -10,6 +10,11 @@ function Args:pop()
 	return table.remove(self.raw, 1)
 end
 
+---@return string?
+function Args:peek()
+	return self.raw[1]
+end
+
 ---@param desiredKey string
 ---@return string? val
 ---@return number? beforePos # New position before the option key
