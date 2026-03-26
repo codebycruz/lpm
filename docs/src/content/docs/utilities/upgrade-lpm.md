@@ -28,3 +28,13 @@ You can use the --version flag to specify a specific version to upgrade to, whic
 ```bash
 lpm upgrade --version=0.6.0
 ```
+
+## Upgrading to Nightly
+
+You can upgrade to the latest nightly build (most recent build from GitHub)
+
+```bash
+lpm upgrade --nightly
+```
+
+Be wary it may be unstable! But also enjoy the new features a little early!

@@ -27,9 +27,3 @@ require("yourproject")
 ```
 
 This will set up your require paths and call into your `./src/init.lua`, so you can write as if you're just writing a normal lpm project, while using love2d!
-
-## Types
-
-Unfortunately at the moment, there's no clean solution to this offered by lpm. You might get a decent solution with LuaLS' library support.
-
-Ideally in the future love2d could offer an lpm compatible package purely for types, but it should also be on us to do so.

@@ -42,11 +42,3 @@ To remove previously installed tools, you can run:
 ```bash
 lpm uninstall triangle
 ```
-
-## Ensuring your PATH is correct
-
-If you have an older version of lpm or having issues with PATH not resolving the tools, try running this:
-
-```bash
-lpm --update-path
-```

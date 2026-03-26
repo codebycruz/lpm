@@ -38,8 +38,10 @@ test.it("should handle tables", function()
 end)
 ```
 
-## External Test Runners
+### Usage
 
-Currently, there is no support for external test runners. In the future, it would be nice to support something like [busted](https://github.com/lunarmodules/busted) out of the box. But that raises problems with the fact we don't support luarocks packages, hence why the minimal `lpm-test` was created as the default test runner.
+Simply add the types to your package and use the built-in LuaCATs types for lpm-test!
 
-You can find a tracking issue for this here, give it a thumbs up if you'd like to see it happen: https://github.com/codebycruz/lpm/issues/48
+```
+lpm add lpm-test --dev --git https://github.com/codebycruz/lpm
+```
