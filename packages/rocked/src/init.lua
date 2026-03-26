@@ -95,6 +95,8 @@ function rocked.parse(spec)
 		return false, "No build section found"
 	end
 
+	build.type = build.type or "builtin"
+
 	if not validRockTypes[build.type] then
 		return false, "Invalid build type: " .. tostring(build.type)
 	end
