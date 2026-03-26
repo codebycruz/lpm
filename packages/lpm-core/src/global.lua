@@ -17,6 +17,16 @@ local REGISTRY_URL = "https://github.com/codebycruz/lpm-registry"
 
 global.currentVersion = "0.8.0"
 
+---@class lpm.Portfile
+---@field name string
+---@field git string
+---@field versions table<string, string> # version -> commit hash
+---@field branch string?
+---@field description string?
+---@field license string?
+---@field authors string[]?
+---@field dependencies table<string, string>?
+
 ---@param s string
 local function sanitize(s)
 	return (string.gsub(s, "[^%w_%-]", "_"))
@@ -68,7 +78,7 @@ function global.syncRegistry()
 end
 
 ---@param name string
----@return table? portfile
+---@return lpm.Portfile?
 ---@return string? err
 function global.lookupRegistryPackage(name)
 	local portfilePath = path.join(global.getRegistryDir(), "packages", name .. ".json")
@@ -80,7 +90,7 @@ function global.lookupRegistryPackage(name)
 end
 
 --- Resolves a version string (or nil for latest) to a commit hash.
----@param portfile table
+---@param portfile lpm.Portfile
 ---@param version string? # nil means latest
 ---@return string version
 ---@return string commit

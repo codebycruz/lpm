@@ -92,4 +92,9 @@ function util.openLuarocksPackage(name, version)
 	return util.openRockspecUrl(name, url)
 end
 
+---@return luarocks.Manifest?, string?
+function util.getManifest()
+	return getManifest()
+end
+
 return util
