@@ -25,7 +25,7 @@ function util.openRockspecUrl(name, url, branch, commit)
 
 	local sourceUrl = spec.source.url
 
-	---@type string, lpm.Lockfile.Dependency?
+	---@type string, lpm.Lockfile.Dependency
 	local dir, lockEntry
 	if sourceUrl:match("^git") then
 		sourceUrl = sourceUrl:gsub("^git%+", "")

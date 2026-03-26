@@ -60,15 +60,18 @@ local function dependencyToPackage(alias, depInfo, relativeTo)
 		if not pkg then
 			error("Failed to load archive dependency '" .. alias .. "': " .. (err or ""))
 		end
+
 		---@type lpm.Lockfile.ArchiveDependency
 		local lockEntry = { archive = depInfo.archive, name = depInfo.name, rockspec = depInfo.rockspec }
+
 		return pkg, lockEntry
 	elseif depInfo.luarocks then -- luarocks registry
 		local pkg, lockEntry, err = lpm.util.openLuarocksPackage(depInfo.luarocks, depInfo.version)
 		if not pkg then
 			error("Failed to resolve luarocks dep '" .. alias .. "': " .. (err or ""))
-		end
-		if lockEntry then lockEntry.name = depInfo.name end
+		end ---@cast lockEntry -nil
+
+		lockEntry.name = depInfo.name
 		return pkg, lockEntry
 	elseif depInfo.version then -- lpm registry
 		lpm.global.syncRegistry()
