@@ -68,15 +68,15 @@ If anyone has any corrections, please do submit a pull request.
 | --------------------- | -------------- | ------------ | ------------ |
 | Written in            | Lua            | Rust         | Teal         |
 | Project format        | JSON           | TOML/Lua     | Lua          |
-| Add/remove deps       | ✓              | ✓            | ❌           |
-| Built-in test runner  | ✓ (lpm-test)   | ✓ (busted)   | ❌           |
-| Ships with LuaJIT     | ✓              | ❌           | ❌           |
-| Compile to executable | ✓              | ❌           | ❌           |
-| Git deps              | ✓              | ✓            | ❌           |
+| Add/remove deps       | ✓              | ✓            | ❌            |
+| Built-in test runner  | ✓ (lpm-test)   | ✓ (busted)   | ❌            |
+| Ships with LuaJIT     | ✓              | ❌            | ❌            |
+| Compile to executable | ✓              | ❌            | ❌            |
+| Git deps              | ✓              | ✓            | ❌            |
 | Registry deps         | ✓ (lpm)        | ✓ (luarocks) | ✓ (luarocks) |
-| Custom Registry       | ✓              | ❌           | ✓            |
+| Custom Registry       | ✓              | ❌            | ✓            |
 | Lockfile              | ✓              | ✓            | ✓            |
-| Luarocks Support      | ❌ ([#53][53]) | ✓            | ✓            |
+| Luarocks Support      | 🚧             | ✓            | ✓            |
 | Lua build scripts     | build.lua      | rockspec     | rockspec     |
 
 [53]: https://github.com/codebycruz/lpm/issues/53
