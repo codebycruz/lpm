@@ -19,21 +19,35 @@ local function dependencyToPackage(alias, depInfo, relativeTo)
 	if depInfo.git then
 		local repoDir = global.getOrInitGitRepo(packageName, depInfo.git, depInfo.branch, depInfo.commit)
 
-		local ok, output = git.getCommitHash(repoDir)
-		local resolvedCommit = (ok and output) and string.gsub(output, "%s+$", "") or depInfo.commit
+		local resolvedCommit = depInfo.commit
 		if not resolvedCommit then
-			error("Failed to resolve HEAD commit for git dependency")
+			local ok, output = git.getCommitHash(repoDir)
+			resolvedCommit = (ok and output) and string.gsub(output, "%s+$", "") or nil
+			if not resolvedCommit then
+				error("Failed to resolve HEAD commit for git dependency")
+			end
 		end
 
 		---@type lpm.Lockfile.GitDependency
-		local lockEntry = { git = depInfo.git, commit = resolvedCommit, branch = depInfo.branch, name = depInfo.name, rockspec = depInfo.rockspec }
+		local lockEntry = {
+			git = depInfo.git,
+			commit = resolvedCommit,
+			branch = depInfo.branch,
+			name = depInfo.name,
+			rockspec =
+				depInfo.rockspec
+		}
 
 		local pkg = Package.open(repoDir, depInfo.rockspec)
-		if pkg and pkg:getName() == packageName then return pkg, lockEntry end
+		if pkg and pkg:getName() == packageName then
+			return pkg, lockEntry
+		end
 
 		for _, config in ipairs(fs.scan(repoDir, "**" .. path.separator .. "lpm.json")) do
 			pkg = Package.open(path.join(repoDir, path.dirname(config)))
-			if pkg and pkg:getName() == packageName then return pkg, lockEntry end
+			if pkg and pkg:getName() == packageName then
+				return pkg, lockEntry
+			end
 		end
 
 		error("No lpm.json with name '" .. packageName .. "' found in git repository")
@@ -80,7 +94,9 @@ local function dependencyToPackage(alias, depInfo, relativeTo)
 			local lockEntry = { git = sourceUrl, commit = resolvedCommit, name = depInfo.name, rockspec = rockspecUrl }
 
 			local pkg = Package.openRockspec(repoDir, rockspecUrl)
-			if pkg then return pkg, lockEntry end
+			if pkg then
+				return pkg, lockEntry
+			end
 
 			error("Failed to open rockspec package for '" .. alias .. "'")
 		elseif sourceUrl:match("^https?://") then
@@ -90,7 +106,9 @@ local function dependencyToPackage(alias, depInfo, relativeTo)
 			local lockEntry = { archive = sourceUrl, name = depInfo.name, rockspec = rockspecUrl }
 
 			local pkg = Package.openRockspec(archiveDir, rockspecUrl)
-			if pkg then return pkg, lockEntry end
+			if pkg then
+				return pkg, lockEntry
+			end
 
 			error("Failed to open rockspec package for '" .. alias .. "'")
 		else
@@ -111,11 +129,15 @@ local function dependencyToPackage(alias, depInfo, relativeTo)
 		local lockEntry = { git = portfile.git, commit = commit, branch = portfile.branch, name = depInfo.name }
 
 		local pkg = Package.open(repoDir, depInfo.rockspec)
-		if pkg and pkg:getName() == packageName then return pkg, lockEntry end
+		if pkg and pkg:getName() == packageName then
+			return pkg, lockEntry
+		end
 
 		for _, config in ipairs(fs.scan(repoDir, "**" .. path.separator .. "lpm.json")) do
 			pkg = Package.open(path.join(repoDir, path.dirname(config)))
-			if pkg and pkg:getName() == packageName then return pkg, lockEntry end
+			if pkg and pkg:getName() == packageName then
+				return pkg, lockEntry
+			end
 		end
 
 		error("No lpm.json with name '" .. packageName .. "' found in registry package '" .. alias .. "'")
@@ -144,17 +166,22 @@ end
 ---@param relativeTo string
 ---@param stack table<string, { pkg: lpm.Package, lock: lpm.Lockfile.Dependency }>
 ---@param visiting table<string, boolean>
-local function collectDependencies(dependencies, relativeTo, stack, visiting)
+---@param rootLockfile lpm.Lockfile?
+local function collectDependencies(dependencies, relativeTo, stack, visiting, rootLockfile)
 	for alias, depInfo in pairs(dependencies) do
 		if visiting[alias] then
-			-- Already mid-resolution (cycle), skip
 			goto continue
+		end
+
+		-- Use root lockfile entry if available to avoid re-resolving luarocks deps
+		if rootLockfile then
+			local locked = rootLockfile:getDependency(alias)
+			if locked then depInfo = locked end
 		end
 
 		local pkg, lockEntry = dependencyToPackage(alias, depInfo, relativeTo)
 
 		if stack[alias] then
-			-- Already seen — validate source matches
 			if sourceKey(stack[alias].lock) ~= sourceKey(lockEntry) then
 				error(
 					"Conflicting sources for dependency '" .. alias .. "':\n" ..
@@ -165,9 +192,8 @@ local function collectDependencies(dependencies, relativeTo, stack, visiting)
 		else
 			stack[alias] = { pkg = pkg, lock = lockEntry }
 
-			-- Recurse into this dependency's own dependencies
 			visiting[alias] = true
-			collectDependencies(pkg:getDependencies(), pkg:getDir(), stack, visiting)
+			collectDependencies(pkg:getDependencies(), pkg:getDir(), stack, visiting, rootLockfile)
 			visiting[alias] = nil
 		end
 
@@ -190,7 +216,8 @@ local function installDependencies(package, dependencies, relativeTo)
 
 	-- 1. Recursively collect all deps onto a flat stack, validating conflicts
 	local stack = {}
-	collectDependencies(dependencies, relativeTo, stack, {})
+	local rootLockfile = isRoot and package:readLockfile() or nil
+	collectDependencies(dependencies, relativeTo, stack, {}, rootLockfile)
 
 	-- 2. Install each resolved dependency
 	for alias, entry in pairs(stack) do

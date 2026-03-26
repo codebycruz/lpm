@@ -94,7 +94,7 @@ local function openRockspec(dir, rockspecPath)
 	local binEntry, binSrc
 	for k, v in pairs(binScripts) do
 		if type(k) == "number" then
-			binEntry, binSrc = v, v  -- array style: name == path
+			binEntry, binSrc = v, v -- array style: name == path
 		else
 			binEntry, binSrc = k, v
 		end

@@ -29,6 +29,10 @@ function global.getTarCacheDir()
 	return path.join(global.getDir(), "tar")
 end
 
+function global.getRockspecCacheDir()
+	return path.join(global.getDir(), "rockspecs")
+end
+
 function global.getToolsDir()
 	return path.join(global.getDir(), "tools")
 end
@@ -201,6 +205,11 @@ function global.init()
 	local tarCacheDir = global.getTarCacheDir()
 	if not fs.exists(tarCacheDir) then
 		fs.mkdir(tarCacheDir)
+	end
+
+	local rockspecCacheDir = global.getRockspecCacheDir()
+	if not fs.exists(rockspecCacheDir) then
+		fs.mkdir(rockspecCacheDir)
 	end
 
 	local toolsDir = global.getToolsDir()
