@@ -64,7 +64,6 @@ test.it("installDependencies writes a resolved commit to the lockfile for git de
 	local entry = lock.dependencies[FIXTURE_NAME]
 	test.truthy(entry)
 	test.truthy(entry.commit)
-	-- Commit should be a 40-character hex SHA
 	test.truthy(entry.commit:match("^%x+$"))
 	test.equal(#entry.commit, 40)
 end)
@@ -101,7 +100,7 @@ test.it("installDependencies respects a pinned commit in lpm.json", function()
 	pkg:installDependencies()
 
 	local lock = json.decode(fs.read(path.join(dir, "lpm-lock.json")))
-	test.equal(lock.dependencies[FIXTURE_NAME].commit, headCommit)
+	test.match(lock.dependencies, { [FIXTURE_NAME] = { commit = headCommit } })
 
 	local fixturePath = path.join(dir, "target", FIXTURE_NAME, "init.lua")
 	test.truthy(fs.exists(fixturePath))
@@ -171,7 +170,7 @@ test.skipIf(jit.os == "Windows" or jit.os == "OSX")("rockspec git dep: luafilesy
 	test.truthy(lockfile)
 	local entry = lockfile:getDependency("luafilesystem")
 	test.truthy(entry)
-	test.truthy(entry.git)
+	test.match(entry, { git = "https://github.com/lunarmodules/luafilesystem" })
 	test.truthy(entry.commit)
 	test.truthy(entry.commit:match("^%x+$"))
 

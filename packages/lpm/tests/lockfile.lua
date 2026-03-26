@@ -47,10 +47,12 @@ test.it("Lockfile:save writes to disk and Lockfile.open reads it back", function
 
 	local loaded = lpm.Lockfile.open(lockPath)
 	test.equal(loaded:getVersion(), "1")
-	test.equal(loaded:getDependency("alpha").path, "../alpha")
-	test.equal(loaded:getDependency("beta").git, "https://example.com/beta.git")
-	test.equal(loaded:getDependency("beta").commit, "abc123")
-	test.equal(loaded:getDependency("beta").branch, "main")
+	test.match(loaded:getDependency("alpha"), { path = "../alpha" })
+	test.match(loaded:getDependency("beta"), {
+		git = "https://example.com/beta.git",
+		commit = "abc123",
+		branch = "main"
+	})
 end)
 
 test.it("Lockfile.open returns nil for a missing file", function()
@@ -81,6 +83,5 @@ test.it("Lockfile:save produces valid JSON", function()
 
 	local content = fs.read(lockPath)
 	local decoded = json.decode(content)
-	test.equal(decoded.version, "1")
-	test.equal(decoded.dependencies.mylib.path, "../mylib")
+	test.match(decoded, { version = "1", dependencies = { mylib = { path = "../mylib" } } })
 end)

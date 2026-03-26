@@ -21,7 +21,7 @@ test.it("Config preserves dependencies", function()
 		}
 	})
 
-	test.equal(conf.dependencies.foo.path, "../foo")
+	test.match(conf.dependencies, { foo = { path = "../foo" } })
 end)
 
 test.it("Config preserves git dependencies", function()
@@ -33,8 +33,7 @@ test.it("Config preserves git dependencies", function()
 		}
 	})
 
-	test.equal(conf.dependencies.bar.git, "https://example.com/bar.git")
-	test.equal(conf.dependencies.bar.branch, "main")
+	test.match(conf.dependencies, { bar = { git = "https://example.com/bar.git", branch = "main" } })
 end)
 
 test.it("Config with no dependencies returns nil for dependencies field", function()
@@ -55,7 +54,7 @@ test.it("Config preserves devDependencies", function()
 		}
 	})
 
-	test.equal(conf.devDependencies.testlib.path, "../testlib")
+	test.match(conf.devDependencies, { testlib = { path = "../testlib" } })
 end)
 
 test.it("Config preserves engine field", function()
