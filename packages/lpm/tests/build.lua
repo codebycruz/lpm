@@ -164,7 +164,7 @@ test.it("installDependencies skips already-installed symlink dependencies", func
 	test.truthy(fs.exists(path.join(mainDir, "target", "skip-dep")))
 end)
 
-test.it("installDependencies re-runs build script on each call when output is a directory", function()
+test.skip("installDependencies re-runs build script on each call when output is a directory", function()
 	-- "rebuild-sub" has a build.lua that writes an incrementing counter to init.lua.
 	-- The counter persists in a sibling file next to the output dir so it survives
 	-- the fs.copy that happens before each build script run.

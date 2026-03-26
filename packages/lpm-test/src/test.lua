@@ -5,7 +5,7 @@
 
 ---@class lpm.test
 ---@field it fun(name: string, fn: fun())
----@field skip fun(name: string)
+---@field skip fun(name: string, fn: fun()?)
 ---@field skipIf fun(condition: boolean): fun(name: string, fn: fun())
 ---@field run fun(): lpm.test.Result[]
 ---@field equal fun(a: any, b: any)
@@ -119,7 +119,7 @@ function M.new()
 		table.insert(callbacks, { name = name, callback = fn })
 	end
 
-	function instance.skip(name)
+	function instance.skip(name, _fn)
 		table.insert(callbacks, { name = name, skipped = true })
 	end
 

@@ -242,9 +242,7 @@ test.it("rockspec dep: can require(packagename) from a consumer package", functi
 	test.truthy(ok)
 end)
 
-test.it("rockspec native C module: can require and call a C function returning 52", function()
-	-- TODO: Re-enable on MacOS when nightly exports LuaJIT symbols.
-	if jit.os == "Windows" or jit.os == "OSX" then return end
+test.skipIf(jit.os == "Windows" or jit.os == "OSX")("rockspec native C module: can require and call a C function returning 52", function()
 	fs.mkdir(tmpBase)
 
 	local rockDir = path.join(tmpBase, "native-rock")

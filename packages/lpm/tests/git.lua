@@ -141,9 +141,7 @@ test.it("rockspec git dep: middleclass can be required after install", function(
 	test.truthy(ok)
 end)
 
-test.it("rockspec git dep: luafilesystem native C module works", function()
-	-- TODO: Re-enable on MacOS when nightly exports LuaJIT symbols.
-	if jit.os == "Windows" or jit.os == "OSX" then return end
+test.skipIf(jit.os == "Windows" or jit.os == "OSX")("rockspec git dep: luafilesystem native C module works", function()
 
 	local dir = path.join(tmpBase, "lfs-consumer")
 	fs.mkdir(dir)
