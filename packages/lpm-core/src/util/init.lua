@@ -10,7 +10,7 @@ local lpm = require("lpm-core")
 local luarocks = require("luarocks")
 
 local MANIFEST_URL = "https://luarocks.org/manifest"
-local MANIFEST_TTL = 300
+local MANIFEST_TTL = 60 * 60 * 24 -- 24 hours
 
 ---@type luarocks.Manifest?
 local cachedManifest
