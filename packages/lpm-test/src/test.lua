@@ -17,7 +17,8 @@
 ---@field less fun(a: number, b: number)
 ---@field greaterEqual fun(a: number, b: number)
 ---@field lessEqual fun(a: number, b: number)
----@field count fun(table: table): number
+---@field deepEqual fun(a: any, b: any)
+---@field match fun(actual: table, expected: table)
 local M = {}
 
 ---@generic T
@@ -108,6 +109,66 @@ local function count(tbl)
 	return n
 end
 
+---@param a any
+---@param b any
+---@param path string
+local function deepEqualInner(a, b, path)
+	if a == b then return end
+	if type(a) ~= type(b) then
+		error("Expected " .. path .. " to be " .. type(b) .. ", got " .. type(a), 0)
+	end
+	if type(a) ~= "table" then
+		error("Expected " .. path .. " to equal " .. tostring(b) .. ", got " .. tostring(a), 0)
+	end
+	-- compare metatables
+	if getmetatable(a) ~= getmetatable(b) then
+		error("Expected " .. path .. " metatables to match", 0)
+	end
+	for k, v in pairs(b) do
+		deepEqualInner(a[k], v, path .. "." .. tostring(k))
+	end
+	for k in pairs(a) do
+		if b[k] == nil then
+			error("Unexpected key " .. path .. "." .. tostring(k), 0)
+		end
+	end
+end
+
+---Recursively asserts deep equality including metatables
+---@param a any
+---@param b any
+local function deepEqual(a, b)
+	local ok, err = pcall(deepEqualInner, a, b, "<root>")
+	if not ok then error(err, 2) end
+end
+
+---@param actual table
+---@param expected table
+---@param path string
+local function matchInner(actual, expected, path)
+	for k, v in pairs(expected) do
+		local ap = path .. "." .. tostring(k)
+		if type(v) == "table" and type(actual[k]) == "table" then
+			matchInner(actual[k], v, ap)
+		else
+			if actual[k] ~= v then
+				error("Expected " .. ap .. " to equal " .. tostring(v) .. ", got " .. tostring(actual[k]), 0)
+			end
+		end
+	end
+end
+
+---Asserts that actual contains all keys/values in expected (like jest's toMatchObject)
+---@param actual table
+---@param expected table
+local function match(actual, expected)
+	if type(actual) ~= "table" then
+		error("Expected a table, got " .. type(actual), 2)
+	end
+	local ok, err = pcall(matchInner, actual, expected, "<root>")
+	if not ok then error(err, 2) end
+end
+
 --- Creates a fresh, independent test instance.
 ---@return lpm.test
 function M.new()
@@ -157,6 +218,8 @@ function M.new()
 	instance.greaterEqual = greaterEqual
 	instance.lessEqual = lessEqual
 	instance.count = count
+	instance.deepEqual = deepEqual
+	instance.match = match
 
 	return instance
 end
