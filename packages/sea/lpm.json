@@ -5,6 +5,7 @@
 		"process": { "path": "../process" },
 		"fs": { "path": "../fs" },
 		"path": { "path": "../path" },
-		"env": { "path": "../env" }
+		"env": { "path": "../env" },
+		"util": { "path": "../util" }
 	}
 }

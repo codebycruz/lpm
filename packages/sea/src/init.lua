@@ -6,6 +6,8 @@ local env = require("env")
 local fs = require("fs")
 local jit = require("jit")
 
+local util = require("util")
+
 local ljDistRepo = "codebycruz/lj-dist"
 local ljDistTag = "latest"
 
@@ -91,16 +93,6 @@ local CEscapes = {
 	["\\"] = "\\\\"
 }
 
----Compute a simple 32-bit FNV-1a hash of a string, returned as an 8-char hex string.
-local function fnv1a(s)
-	local h = 2166136261
-	for i = 1, #s do
-		h = bit.bxor(h, string.byte(s, i))
-		h = bit.band(h * 16777619, 0xFFFFFFFF)
-	end
-	return string.format("%08x", bit.band(h, 0xFFFFFFFF))
-end
-
 ---Convert binary content to a C uint8_t array initialiser string, e.g. "0x41,0x42,..."
 local function toByteLiteral(content)
 	local t = {}
@@ -158,7 +150,7 @@ function sea.compile(main, files, sharedLibs)
 
 	for _, lib in ipairs(sharedLibs) do
 		local id                      = safeIdent(lib.name)
-		local hash                    = fnv1a(lib.content)
+		local hash                    = util.fnv1a(lib.content)
 		local ext                     = process.platform == "win32" and "dll"
 			or process.platform == "darwin" and "dylib"
 			or "so"
