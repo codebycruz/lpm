@@ -6,12 +6,12 @@ local isWindows = path.separator == "\\"
 
 ---@param p string
 function path.basename(p)
-	return string.match(p, "([^" .. path.separator .. "]+)$") or ""
+	return string.match(p, "([^/\\]+)$") or ""
 end
 
 ---@param p string
 function path.dirname(p)
-	return p:match("^(.*)" .. path.separator) or "."
+	return p:match("^(.*)[/\\]") or "."
 end
 
 local windowsDriveLetter = "^%a:\\"
