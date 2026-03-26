@@ -143,6 +143,8 @@ export default function Registry() {
 					<line x1="21" y1="21" x2="16.65" y2="16.65" />
 				</svg>
 				<input
+					ref={searchRef}
+					autoFocus
 					type="text"
 					placeholder="Search packages..."
 					value={query}

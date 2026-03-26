@@ -1,3 +1,4 @@
+import { type ComponentChildren } from "preact";
 import { useState, useEffect } from "preact/hooks";
 import Registry from "./Registry.tsx";
 import PackageDetail from "./PackageDetail.tsx";
@@ -52,7 +53,22 @@ export default function RegistryPage() {
 					.
 				</p>
 			</div>
+			<Note>
+				Looking for LuaRocks packages? Search for them at{" "}
+				<a href="https://luarocks.org/" target="_blank" rel="noopener noreferrer" class="text-blue-500 hover:text-blue-400 underline underline-offset-2">luarocks.org</a>
+				{" "}and install with{" "}
+				<code class="text-sm font-mono px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10">lpm add rocks:packagename</code>.
+			</Note>
 			<Registry />
+		</div>
+	);
+}
+
+function Note({ children }: { children: ComponentChildren }) {
+	return (
+		<div class="mb-8 flex gap-3 rounded-xl border border-blue-200 dark:border-blue-900 bg-blue-50 dark:bg-blue-950/40 px-4 py-3 text-sm text-blue-900 dark:text-blue-200">
+			<span class="mt-0.5 shrink-0">💡</span>
+			<p>{children}</p>
 		</div>
 	);
 }
