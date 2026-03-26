@@ -1,5 +1,4 @@
 local env = require("env")
-local luarocks = require("luarocks")
 local path = require("path")
 
 local lpm = require("lpm-core")
@@ -11,11 +10,8 @@ local function resolveRocks(name)
 	local rocksName, versionStr = name:match("^rocks:([^@]+)@?(.*)$")
 	versionStr = versionStr ~= "" and versionStr or nil
 
-	local url, err = luarocks.getRockspecUrl(rocksName, versionStr)
-	if not url then return nil, err end
-
-	local pkg, _, pkgErr = lpm.util.openRockspecUrl(rocksName, url)
-	return pkg, pkgErr
+	local pkg, _, err = lpm.util.openLuarocksPackage(rocksName, versionStr)
+	return pkg, err
 end
 
 --- Resolves --git, --path, or a registry/rocks: name to a Package.

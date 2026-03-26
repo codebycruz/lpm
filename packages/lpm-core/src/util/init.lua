@@ -1,10 +1,41 @@
 local util = {}
 
 local http = require("http")
+local fs = require("fs")
+local path = require("path")
 local git = require("git")
 local rocked = require("rocked")
 local lpm = require("lpm-core")
 local luarocks = require("luarocks")
+
+local MANIFEST_URL = "https://luarocks.org/manifest"
+local MANIFEST_TTL = 300
+
+---@type luarocks.Manifest?
+local cachedManifest
+
+---@return luarocks.Manifest?, string?
+local function getManifest()
+	if cachedManifest then return cachedManifest end
+
+	local cacheFile = path.join(lpm.global.getDir(), "luarocks-manifest.raw")
+
+	local stat = fs.stat(cacheFile)
+	if stat and (os.time() - stat.modifyTime) < MANIFEST_TTL then
+		local raw = fs.read(cacheFile)
+		if raw then
+			cachedManifest = luarocks.Manifest.new(raw)
+			return cachedManifest
+		end
+	end
+
+	local content, err = http.get(MANIFEST_URL)
+	if not content then return nil, "Failed to fetch manifest: " .. (err or "") end
+
+	fs.write(cacheFile, content)
+	cachedManifest = luarocks.Manifest.new(content)
+	return cachedManifest
+end
 
 --- Fetches a rockspec URL, parses it, and opens the package from its source.
 ---@param name string # Used for error messages and git cache key
@@ -48,8 +79,10 @@ end
 ---@param version string?
 ---@return lpm.Package?, lpm.Lockfile.Dependency?, string?
 function util.openLuarocksPackage(name, version)
-	local url, err = luarocks.getRockspecUrl(name, version)
-	if not url then return nil, nil, err end
+	local manifest, err = getManifest()
+	if not manifest then return nil, nil, err end
+	local url, uerr = luarocks.getRockspecUrl(manifest, name, version)
+	if not url then return nil, nil, uerr end
 	return util.openRockspecUrl(name, url)
 end
 

@@ -1,172 +1,64 @@
-local http = require("http")
-local fs = require("fs")
-local buffer = require("string.buffer")
-local path = require("path")
-
-local MANIFEST_URL = "https://luarocks.org/manifest"
 local ROCKSPEC_BASE = "https://luarocks.org"
-local MANIFEST_TTL = 300 -- 5 minutes
 
 local luarocks = {}
 
----@class luarocks.ManifestEntry
+---@class luarocks.Manifest.Entry
 ---@field arch string
 
 ---@class luarocks.Manifest
----@field repository table<string, table<string, luarocks.ManifestEntry[]>>
----@field modules table
----@field commands table
+---@field _raw string
+local Manifest = {}
+Manifest.__index = Manifest
 
----@type luarocks.Manifest?
-local cachedManifest
-
----@alias luarocks.Token { type: "string", value: string } | { type: "ident", value: string } | { type: "sym", value: string }
-
----@param content string
----@return luarocks.Token[]
-local function tokenize(content)
-	local tokens = {}
-	local i = 1
-	local len = #content
-	while i <= len do
-		local c = content:sub(i, i)
-		if c == '"' then
-			local j = i + 1
-			while j <= len do
-				local ch = content:sub(j, j)
-				if ch == '\\' then
-					j = j + 2
-				elseif ch == '"' then
-					break
-				else
-					j = j + 1
-				end
-			end
-			tokens[#tokens + 1] = { type = "string", value = content:sub(i + 1, j - 1) }
-			i = j + 1
-		elseif c:match("[%a_]") then
-			local j = i
-			while j <= len and content:sub(j, j):match("[%w_]") do j = j + 1 end
-			tokens[#tokens + 1] = { type = "ident", value = content:sub(i, j - 1) }
-			i = j
-		elseif c:match("[{}%[%]=,]") then
-			tokens[#tokens + 1] = { type = "sym", value = c }
-			i = i + 1
-		else
-			i = i + 1
-		end
-	end
-	return tokens
-end
-
----@param tokens luarocks.Token[]
----@return luarocks.Manifest?, string?
-local function parseManifest(tokens)
-	local pos = 1
-
-	local function peek() return tokens[pos] end
-
-	local function consume(typ, val)
-		local t = tokens[pos]
-		if not t then error("unexpected end of tokens") end
-		if typ and t.type ~= typ then error("expected type " .. typ .. " got " .. t.type .. " (" .. t.value .. ")") end
-		if val and t.value ~= val then error("expected " .. val .. " got " .. t.value) end
-		pos = pos + 1
-		return t.value
-	end
-
-	local function consumeKey()
-		if peek() and peek().value == "[" then
-			consume("sym", "[")
-			local k = consume("string")
-			consume("sym", "]")
-			return k
-		else
-			return consume("ident")
-		end
-	end
-	while peek() and not (peek().type == "ident" and peek().value == "repository") do pos = pos + 1 end
-	if not peek() then return nil, "No repository block found" end
-
-	consume("ident", "repository")
-	consume("sym", "=")
-	consume("sym", "{")
-
-	local repo = {}
-	while peek() and peek().value ~= "}" do
-		local pkgName = consumeKey()
-		consume("sym", "=")
-		consume("sym", "{")
-
-		local versions = {}
-		while peek() and peek().value ~= "}" do
-			local ver = consumeKey()
-			consume("sym", "=")
-			consume("sym", "{")
-
-			local entries = {}
-			while peek() and peek().value ~= "}" do
-				consume("sym", "{")
-				consume("ident", "arch")
-				consume("sym", "=")
-				local arch = consume("string")
-				entries[#entries + 1] = { arch = arch }
-				consume("sym", "}")
-				if peek() and peek().value == "," then consume("sym", ",") end
-			end
-			consume("sym", "}")
-			if peek() and peek().value == "," then consume("sym", ",") end
-
-			versions[ver] = entries
-		end
-		consume("sym", "}")
-		if peek() and peek().value == "," then consume("sym", ",") end
-
-		repo[pkgName] = versions
-	end
-
-	return { repository = repo, modules = {}, commands = {} }
-end
-
----@return luarocks.Manifest?, string?
-local function getManifest()
-	if cachedManifest then return cachedManifest end
-
-	local home = os.getenv("HOME") or os.getenv("USERPROFILE")
-	local cacheFile = path.join(home, ".lpm", "luarocks-manifest.bin")
-
-	local stat = fs.stat(cacheFile)
-	if stat and (os.time() - stat.modifyTime) < MANIFEST_TTL then
-		local cached = fs.read(cacheFile)
-		if cached then
-			cachedManifest = buffer.decode(cached)
-			return cachedManifest
-		end
-	end
-
-	local content, err = http.get(MANIFEST_URL)
-	if not content then
-		return nil, "Failed to fetch manifest: " .. (err or "")
-	end
-
-	local manifest, perr = parseManifest(tokenize(content))
-	if not manifest then return nil, perr end
-
-	fs.write(cacheFile, buffer.encode(manifest))
-	cachedManifest = manifest
-	return cachedManifest
+---@param raw string
+---@return luarocks.Manifest
+function Manifest.new(raw)
+	return setmetatable({ _raw = raw }, Manifest)
 end
 
 ---@param name string
----@return table<string, string>? # version -> url
----@return string? err
-function luarocks.getRockspecUrls(name)
-	local manifest, err = getManifest()
-	if not manifest then
-		return nil, err
+---@return table<string, luarocks.Manifest.Entry[]>?
+function Manifest:package(name)
+	local escaped = name:gsub("([%-%.%+%*%?%[%]%^%$%(%)%%])", "%%%1")
+	-- Try quoted key: ["name"] = {
+	local start = self._raw:find('%["' .. escaped .. '"%]%s*=%s*{')
+	-- Fall back to unquoted ident key with frontier pattern: name = {
+	if not start then
+		start = self._raw:find('%f[%w_]' .. escaped .. '%f[^%w_]%s*=%s*{')
+	end
+	if not start then return nil end
+
+	local i = self._raw:find("{", start)
+	local depth, blockStart = 0, i
+	while i <= #self._raw do
+		local c = self._raw:sub(i, i)
+		if c == "{" then depth = depth + 1
+		elseif c == "}" then
+			depth = depth - 1
+			if depth == 0 then break end
+		end
+		i = i + 1
+	end
+	local block = self._raw:sub(blockStart, i)
+
+	local versions = {}
+	for verKey, verBody in block:gmatch('%["([^"]+)"%]%s*=%s*(%b{})') do
+		local entries = {}
+		for arch in verBody:gmatch('arch%s*=%s*"([^"]+)"') do
+			entries[#entries + 1] = { arch = arch }
+		end
+		versions[verKey] = entries
 	end
 
-	local versions = manifest.repository[name]
+	return versions
+end
+
+---@param manifest luarocks.Manifest
+---@param name string
+---@return table<string, string>? # version -> url
+---@return string? err
+function luarocks.getRockspecUrls(manifest, name)
+	local versions = manifest:package(name)
 	if not versions then
 		return nil, "Package not found in luarocks registry: " .. name
 	end
@@ -179,6 +71,10 @@ function luarocks.getRockspecUrls(name)
 				break
 			end
 		end
+	end
+
+	if not next(urls) then
+		return nil, "No rockspec entries found for: " .. name
 	end
 
 	return urls
@@ -211,28 +107,23 @@ end
 ---@return boolean
 local function satisfies(ver, op, constraint)
 	local c = cmpVer(parseVer(ver), parseVer(constraint))
-	if op == ">=" then
-		return c >= 0
-	elseif op == ">" then
-		return c > 0
-	elseif op == "<=" then
-		return c <= 0
-	elseif op == "<" then
-		return c < 0
-	elseif op == "==" or op == "=" then
-		return c == 0
-	elseif op == "~=" then
-		return c ~= 0
+	if op == ">=" then return c >= 0
+	elseif op == ">" then return c > 0
+	elseif op == "<=" then return c <= 0
+	elseif op == "<" then return c < 0
+	elseif op == "==" or op == "=" then return c == 0
+	elseif op == "~=" then return c ~= 0
 	end
 	return false
 end
 
+---@param manifest luarocks.Manifest
 ---@param name string
----@param constraint string? # e.g. ">= 1.0" or exact "1.0.0-1"; if nil, picks latest
+---@param constraint string?
 ---@return string? rockspecUrl
 ---@return string? err
-function luarocks.getRockspecUrl(name, constraint)
-	local urls, err = luarocks.getRockspecUrls(name)
+function luarocks.getRockspecUrl(manifest, name, constraint)
+	local urls, err = luarocks.getRockspecUrls(manifest, name)
 	if not urls then return nil, err end
 
 	local sorted = {}
@@ -240,17 +131,14 @@ function luarocks.getRockspecUrl(name, constraint)
 	table.sort(sorted, function(a, b) return cmpVer(parseVer(a), parseVer(b)) > 0 end)
 
 	if not constraint or constraint == "" then
-		local url = urls[sorted[1]]
-		return url or nil, url and nil or "No rockspec entry found for: " .. name
+		return urls[sorted[1]]
 	end
 
-	-- Parse all constraints (e.g. ">= 1.0, < 2.0")
 	local constraints = {}
 	for op, ver in constraint:gmatch("([><=~!]+)%s*([%d%.%-]+)") do
 		constraints[#constraints + 1] = { op = op, ver = ver }
 	end
 
-	-- Exact version match if no operators found
 	if #constraints == 0 then
 		local url = urls[constraint]
 		return url or nil, url and nil or "Version '" .. constraint .. "' not found for: " .. name
@@ -259,37 +147,14 @@ function luarocks.getRockspecUrl(name, constraint)
 	for _, v in ipairs(sorted) do
 		local ok = true
 		for _, c in ipairs(constraints) do
-			if not satisfies(v, c.op, c.ver) then
-				ok = false
-				break
-			end
+			if not satisfies(v, c.op, c.ver) then ok = false; break end
 		end
-
-		if ok then
-			return urls[v]
-		end
+		if ok then return urls[v] end
 	end
 
 	return nil, "No version of '" .. name .. "' satisfies: " .. constraint
 end
 
----@param name string
----@param version string?
----@return string? rockspecContent
----@return string? err
-function luarocks.getRockspec(name, version)
-	local url, err = luarocks.getRockspecUrl(name, version)
-	if not url then return nil, err end
-
-	local content, fetchErr = http.get(url)
-	if not content then
-		return nil, "Failed to fetch rockspec: " .. (fetchErr or "")
-	end
-
-	return content
-end
-
-luarocks._tokenize = tokenize
-luarocks._parseManifest = parseManifest
+luarocks.Manifest = Manifest
 
 return luarocks

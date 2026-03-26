@@ -1,7 +1,6 @@
 local json = require("json")
 local ansi = require("ansi")
 local fs = require("fs")
-local luarocks = require("luarocks")
 
 local lpm = require("lpm-core")
 
@@ -78,8 +77,8 @@ local function add(args)
 		local rocksName = name:match("^rocks:(.+)$")
 		name = rocksName
 
-		local url, err = luarocks.getRockspecUrl(rocksName, registryVersion)
-		if not url then
+		local _, _, err = lpm.util.openLuarocksPackage(rocksName, registryVersion)
+		if err then
 			ansi.printf("{red}%s", err)
 			return
 		end
