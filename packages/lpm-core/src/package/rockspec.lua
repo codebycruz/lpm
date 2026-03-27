@@ -176,58 +176,95 @@ local function openRockspec(dir, rockspecPath)
 
 			fs.write(stampFile, buildStamp)
 			return true
-		end
+		elseif buildType == "cmake" then
+			local luajitPath = sea.getLuajitPath()
+			local buildDir = path.join(dir, "build.lpm")
+			local installDir = path.join(dir, "install.lpm")
+			if not fs.isdir(buildDir) then fs.mkdir(buildDir) end
+			if not fs.isdir(installDir) then fs.mkdir(installDir) end
 
-		for modname, src in pairs(modules) do
-			local modPath = modname:gsub("%.", path.separator)
-			local srcBase = path.basename(src)
-			local destAbs
-			if srcBase == "init.lua" then
-				-- source is an init.lua: install as modPath/init.lua
-				-- but if modname ends in .init (e.g. "system.init"), strip that segment
-				local dirPath = modname:match("^(.+)%.init$")
-				if dirPath then
-					destAbs = path.join(modulesDir, dirPath:gsub("%.", path.separator), "init.lua")
+			local configureArgs = {
+				"-H.", "-B" .. buildDir,
+				"-DLUA_BUILD_TYPE=System",
+				"-DWITH_LUA_ENGINE=LuaJIT",
+				"-DLUAJIT_INCLUDE_DIR=" .. path.join(luajitPath, "include"),
+				"-DLUAJIT_LIBRARIES=" .. path.join(luajitPath, "lib", "libluajit.a"),
+				"-DCMAKE_INSTALL_PREFIX=" .. installDir,
+			}
+			for k, v in pairs(spec.build.build_variables or {}) do
+				configureArgs[#configureArgs + 1] = "-D" .. k .. "=" .. v
+			end
+
+			local ok, err = process.exec("cmake", configureArgs, { cwd = dir })
+			if not ok then return nil, "cmake configure failed: " .. (err or "") end
+
+			ok, err = process.exec("cmake", { "--build", buildDir, "--config", "Release" }, { cwd = dir })
+			if not ok then return nil, "cmake build failed: " .. (err or "") end
+
+			ok, err = process.exec("cmake", { "--build", buildDir, "--target", "install", "--config", "Release" }, { cwd = dir })
+			if not ok then return nil, "cmake install failed: " .. (err or "") end
+
+			local soExt = process.platform == "darwin" and "**.dylib" or "**.so"
+			for _, rel in ipairs(fs.scan(installDir, soExt)) do
+				fs.copy(path.join(installDir, rel), path.join(modulesDir, path.basename(rel)))
+			end
+
+			fs.write(stampFile, buildStamp)
+			return true
+		elseif buildType == "builtin" then
+			for modname, src in pairs(modules) do
+				local modPath = modname:gsub("%.", path.separator)
+				local srcBase = path.basename(src)
+				local destAbs
+				if srcBase == "init.lua" then
+					-- source is an init.lua: install as modPath/init.lua
+					-- but if modname ends in .init (e.g. "system.init"), strip that segment
+					local dirPath = modname:match("^(.+)%.init$")
+					if dirPath then
+						destAbs = path.join(modulesDir, dirPath:gsub("%.", path.separator), "init.lua")
+					else
+						destAbs = path.join(modulesDir, modPath, "init.lua")
+					end
 				else
-					destAbs = path.join(modulesDir, modPath, "init.lua")
+					destAbs = path.join(modulesDir, modPath .. ".lua")
 				end
-			else
-				destAbs = path.join(modulesDir, modPath .. ".lua")
-			end
-			local destDir = path.dirname(destAbs)
-			if not fs.isdir(destDir) then mkdirp(destDir) end
-			fs.copy(path.join(dir, src), destAbs)
-		end
-
-		for modname, src in pairs(nativeModules) do
-			local ext = process.platform == "darwin" and "dylib" or "so"
-			local destAbs = path.join(modulesDir, modname:gsub("%.", path.separator) .. "." .. ext)
-			local destDir = path.dirname(destAbs)
-			if not fs.isdir(destDir) then mkdirp(destDir) end
-
-			local srcFiles = {}
-			for _, s in ipairs(src.sources) do
-				srcFiles[#srcFiles + 1] = path.join(dir, s)
+				local destDir = path.dirname(destAbs)
+				if not fs.isdir(destDir) then mkdirp(destDir) end
+				fs.copy(path.join(dir, src), destAbs)
 			end
 
-			local gccArgs = { "-shared", "-fPIC", "-I" .. path.join(sea.getLuajitPath(), "include") }
-			for _, s in ipairs(srcFiles) do gccArgs[#gccArgs + 1] = s end
-			gccArgs[#gccArgs + 1] = "-o"
-			gccArgs[#gccArgs + 1] = destAbs
+			for modname, src in pairs(nativeModules) do
+				local ext = process.platform == "darwin" and "dylib" or "so"
+				local destAbs = path.join(modulesDir, modname:gsub("%.", path.separator) .. "." .. ext)
+				local destDir = path.dirname(destAbs)
+				if not fs.isdir(destDir) then mkdirp(destDir) end
 
-			local ok, err = process.exec("gcc", gccArgs)
-			if not ok then
-				return nil, "Failed to compile native module '" .. modname .. "': " .. (err or "")
+				local srcFiles = {}
+				for _, s in ipairs(src.sources) do
+					srcFiles[#srcFiles + 1] = path.join(dir, s)
+				end
+
+				local gccArgs = { "-shared", "-fPIC", "-I" .. path.join(sea.getLuajitPath(), "include") }
+				for _, s in ipairs(srcFiles) do gccArgs[#gccArgs + 1] = s end
+				gccArgs[#gccArgs + 1] = "-o"
+				gccArgs[#gccArgs + 1] = destAbs
+
+				local ok, err = process.exec("gcc", gccArgs)
+				if not ok then
+					return nil, "Failed to compile native module '" .. modname .. "': " .. (err or "")
+				end
 			end
-		end
 
-		for k, v in pairs(binScripts) do
-			local binName, binRelSrc = type(k) == "number" and v or k, v
-			fs.copy(path.join(dir, binRelSrc), path.join(outputDir, binName))
-		end
+			for k, v in pairs(binScripts) do
+				local binName, binRelSrc = type(k) == "number" and v or k, v
+				fs.copy(path.join(dir, binRelSrc), path.join(outputDir, binName))
+			end
 
-		fs.write(stampFile, buildStamp)
-		return true
+			fs.write(stampFile, buildStamp)
+			return true
+		else
+			return nil, "unsupported build type: " .. buildType
+		end -- builtin
 	end
 
 	pkg.readConfig = function()
