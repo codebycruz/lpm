@@ -1,59 +1,37 @@
 local ansi = require("ansi")
-local env = require("env")
-local path = require("path")
-local ffi = require("ffi")
 
 local lpm = require("lpm-core")
+local run = require("lpm-core.package.run")
 
 ---@param _args clap.Args
 local function repl(_args)
 	ansi.printf("{blue}{bold}lpm repl{reset} — LuaJIT interactive shell")
 	ansi.printf("{gray}Type {bold}exit(){reset}{gray} or press Ctrl+C to quit.\n")
 
-	-- Set up package paths if inside an lpm project
-	local pkg = lpm.Package.open()
-	local luaPath, luaCPath = package.path, package.cpath
+	local savedPath, savedCPath = package.path, package.cpath
 
+	local pkg = lpm.Package.open()
 	if pkg then
 		pkg:build()
 		pkg:installDependencies()
 
-		local modulesDir = pkg:getModulesDir()
-		luaPath = path.join(modulesDir, "?.lua") .. ";"
-			.. path.join(modulesDir, "?", "init.lua") .. ";"
-			.. luaPath
-		luaCPath = (
-			ffi.os == "Linux" and path.join(modulesDir, "?.so") or
-			ffi.os == "Windows" and path.join(modulesDir, "?.dll") or
-			path.join(modulesDir, "?.dylib")
-		) .. ";" .. luaCPath
+		local luaPath, luaCPath = run.getLuaPaths(pkg)
+		package.path = luaPath .. savedPath
+		package.cpath = luaCPath .. savedCPath
 
 		local config = pkg:readConfig()
 		ansi.printf("{gray}Project: {green}%s {gray}(%s)", config.name or "unknown", pkg:getDir())
 	end
 
-	-- Accumulate multi-line input
 	local buffer = ""
-	local lineNum = 1
 
 	local function prompt()
-		if buffer ~= "" then
-			io.write(ansi.format("{gray}...{reset} "))
-		else
-			io.write(ansi.format("{blue}>{reset} "))
-		end
+		io.write(ansi.format(buffer ~= "" and "{gray}...{reset} " or "{blue}>{reset} "))
 		io.flush()
 	end
 
-	local savedPath, savedCPath = package.path, package.cpath
-	package.path = luaPath
-	package.cpath = luaCPath
-
-	-- Shared environment for the session
 	local G = setmetatable({}, { __index = _G })
 	G._ENV = G
-
-	-- exit() helper
 	G.exit = function(code) os.exit(code or 0) end
 
 	local function pretty(val, indent, seen)
@@ -86,38 +64,26 @@ local function repl(_args)
 		prompt()
 		local line = io.read("*l")
 
-		if line == nil then -- EOF / Ctrl+D
-			print("")
-			break
-		end
-
-		if line == "exit()" or line == "quit()" then
+		if line == nil or line == "exit()" or line == "quit()" then
+			if line == nil then print("") end
 			break
 		end
 
 		buffer = buffer == "" and line or (buffer .. "\n" .. line)
 
-		-- Try as expression first (return <expr>)
-		local chunk, err = loadstring("return " .. buffer, "repl")
-		if not chunk then
-			-- Try as statement
-			chunk, err = loadstring(buffer, "repl")
-		end
+		local chunk, err = loadstring("return " .. buffer, "repl") or loadstring(buffer, "repl")
 
 		if chunk then
 			setfenv(chunk, G)
 			local ok, result = pcall(chunk)
 			if ok then
-				if result ~= nil then
-					ansi.printf("{gray}={reset} %s", pretty(result))
-				end
+				if result ~= nil then ansi.printf("{gray}={reset} %s", pretty(result)) end
 			else
 				ansi.printf("{red}%s", tostring(result))
 			end
 			buffer = ""
-			lineNum = lineNum + 1
 		elseif err and err:find("<eof>") then
-			-- Incomplete input, keep buffering
+			-- incomplete, keep buffering
 		else
 			ansi.printf("{red}%s", tostring(err))
 			buffer = ""

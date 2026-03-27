@@ -183,7 +183,9 @@ function Package:updateDevDependencies()
 end
 
 Package.compile = require("lpm-core.package.compile")
-Package.runFile = require("lpm-core.package.run")
+local run = require("lpm-core.package.run")
+Package.runFile = run.runFile
+Package.runString = run.runString
 Package.runTests = require("lpm-core.package.test")
 
 ---@param name string # Name of a script defined in lpm.json scripts table

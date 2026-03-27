@@ -98,6 +98,12 @@ if args:flag("version") and args:count() == 0 then
 	return
 end
 
+local evalCode = args:short("e")
+if evalCode then
+	require("lpm.commands.eval")(evalCode)
+	return
+end
+
 if args:count() == 0 and args:flag("help") then
 	require("lpm.commands.help")(args)
 	return

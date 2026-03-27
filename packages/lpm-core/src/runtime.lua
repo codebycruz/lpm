@@ -55,24 +55,16 @@ local function restore(t, saved)
 	end
 end
 
----@param scriptPath string
+---@param chunk function
 ---@param opts lpm.ExecuteOptions?
-local function executeFile(scriptPath, opts)
+local function executeChunk(chunk, opts)
 	opts = opts or {}
 
 	local oldCwd = opts.cwd and env.cwd()
-	if opts.cwd then
-		env.chdir(opts.cwd)
-	end
+	if opts.cwd then env.chdir(opts.cwd) end
 
 	local oldPath, oldCPath = package.path, package.cpath
-	local callback, err = loadfile(scriptPath, "t")
-	if not callback then
-		if oldCwd then env.chdir(oldCwd) end
-		return false, err or "Failed to compile script"
-	end
 
-	-- Save old env var values and set new ones
 	local oldEnvVars = {}
 	if opts.env then
 		for k, v in pairs(opts.env) do
@@ -81,7 +73,6 @@ local function executeFile(scriptPath, opts)
 		end
 	end
 
-	-- Mutate these in place since at least package.loaded is just a reference to the internally used _R._LOADED
 	local savedLoaded = clearNonBuiltins(package.loaded)
 	local savedPreload = clearNonBuiltins(package.preload)
 
@@ -91,14 +82,10 @@ local function executeFile(scriptPath, opts)
 		end
 	end
 
-	local newG = {}
-	setmetatable(newG, { __index = _G })
-	setfenv(callback, newG)
-
+	local newG = setmetatable({}, { __index = _G })
+	setfenv(chunk, newG)
 	package.loaded._G = newG
 
-	-- Wrap package.loaders so that any chunk loaded via require()
-	-- also gets its environment set to newG, preventing global pollution.
 	local oldLoaders = package.loaders
 	local freshLoaders = {}
 	for i, loader in ipairs(oldLoaders) do
@@ -110,10 +97,8 @@ local function executeFile(scriptPath, opts)
 			return result
 		end
 	end
-
 	package.loaders = freshLoaders
 
-	-- Allow re-requiring of modules that declare C definitions
 	ffi.cdef = function(def)
 		local ok, err = pcall(originalCdef, def)
 		if not ok and not string.find(err, "attempt to redefine", 1, true) then
@@ -122,35 +107,52 @@ local function executeFile(scriptPath, opts)
 	end
 
 	local ok, err = pcall(function()
-		package.path, package.cpath = opts.packagePath, opts.packageCPath
+		package.path = opts.packagePath or oldPath
+		package.cpath = opts.packageCPath or oldCPath
 		if opts.args then
-			-- SAFETY: opts.args should not be used by caller afterward as it can be mutated here.
-			arg = opts.args or {}
-			return callback(unpack(opts.args))
+			arg = opts.args
+			return chunk(unpack(opts.args))
 		else
-			return callback()
+			return chunk()
 		end
 	end)
 
-	-- Restore old env var values
-	for k, v in pairs(oldEnvVars) do
-		env.set(k, v)
-	end
-
-	if oldCwd then
-		env.chdir(oldCwd)
-	end
+	for k, v in pairs(oldEnvVars) do env.set(k, v) end
+	if oldCwd then env.chdir(oldCwd) end
 
 	ffi.cdef = originalCdef
-
 	restore(package.loaded, savedLoaded)
 	restore(package.preload, savedPreload)
-
 	package.loaders = oldLoaders
 	package.path, package.cpath = oldPath, oldCPath
+
 	return ok, err
 end
 
+---@param scriptPath string
+---@param opts lpm.ExecuteOptions?
+local function executeFile(scriptPath, opts)
+	local chunk, err = loadfile(scriptPath, "t")
+	if not chunk then
+		return false, err or "Failed to compile script"
+	end
+	return executeChunk(chunk, opts)
+end
+
+---@param code string
+---@param opts lpm.ExecuteOptions?
+local function executeString(code, opts)
+	local chunk, err = loadstring("return " .. code, "-e")
+	if not chunk then
+		chunk, err = loadstring(code, "-e")
+	end
+	if not chunk then
+		return false, err
+	end
+	return executeChunk(chunk, opts)
+end
+
 return {
-	executeFile = executeFile
+	executeFile = executeFile,
+	executeString = executeString,
 }

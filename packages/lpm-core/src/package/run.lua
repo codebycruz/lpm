@@ -23,60 +23,70 @@ end
 ---@param package lpm.Package
 ---@param scriptPath string
 ---@param args string[]?
----@param vars table<string, string>? # Env vars
+---@param vars table<string, string>?
 ---@param cwd string
 local function runFileWithLPM(package, scriptPath, args, vars, cwd)
 	local luaPath, luaCPath = getLuaPathsForPackage(package)
-
 	return runtime.executeFile(scriptPath, {
-		args = args,
-		env = vars,
-		cwd = cwd,
-		packagePath = luaPath,
-		packageCPath = luaCPath
+		args = args, env = vars, cwd = cwd,
+		packagePath = luaPath, packageCPath = luaCPath
+	})
+end
+
+---@param package lpm.Package
+---@param code string
+---@param args string[]?
+---@param vars table<string, string>?
+---@param cwd string
+local function runStringWithLPM(package, code, args, vars, cwd)
+	local luaPath, luaCPath = getLuaPathsForPackage(package)
+	return runtime.executeString(code, {
+		args = args, env = vars, cwd = cwd,
+		packagePath = luaPath, packageCPath = luaCPath
 	})
 end
 
 ---@param package lpm.Package
 ---@param scriptPath string
 ---@param args string[]?
----@param vars table<string, string>? # Env vars
+---@param vars table<string, string>?
 ---@param engine string
 ---@param cwd string
 local function runFileWithLuaCLI(package, scriptPath, args, vars, engine, cwd)
 	local luaPath, luaCPath = getLuaPathsForPackage(package)
-
 	local env = { LUA_PATH = luaPath, LUA_CPATH = luaCPath }
-	if vars then
-		for k, v in pairs(vars) do
-			env[k] = v
-		end
-	end
-
+	if vars then for k, v in pairs(vars) do env[k] = v end end
 	return process.exec(engine, { scriptPath }, { cwd = cwd, env = env, stdout = "inherit", stderr = "inherit" })
 end
 
---- Runs a script within the package context
---- This will use the package's engine and set up the LUA_PATH accordingly
 ---@param package lpm.Package
----@param scriptPath string? # Defaults to bin field or target/<name>/init.lua
----@param args string[]? # Positional arguments
----@param vars table<string, string>? # Additional environment variables
----@param cwd string? # Working directory for the script. Defaults to the package directory
----@return boolean? # Success
----@return string # Output
-local function runFile(package, scriptPath, args, vars, cwd)
-	-- Ensure package is built so modules folder exists (and so it can require itself)
-	package:build()
+---@param code string
+---@param args string[]?
+---@param vars table<string, string>?
+---@param engine string
+---@param cwd string
+local function runStringWithLuaCLI(package, code, args, vars, engine, cwd)
+	local luaPath, luaCPath = getLuaPathsForPackage(package)
+	local env = { LUA_PATH = luaPath, LUA_CPATH = luaCPath }
+	if vars then for k, v in pairs(vars) do env[k] = v end end
+	return process.exec(engine, { "-e", code, unpack(args or {}) }, { cwd = cwd, env = env, stdout = "inherit", stderr = "inherit" })
+end
 
+---@param package lpm.Package
+---@param scriptPath string?
+---@param args string[]?
+---@param vars table<string, string>?
+---@param cwd string?
+---@return boolean?
+---@return string
+local function runFile(package, scriptPath, args, vars, cwd)
+	package:build()
 	local config = package:readConfig()
 
 	if not scriptPath then
-		if config.bin then
-			scriptPath = path.join(package:getTargetDir(), config.bin)
-		else
-			scriptPath = path.join(package:getTargetDir(), "init.lua")
-		end
+		scriptPath = config.bin
+			and path.join(package:getTargetDir(), config.bin)
+			or path.join(package:getTargetDir(), "init.lua")
 	end
 
 	cwd = cwd or package:getDir()
@@ -89,11 +99,30 @@ local function runFile(package, scriptPath, args, vars, cwd)
 		ok, err = runFileWithLuaCLI(package, scriptPath, args, vars, engine, cwd)
 	end
 
-	if not ok then
-		return nil, err or "Script exited with a non-zero exit code"
-	end
-
-	return ok, err
+	return ok or nil, err or "Script exited with a non-zero exit code"
 end
 
-return runFile
+---@param package lpm.Package
+---@param code string
+---@param args string[]?
+---@param vars table<string, string>?
+---@param cwd string?
+---@return boolean?
+---@return string
+local function runString(package, code, args, vars, cwd)
+	package:build()
+	local config = package:readConfig()
+	cwd = cwd or package:getDir()
+
+	local engine = config.engine or "lpm"
+	local ok, err
+	if engine == "lpm" then
+		ok, err = runStringWithLPM(package, code, args, vars, cwd)
+	else
+		ok, err = runStringWithLuaCLI(package, code, args, vars, engine, cwd)
+	end
+
+	return ok or nil, err or "Script exited with a non-zero exit code"
+end
+
+return { runFile = runFile, runString = runString, getLuaPaths = getLuaPathsForPackage }
