@@ -145,9 +145,12 @@ local function openRockspec(dir, rockspecPath)
 		local modulesDir = path.dirname(outputDir)
 
 		if buildType == "make" then
-			local luajitInclude = path.join(sea.getLuajitPath(), "include")
+			local luajitPath = sea.getLuajitPath()
+			local luajitInclude = path.join(luajitPath, "include")
 			local makeVars = {
 				"LUA_INCDIR=" .. luajitInclude,
+				"LUA_LIBDIR=" .. path.join(luajitPath, "lib"),
+				"LUALIB=libluajit.a",
 				"INST_LIBDIR=" .. modulesDir,
 				"INST_LUADIR=" .. modulesDir,
 			}
