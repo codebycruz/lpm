@@ -64,7 +64,7 @@ local function updatePath(ldeDir, toolsDir)
 			if fs.exists(rc) then
 				local content = fs.read(rc) or ""
 				if content:find("%.lde", 1, true) then
-					-- Already has some lde entry — check if tools is missing
+					-- Already has some lde entry, check if tools is missing
 					if not content:find("%.lde/tools", 1, true) then
 						-- Replace the existing lde PATH line with the full one
 						local updated = content:gsub('export PATH="[^"]*%.lde[^"]*"', pathLine)
@@ -83,7 +83,7 @@ local function updatePath(ldeDir, toolsDir)
 			end
 		end
 
-		-- No file had an lde entry yet — append to the first existing rc
+		-- No file had an lde entry yet, append to the first existing rc
 		if target then
 			local content = fs.read(target) or ""
 			fs.write(target, content .. "\n# Added by lde\n" .. pathLine .. "\n")

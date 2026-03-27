@@ -2,11 +2,26 @@
 import Layout from "../layouts/Layout.astro";
 import InstallTabs from "../components/InstallTabs";
 import { GITHUB_RELEASES_URL } from "../data/info";
+
+const comparison = [
+	["Written in", "Lua", "Rust", "Teal"],
+	["Project format", "JSON", "TOML/Lua", "Lua"],
+	["Add/remove deps", "y", "y", "n"],
+	["Built-in test runner", "y:lde-test", "y:busted", "n"],
+	["Ships with LuaJIT", "y", "n", "n"],
+	["Compile to executable", "y", "n", "n"],
+	["Git deps", "y", "y", "n"],
+	["Registry deps", "y:lde", "y:luarocks", "y:luarocks"],
+	["Custom Registry", "y", "n", "y"],
+	["Lockfile", "y", "y", "y"],
+	["LuaRocks support", "wip", "wip", "y"],
+	["Lua build scripts", "build.lua", "rockspec", "rockspec"],
+];
 ---
 
 <Layout>
 	<!-- Full-width wrapper so the background isn't clipped to max-w -->
-	<div class="flex-1 relative flex flex-col">
+	<div class="flex-1 relative flex flex-col min-h-[calc(100vh-56px)]">
 		<!-- Lunar background -->
 		<div
 			class="absolute inset-0 overflow-hidden pointer-events-none select-none opacity-100"
@@ -169,4 +184,243 @@ import { GITHUB_RELEASES_URL } from "../data/info";
 			</div>
 		</div>
 	</div>
+
+	<div class="w-full border-t border-white/10 px-8 pt-24 pb-8">
+		<div class="max-w-7xl mx-auto">
+			<h2 class="text-5xl font-semibold text-center">All in one</h2>
+			<p class="text-base text-black/50 dark:text-white/40 mt-2 text-center">
+				Everything you need to write, test, and ship Lua.
+			</p>
+		</div>
+	</div>
+	<div
+		class="w-full max-w-7xl mx-auto px-8 pb-24 grid grid-cols-1 md:grid-cols-2 gap-8"
+		id="features"
+	>
+		<a
+			href="/docs/features/runtime"
+			class="feature-card rounded-2xl border border-white/10 bg-white/5 dark:bg-white/[0.03] p-12 backdrop-blur-sm hover:border-blue-500/40 hover:bg-blue-500/5 transition-colors"
+		>
+			<h2 class="text-xl font-semibold mb-4">Runtime</h2>
+			<ul
+				class="text-sm text-black/60 dark:text-white/50 leading-relaxed space-y-2 list-disc list-inside mb-6"
+			>
+				<li>LuaJIT built-in w/ no setup required</li>
+				<li>Works cross-platform, including Windows</li>
+				<li>
+					<code class="text-blue-400">lde repl</code> for interactive Lua
+					inside your project context
+				</li>
+			</ul>
+			<code
+				class="text-sm text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-lg"
+				>$ lde ./file.lua</code
+			>
+		</a>
+
+		<a
+			href="/docs/features/package-manager"
+			class="feature-card rounded-2xl border border-white/10 bg-white/5 dark:bg-white/[0.03] p-12 backdrop-blur-sm hover:border-blue-500/40 hover:bg-blue-500/5 transition-colors"
+		>
+			<h2 class="text-xl font-semibold mb-4">Package Manager</h2>
+			<ul
+				class="text-sm text-black/60 dark:text-white/50 leading-relaxed space-y-2 list-disc list-inside mb-6"
+			>
+				<li>LuaRocks support, backwards compatible</li>
+				<li>
+					<code class="text-blue-400">build.lua</code> scripts for seamless
+					preprocessing
+				</li>
+				<li>Works with external runtimes like LÖVE</li>
+			</ul>
+			<code
+				class="text-sm text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-lg"
+				>$ lde install</code
+			>
+		</a>
+
+		<a
+			href="/docs/features/test-runner"
+			class="feature-card rounded-2xl border border-white/10 bg-white/5 dark:bg-white/[0.03] p-12 backdrop-blur-sm hover:border-blue-500/40 hover:bg-blue-500/5 transition-colors"
+		>
+			<h2 class="text-xl font-semibold mb-4">Test Runner</h2>
+			<ul
+				class="text-sm text-black/60 dark:text-white/50 leading-relaxed space-y-2 list-disc list-inside mb-6"
+			>
+				<li>Simple and minimal, inspired by tape.js</li>
+				<li>
+					Ships with the runtime as <code class="text-blue-400"
+						>lde-test</code
+					>
+				</li>
+				<li>
+					Run your tests with <code class="text-blue-400"
+						>lde test</code
+					>
+				</li>
+			</ul>
+			<code
+				class="text-sm text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-lg"
+				>$ lde test</code
+			>
+		</a>
+
+		<a
+			href="/docs/features/single-file-apps"
+			class="feature-card rounded-2xl border border-white/10 bg-white/5 dark:bg-white/[0.03] p-12 backdrop-blur-sm hover:border-blue-500/40 hover:bg-blue-500/5 transition-colors"
+		>
+			<h2 class="text-xl font-semibold mb-4">Bundler & Compiler</h2>
+			<ul
+				class="text-sm text-black/60 dark:text-white/50 leading-relaxed space-y-2 list-disc list-inside mb-6"
+			>
+				<li>
+					<code class="text-blue-400">lde bundle</code> to combine project
+					and deps into a single Lua file
+				</li>
+				<li>
+					<code class="text-blue-400">lde compile</code> to produce a standalone
+					binary under 1mB
+				</li>
+				<li>No Lua required on the target machine</li>
+			</ul>
+			<code
+				class="text-sm text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-lg"
+				>$ lde compile</code
+			>
+		</a>
+	</div>
+
+	<div class="w-full border-t border-white/10">
+		<div class="max-w-3xl mx-auto px-8 py-16">
+			<h2 class="text-5xl font-semibold mb-2 text-center">How does lde compare?</h2>
+		<p class="text-base text-black/50 dark:text-white/40 mb-8 text-center">
+			Corrections welcome via <a
+				class="underline text-blue-400"
+				href="https://github.com/lde-org/lde/pulls">pull request</a
+			>.
+		</p>
+		<div class="overflow-x-auto rounded-2xl border border-white/10">
+			<table class="w-full text-base">
+				<thead>
+					<tr
+						class="border-b border-white/10 bg-white/5 dark:bg-white/[0.03]"
+					>
+						<th
+							class="text-left px-6 py-5 font-medium text-black/50 dark:text-white/40"
+						></th>
+						<th
+							class="text-left px-6 py-5 font-semibold text-blue-400"
+							><img
+								src="/lde-nospace.svg"
+								class="h-6 inline mr-2"
+								alt=""
+							/>lde</th
+						>
+						<th class="text-left px-6 py-5 font-medium">lux</th>
+						<th class="text-left px-6 py-5 font-medium">luarocks</th
+						>
+					</tr>
+				</thead>
+				<tbody class="divide-y divide-white/10">
+					{
+						comparison.map(([feature, ...cols]) => (
+							<tr class="hover:bg-white/[0.02] transition-colors">
+								<td class="px-6 py-4 text-black/60 dark:text-white/50">
+									{feature}
+								</td>
+								{cols.map((val, i) => {
+									const blue = i === 0;
+									const base = `px-6 py-4 ${blue ? "text-blue-400 font-medium" : "text-black/70 dark:text-white/60"}`;
+									if (val === "y")
+										return (
+											<td class={base}>
+												<span class="text-green-400 font-bold">
+													✓
+												</span>
+											</td>
+										);
+									if (val === "n")
+										return (
+											<td class={base}>
+												<span class="text-red-400/70 font-bold">
+													✗
+												</span>
+											</td>
+										);
+									if (val === "wip")
+										return (
+											<td class={base}>
+												<span class="text-yellow-400 text-lg">⚠</span>
+											</td>
+										);
+									if (val.startsWith("y:"))
+										return (
+											<td class={base}>
+												<span class="text-green-400 font-bold">
+													✓
+												</span>{" "}
+												<span class="text-sm opacity-60">
+													({val.slice(2)})
+												</span>
+											</td>
+										);
+									return <td class={base}>{val}</td>;
+								})}
+							</tr>
+						))
+					}
+				</tbody>
+			</table>
+		</div>
+	</div>
+	</div>
+
+	<div class="w-full border-t border-white/10 min-h-[50vh] flex items-center justify-center">
+		<div class="py-24 w-full max-w-3xl px-8">
+			<h2 class="text-5xl font-semibold mb-3 text-center">Learn more</h2>
+			<p class="text-base text-black/50 dark:text-white/40 mb-8 text-center">Dive into the docs or read the latest from the blog.</p>
+			<div class="flex gap-6 w-full">
+				<a href="/docs/getting-started/introduction" class="flex-1 py-12 px-10 rounded-2xl border border-white/10 bg-white/5 dark:bg-white/[0.03] hover:border-blue-500/40 hover:bg-blue-500/5 transition-colors font-medium text-2xl flex flex-col gap-2">
+					Get started
+					<span class="text-sm font-normal text-black/50 dark:text-white/40">Read the docs and set up your first project</span>
+				</a>
+				<a href="/blog" class="flex-1 py-12 px-10 rounded-2xl border border-white/10 bg-white/5 dark:bg-white/[0.03] hover:border-blue-500/40 hover:bg-blue-500/5 transition-colors font-medium text-2xl flex flex-col gap-2">
+					Blog
+					<span class="text-sm font-normal text-black/50 dark:text-white/40">Release notes and updates</span>
+				</a>
+			</div>
+		</div>
+	</div>
+	<style>
+		.feature-card {
+			opacity: 0;
+			transform: translateY(24px);
+			transition:
+				opacity 0.5s ease,
+				transform 0.5s ease;
+		}
+		.feature-card.visible {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	</style>
+
+	<script>
+		const cards = document.querySelectorAll(".feature-card");
+		const observer = new IntersectionObserver(
+			(entries) => {
+				entries.forEach((e) => {
+					if (e.isIntersecting) {
+						e.target.classList.add("visible");
+						observer.unobserve(e.target);
+					}
+				});
+			},
+			{ threshold: 0.15 },
+		);
+		cards.forEach((c, i) => {
+			(c as HTMLElement).style.transitionDelay = `${i * 80}ms`;
+			observer.observe(c);
+		});
+	</script>
 </Layout>
