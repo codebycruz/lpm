@@ -94,6 +94,21 @@ function Args:flag(desiredKey)
 	return false, nil
 end
 
+---@param desiredKey string
+---@return string? val
+function Args:short(desiredKey)
+	local flag = "-" .. desiredKey
+	for i, arg in ipairs(self.raw) do
+		if arg == flag and self.raw[i + 1] ~= nil then
+			table.remove(self.raw, i)
+			return table.remove(self.raw, i)
+		elseif string.sub(arg, 1, #flag + 1) == flag .. "=" then
+			table.remove(self.raw, i)
+			return string.sub(arg, #flag + 2)
+		end
+	end
+end
+
 ---@param rawArgs string[]
 ---@return clap.Args
 function clap.parse(rawArgs)
