@@ -1,6 +1,6 @@
 <div align="center">
 
-<a href="https://lualpm.com/">
+<a href="https://lde.sh/">
 	<img src="./assets/dist/lde-text-nospace.svg" alt="lde logo" width="256" />
 </a>
 
@@ -14,7 +14,7 @@
 
 It includes a LuaJIT runtime for any operating system, a test runner, and the ability to compile your Lua programs into single executables users can run in **<1mB**. All of this alongside a package manager and package registry to easily share and reuse lua code, properly version locked and isolated to your individual projects.
 
-To get started, [read the docs](https://lualpm.com/docs/getting-started/introduction).
+To get started, [read the docs](https://lde.sh/docs/getting-started/introduction).
 
 ## Features
 
@@ -35,8 +35,8 @@ To get started, [read the docs](https://lualpm.com/docs/getting-started/introduc
 
 | OS      | Command                                       |
 | ------- | --------------------------------------------- |
-| Linux   | `curl -fsSL https://lualpm.com/install \| sh` |
-| Windows | `irm https://lualpm.com/install.ps1 \| iex`   |
+| Linux   | `curl -fsSL https://lde.sh/install \| sh` |
+| Windows | `irm https://lde.sh/install.ps1 \| iex`   |
 
 _To upgrade your `lde` version, simply run `lde upgrade`!_
 

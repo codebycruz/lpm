@@ -39,7 +39,7 @@ local function help(_args)
 		end
 	end
 
-	ansi.printf("{bold}%-25s{reset} {blue} %s", "\nLearn more:", "https://lualpm.com")
+	ansi.printf("{bold}%-25s{reset} {blue} %s", "\nLearn more:", "https://lde.sh")
 	ansi.printf("{bold}%-24s{reset} {blue} %s", "Join the discord:", "https://discord.gg/rHgp7DhkHm")
 end
 

@@ -17,7 +17,7 @@ Publishing is as simple as running `lpm publish` from your package directory. It
 
 Registry dependencies are not yet supported in `lpx`, but there are no packages that would use it anyway for now.
 
-You can browse available packages at [lualpm.com/registry](https://lualpm.com/registry).
+You can browse available packages at [lde.sh/registry](https://lde.sh/registry).
 
 ## Lockfiles
 

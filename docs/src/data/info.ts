@@ -1,6 +1,6 @@
 export const SITE_URL = import.meta.env.DEV
 	? "http://localhost:4321"
-	: "https://lualpm.com";
+	: "https://lde.sh";
 
 export const GITHUB_URL = "https://github.com/lde-org/lde";
 export const GITHUB_RELEASES_URL = `${GITHUB_URL}/releases`;

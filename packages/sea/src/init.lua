@@ -180,7 +180,7 @@ function sea.compile(main, files, sharedLibs)
 
 		libPreloads[#libPreloads + 1] = string.format([[
 	lua_pushstring(L, %sLibraryPath);
-	lua_pushcclosure(L, lpm_loadlib_loader, 1);
+	lua_pushcclosure(L, lde_loadlib_loader, 1);
 	lua_setfield(L, -2, "%s");]], id, string.gsub(lib.name, ".", CEscapes))
 	end
 
@@ -191,12 +191,12 @@ function sea.compile(main, files, sharedLibs)
 	local hasLibs        = #sharedLibs > 0
 	local stdintInclude  = hasLibs and "#include <stdint.h>" or ""
 
-	-- lpm_loadlib_loader: a C closure that calls package.loadlib(upvalue1, "*").
+	-- lde_loadlib_loader: a C closure that calls package.loadlib(upvalue1, "*").
 	-- Only emitted when there are shared libs to avoid dead-code warnings.
 	local loadlibHelper  = ""
 	if hasLibs then
 		loadlibHelper = [[
-static int lpm_loadlib_loader(lua_State* L) {
+static int lde_loadlib_loader(lua_State* L) {
 	const char* soPath = lua_tostring(L, lua_upvalueindex(1));
 	lua_getglobal(L, "package");
 	lua_getfield(L, -1, "loadlib");

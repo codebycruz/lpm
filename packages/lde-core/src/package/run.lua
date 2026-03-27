@@ -25,7 +25,7 @@ end
 ---@param args string[]?
 ---@param vars table<string, string>?
 ---@param cwd string
-local function runFileWithLPM(package, scriptPath, args, vars, cwd)
+local function runFileWithLDE(package, scriptPath, args, vars, cwd)
 	local luaPath, luaCPath = getLuaPathsForPackage(package)
 	return runtime.executeFile(scriptPath, {
 		args = args,
@@ -101,7 +101,7 @@ local function runFile(package, scriptPath, args, vars, cwd)
 	local engine = config.engine or "lde"
 	local ok, err
 	if engine == "lde" or engine == "lpm" --[[ compat ]] then
-		ok, err = runFileWithLPM(package, scriptPath, args, vars, cwd)
+		ok, err = runFileWithLDE(package, scriptPath, args, vars, cwd)
 	else
 		ok, err = runFileWithLuaCLI(package, scriptPath, args, vars, engine, cwd)
 	end

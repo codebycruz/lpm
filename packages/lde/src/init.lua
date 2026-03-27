@@ -16,7 +16,7 @@ if os.getenv("BOOTSTRAP") then
 	end
 
 	local isWindows = separator == '\\'
-	local lpmModulesDir = join(baseDir, "target")
+	local ldeModulesDir = join(baseDir, "target")
 
 	local function exists(path)
 		local ok, _, code = os.rename(path, path)
@@ -32,11 +32,11 @@ if os.getenv("BOOTSTRAP") then
 		return true
 	end
 
-	if not exists(lpmModulesDir) then
+	if not exists(ldeModulesDir) then
 		if isWindows then
-			os.execute('mkdir "' .. lpmModulesDir .. '"')
+			os.execute('mkdir "' .. ldeModulesDir .. '"')
 		else
-			os.execute('mkdir -p "' .. lpmModulesDir .. '"')
+			os.execute('mkdir -p "' .. ldeModulesDir .. '"')
 		end
 	end
 
@@ -50,7 +50,7 @@ if os.getenv("BOOTSTRAP") then
 		local relSrcPath = join("..", "..", pkg, "src")
 		local absSrcPath = join(baseDir, "..", pkg, "src")
 
-		local moduleDistPath = join(lpmModulesDir, pkg)
+		local moduleDistPath = join(ldeModulesDir, pkg)
 		if not exists(moduleDistPath) then
 			if isWindows then
 				os.execute('mklink /J "' .. moduleDistPath .. '" "' .. absSrcPath .. '"')
@@ -60,7 +60,7 @@ if os.getenv("BOOTSTRAP") then
 		end
 	end
 
-	local moduleDistPath = join(lpmModulesDir, "lde")
+	local moduleDistPath = join(ldeModulesDir, "lde")
 	if not exists(moduleDistPath) then
 		local relSrcPath = join("..", "src")
 		local absSrcPath = join(baseDir, "src")

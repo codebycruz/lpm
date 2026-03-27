@@ -26,10 +26,10 @@ The install scripts now accept a `--nightly` flag to install the latest nightly 
 
 ```sh
 # Linux
-curl -fsSL https://lualpm.com/install | sh -s -- --nightly
+curl -fsSL https://lde.sh/install | sh -s -- --nightly
 
 # Windows
-irm https://lualpm.com/install.ps1 | iex -Args --nightly
+irm https://lde.sh/install.ps1 | iex -Args --nightly
 ```
 
 Nightly builds reflect the latest commits and may be unstable. Use `lpm upgrade` (without `--nightly`) to switch back to a stable release.
@@ -41,5 +41,5 @@ Aarch64 macOS is now officially supported and passes the full test suite. Intel 
 To install on Apple Silicon:
 
 ```sh
-curl -fsSL https://lualpm.com/install | sh
+curl -fsSL https://lde.sh/install | sh
 ```

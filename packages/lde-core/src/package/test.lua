@@ -31,7 +31,7 @@ local function getLuaPathsForPackage(package)
 	return luaPath, luaCPath
 end
 
-local lpmTest = require("lde-test.test")
+local ldeTest = require("lde-test.test")
 
 --- Runs all tests for this package.
 ---@param package lde.Package
@@ -64,7 +64,7 @@ local function runTests(package)
 	for _, relativePath in ipairs(testFiles) do
 		local testFile = path.join(testDir, relativePath)
 
-		local testObj = lpmTest.new()
+		local testObj = ldeTest.new()
 
 		local ok, err = runtime.executeFile(testFile, {
 			packagePath = luaPath,

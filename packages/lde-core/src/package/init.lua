@@ -72,7 +72,7 @@ end
 
 ---@param dir string?
 ---@return lde.Package?, string?
-function Package.openLPM(dir)
+function Package.openLDE(dir)
 	dir = dir or env.cwd()
 
 	local configPath = configPathAtDir(dir)
@@ -92,7 +92,7 @@ function Package.open(dir, rockspec)
 	dir = dir or env.cwd()
 
 	if fs.exists(configPathAtDir(dir)) then
-		return Package.openLPM(dir)
+		return Package.openLDE(dir)
 	end
 
 	return Package.openRockspec(dir, rockspec)

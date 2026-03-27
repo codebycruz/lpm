@@ -14,7 +14,7 @@ description: Adds Windows ARM64 support, --help flag, lpm run for single files, 
 lpm now ships with a native Windows ARM64 build. It's included in the standard install script, so no extra steps needed:
 
 ```powershell
-irm https://lualpm.com/install.ps1 | iex
+irm https://lde.sh/install.ps1 | iex
 ```
 
 ## `--help` flag
@@ -39,10 +39,10 @@ The install scripts now accept a `--version` flag to install a specific release:
 
 ```sh
 # Linux
-curl -fsSL https://lualpm.com/install | sh -s -- --version 0.7.2
+curl -fsSL https://lde.sh/install | sh -s -- --version 0.7.2
 
 # Windows
-irm https://lualpm.com/install.ps1 | iex -Args --version, 0.7.2
+irm https://lde.sh/install.ps1 | iex -Args --version, 0.7.2
 ```
 
 ## New `lpm-test` assertions

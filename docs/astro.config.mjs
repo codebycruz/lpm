@@ -8,7 +8,7 @@ import cloudflare from "@astrojs/cloudflare";
 
 // https://astro.build/config
 export default defineConfig({
-	site: "https://lualpm.com",
+	site: "https://lde.sh",
 	output: "static",
 	server: {
 		allowedHosts: process.env.NODE_ENV !== "production" ? true : undefined,
