@@ -2,10 +2,10 @@
 	"name": "fs",
 	"version": "0.1.0",
 	"engine": "luajit",
-	"$schema": "../lpm/lpm.schema.json",
+	"$schema": "../lde/lde.schema.json",
 	"dependencies": {},
 	"devDependencies": {
-		"lpm-test": { "path": "../lpm-test" },
+		"lde-test": { "path": "../lde-test" },
 		"fs": { "path": "../fs" },
 		"env": { "path": "../env" },
 		"path": { "path": "../path" }

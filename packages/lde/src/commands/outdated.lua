@@ -16,7 +16,7 @@ local function outdated(_args)
 
 	for name, depInfo in pairs(deps) do
 		if depInfo.version then
-			-- lpm registry dep
+			-- lde registry dep
 			lde.global.syncRegistry()
 			local portfile, rerr = lde.global.lookupRegistryPackage(depInfo.name or name)
 			if not portfile then

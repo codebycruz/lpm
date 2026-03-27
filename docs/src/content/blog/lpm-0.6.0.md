@@ -5,7 +5,7 @@ published: 2026-02-18
 description: Introduces lpm-test, a built-in test runner with test suites and assertions, along with lpm bundle, lpm update and format preservation for lpm add and lpm remove.
 ---
 
-> **NOTE**: This article was made before [the rebrand to lde](https://github.com/codebycruz/lpm/issues/73). Just replace `lpm` with `lde`.
+> **NOTE**: This article was made before [the rebrand to lde](https://github.com/lde-org/lde/issues/73). Just replace `lpm` with `lde`.
 
 > Upgrade to the latest version with `lpm upgrade`!
 

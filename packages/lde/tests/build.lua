@@ -7,7 +7,7 @@ local env = require("env")
 local path = require("path")
 local json = require("json")
 
-local tmpBase = path.join(env.tmpdir(), "lpm-build-tests")
+local tmpBase = path.join(env.tmpdir(), "lde-build-tests")
 
 -- Clean up from any previous test run
 fs.rmdir(tmpBase)
@@ -240,7 +240,7 @@ test.it("installDependencies writes a lockfile with resolved path dependency", f
 	local pkg = lde.Package.open(mainDir)
 	pkg:installDependencies()
 
-	local lockPath = path.join(mainDir, "lpm-lock.json")
+	local lockPath = path.join(mainDir, "lde.lock")
 	test.truthy(fs.exists(lockPath))
 
 	local content = json.decode(fs.read(lockPath))
@@ -272,7 +272,7 @@ test.it("installDependencies uses lockfile to pin dependency on reinstall", func
 	pkg:installDependencies()
 
 	-- Manually overwrite the lockfile to point at other-dep instead
-	lde.Lockfile.new(path.join(mainDir, "lpm-lock.json"), {
+	lde.Lockfile.new(path.join(mainDir, "lde.lock"), {
 		["pinned-dep"] = { path = "../other-dep" }
 	}):save()
 

@@ -6,7 +6,7 @@
 
 ---
 
-[![Build+Test](https://github.com/codebycruz/lpm/actions/workflows/nightly.yml/badge.svg)](https://github.com/codebycruz/lpm/actions/workflows/nightly.yml) [![Latest Release](https://img.shields.io/github/v/release/codebycruz/lpm?labelColor=2d333b)](https://github.com/codebycruz/lpm/releases/latest) [![Discord](https://img.shields.io/discord/1473159418257604752?logo=discord&logoColor=white&label=Discord&labelColor=2d333b)](https://discord.gg/rHgp7DhkHm)
+[![Build+Test](https://github.com/lde-org/lde/actions/workflows/nightly.yml/badge.svg)](https://github.com/codebycruz/lde-org/lde/actions/workflows/nightly.yml) [![Latest Release](https://img.shields.io/github/v/release/codebycruz/lde-org/lde?labelColor=2d333b)](https://github.com/codebycruz/lde-org/lde/releases/latest) [![Discord](https://img.shields.io/discord/1473159418257604752?logo=discord&logoColor=white&label=Discord&labelColor=2d333b)](https://discord.gg/rHgp7DhkHm)
 
 </div>
 
@@ -29,7 +29,7 @@ To get started, [read the docs](https://lualpm.com/docs/getting-started/introduc
 - `lde x` - Execute a project in another location, perfect for CLIs (alias: `ldx`)
 - `lde tree` - View your dependencies at a glance
 - `lde update` - Update your dependencies to their latest versions
-- `lde publish` - Create a PR to add your package to [the registry](https://github.com/codebycruz/lpm-registry)
+- `lde publish` - Create a PR to add your package to [the registry](https://github.com/lde-org/registry)
 
 ## Installation
 

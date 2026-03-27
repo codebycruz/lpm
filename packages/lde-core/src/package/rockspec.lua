@@ -138,7 +138,7 @@ local function openRockspec(dir, rockspecPath)
 	pkg.buildfn = function(_, outputDir)
 		if not fs.isdir(outputDir) then fs.mkdir(outputDir) end
 
-		local stampFile = path.join(outputDir, ".lpm-built")
+		local stampFile = path.join(outputDir, ".lde-built")
 		if fs.exists(stampFile) and fs.read(stampFile) == buildStamp then
 			return true
 		end
@@ -178,8 +178,8 @@ local function openRockspec(dir, rockspecPath)
 			return true
 		elseif buildType == "cmake" then
 			local luajitPath = sea.getLuajitPath()
-			local buildDir = path.join(dir, "build.lpm")
-			local installDir = path.join(dir, "install.lpm")
+			local buildDir = path.join(dir, "build.lde")
+			local installDir = path.join(dir, "install.lde")
 			if not fs.isdir(buildDir) then fs.mkdir(buildDir) end
 			if not fs.isdir(installDir) then fs.mkdir(installDir) end
 

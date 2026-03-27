@@ -1,5 +1,5 @@
-name: "Setup lpm"
-description: "Install lpm package manager"
+name: "Setup lde"
+description: "Install lde package manager"
 
 inputs:
   version:
@@ -10,7 +10,7 @@ inputs:
 runs:
   using: "composite"
   steps:
-    - name: Install lpm (Unix)
+    - name: Install lde (Unix)
       if: runner.os != 'Windows'
       shell: bash
       run: |
@@ -20,9 +20,9 @@ runs:
           *)       ARGS="--version ${{ inputs.version }}" ;;
         esac
         sh "${{ github.action_path }}/install.sh" $ARGS
-        echo "$HOME/.lpm" >> "$GITHUB_PATH"
+        echo "$HOME/.lde" >> "$GITHUB_PATH"
 
-    - name: Install lpm (Windows)
+    - name: Install lde (Windows)
       if: runner.os == 'Windows'
       shell: pwsh
       run: |
@@ -36,4 +36,4 @@ runs:
             & "${{ github.action_path }}/install.ps1" "--version" $version
         }
 
-        echo "$env:USERPROFILE\.lpm" >> $env:GITHUB_PATH
+        echo "$env:USERPROFILE\.lde" >> $env:GITHUB_PATH

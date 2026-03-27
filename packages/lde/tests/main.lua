@@ -9,7 +9,7 @@ local git = require("git")
 
 local lde = require("lde-core")
 
-local tmpBase = path.join(env.tmpdir(), "lpm-main-tests")
+local tmpBase = path.join(env.tmpdir(), "lde-main-tests")
 
 -- Clean up from any previous test run
 fs.rmdir(tmpBase)
@@ -272,7 +272,7 @@ test.it("git dep: installs root package, not a sub-package, when repo has lde.js
 
 	-- Simulate a cloned git repo that has lde.json at root AND in subdirectories.
 	-- This reproduces the bug where the sub-package (e.g. "ansi") was installed
-	-- instead of the root package (e.g. "lpm-test").
+	-- instead of the root package (e.g. "lde-test").
 	--
 	-- We pre-populate the real git cache dir so getOrInitGitRepo skips cloning.
 	local repoDir = lde.global.getGitRepoDir("my-root-pkg")
@@ -461,12 +461,12 @@ test.it("installDependencies: writes a single flat lockfile containing all trans
 	test.truthy(lockfile:getDependency("flat-lock-deep"))
 
 	-- No lockfile should have been written inside the middle dep
-	test.falsy(lde.Lockfile.open(path.join(middleDir, "lpm-lock.json")))
+	test.falsy(lde.Lockfile.open(path.join(middleDir, "lde.lock")))
 end)
 
--- It's undefined behavior for lpm specifically to rely on transitive deps.
+-- It's undefined behavior for lde specifically to rely on transitive deps.
 -- But regardless need to ensure it works at runtime for the actual dependencies that will use it.
-test.it("transitive dep: util is resolvable as a dependency of lpm-core", function()
+test.it("transitive dep: util is resolvable as a dependency of lde-core", function()
 	local util = require("util")
 	test.truthy(util)
 	test.truthy(util.dedent)

@@ -8,16 +8,16 @@ local env = require("env")
 local path = require("path")
 local json = require("json")
 
-local tmpBase = path.join(env.tmpdir(), "lpm-git-tests")
+local tmpBase = path.join(env.tmpdir(), "lde-git-tests")
 
 -- Clean up from any previous test run
 fs.rmdir(tmpBase)
 fs.mkdir(tmpBase)
 
-local GIT_URL = "https://github.com/codebycruz/lpm"
-local FIXTURE_NAME = "lpm-test-fixture"
+local GIT_URL = "https://github.com/lde-org/lde"
+local FIXTURE_NAME = "some-package"
 
---- Creates a minimal package that depends on lpm-test-fixture via git.
+--- Creates a minimal package that depends on some-package via git.
 local function makeProjectWithGitDep(name, extraDepFields)
 	local dir = path.join(tmpBase, name)
 	fs.mkdir(dir)
@@ -49,7 +49,7 @@ test.it("installDependencies installs a git dependency", function()
 
 	local fixturePath = path.join(dir, "target", FIXTURE_NAME, "init.lua")
 	test.truthy(fs.exists(fixturePath))
-	test.equal(fs.read(fixturePath), 'return "lpm-test-fixture"\n')
+	test.equal(fs.read(fixturePath), 'return "some-package"\n')
 end)
 
 test.it("installDependencies writes a resolved commit to the lockfile for git deps", function()
@@ -57,7 +57,7 @@ test.it("installDependencies writes a resolved commit to the lockfile for git de
 	local pkg = lde.Package.open(dir)
 	pkg:installDependencies()
 
-	local lockRaw = fs.read(path.join(dir, "lpm-lock.json"))
+	local lockRaw = fs.read(path.join(dir, "lde.lock"))
 	test.truthy(lockRaw)
 
 	local lock = json.decode(lockRaw)
@@ -75,13 +75,13 @@ test.it("installDependencies uses the lockfile commit to skip re-cloning", funct
 	-- First install — clones and writes lockfile
 	pkg:installDependencies()
 
-	local lock1 = json.decode(fs.read(path.join(dir, "lpm-lock.json")))
+	local lock1 = json.decode(fs.read(path.join(dir, "lde.lock")))
 	local commit1 = lock1.dependencies[FIXTURE_NAME].commit
 
 	-- Second install — should reuse the cached repo, lockfile commit unchanged
 	pkg:installDependencies()
 
-	local lock2 = json.decode(fs.read(path.join(dir, "lpm-lock.json")))
+	local lock2 = json.decode(fs.read(path.join(dir, "lde.lock")))
 	local commit2 = lock2.dependencies[FIXTURE_NAME].commit
 
 	test.equal(commit1, commit2)
@@ -91,7 +91,7 @@ test.it("installDependencies respects a pinned commit in lde.json", function()
 	-- Get the current HEAD commit first via an unpinned install
 	local refDir = makeProjectWithGitDep("git-pin-ref")
 	lde.Package.open(refDir):installDependencies()
-	local refLock = json.decode(fs.read(path.join(refDir, "lpm-lock.json")))
+	local refLock = json.decode(fs.read(path.join(refDir, "lde.lock")))
 	local headCommit = refLock.dependencies[FIXTURE_NAME].commit
 
 	-- Now install a project that pins to that exact commit
@@ -99,7 +99,7 @@ test.it("installDependencies respects a pinned commit in lde.json", function()
 	local pkg = lde.Package.open(dir)
 	pkg:installDependencies()
 
-	local lock = json.decode(fs.read(path.join(dir, "lpm-lock.json")))
+	local lock = json.decode(fs.read(path.join(dir, "lde.lock")))
 	test.match(lock.dependencies, { [FIXTURE_NAME] = { commit = headCommit } })
 
 	local fixturePath = path.join(dir, "target", FIXTURE_NAME, "init.lua")

@@ -6,10 +6,10 @@ local lde = require("lde-core")
 
 ---@param args clap.Args
 local function add(args)
-	local rawName = assert(args:pop(), "Usage: lpm add <name>[@<version>] --path <path> | --git <url>")
+	local rawName = assert(args:pop(), "Usage: lde add <name>[@<version>] --path <path> | --git <url>")
 	local isDevelopment = args:flag("dev")
 
-	-- Support lpm add <name>@<version> syntax
+	-- Support lde add <name>@<version> syntax
 	local name, versionFromName = rawName:match("^([^@]+)@(.+)$")
 	if not name then name = rawName end
 

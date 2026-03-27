@@ -6,7 +6,7 @@ local lde = require("lde-core")
 
 ---@param args clap.Args
 local function remove(args)
-	local name = assert(args:pop(), "Usage: lpm remove <name>")
+	local name = assert(args:pop(), "Usage: lde remove <name>")
 
 	local pkg, err = lde.Package.open()
 	if not pkg then

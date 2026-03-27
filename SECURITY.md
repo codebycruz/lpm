@@ -2,9 +2,9 @@
 
 ## Supported Versions
 
-Only the latest version of lpm is supported. Please use `lpm upgrade` periodically to receive the latest security updates.
+Only the latest version of lde is supported. Please use `lde upgrade` periodically to receive the latest security updates.
 
-In the future this may change as lpm becomes more stable.
+In the future this may change as lde becomes more stable.
 
 ## Reporting a Vulnerability
 

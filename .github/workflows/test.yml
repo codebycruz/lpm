@@ -24,10 +24,10 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - name: Setup lpm
-        uses: codebycruz/lpm@master
+      - name: Setup lde
+        uses: lde-org/lde@master
         with:
           version: nightly
 
       - name: Run tests
-        run: lpm run -- test
+        run: lde run -- test

@@ -41,7 +41,7 @@ function Package:getTestDir() return path.join(self.dir, "tests") end
 
 function Package:getConfigPath() return configPathAtDir(self.dir) end
 
-function Package:getLockfilePath() return path.join(self.dir, "lpm-lock.json") end
+function Package:getLockfilePath() return path.join(self.dir, "lde.lock") end
 
 ---@param pkg lde.Package
 ---@param outputDir string

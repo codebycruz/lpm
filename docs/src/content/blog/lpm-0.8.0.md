@@ -5,7 +5,7 @@ published: 2026-03-26
 description: Adds LuaRocks dependency support, flat lockfile for transitive deps, a basic REPL, and more lpm-test utilities.
 ---
 
-> **NOTE**: This article was made before [the rebrand to lde](https://github.com/codebycruz/lpm/issues/73). Just replace `lpm` with `lde`.
+> **NOTE**: This article was made before [the rebrand to lde](https://github.com/lde-org/lde/issues/73). Just replace `lpm` with `lde`.
 
 > Upgrade to the latest version with `lpm upgrade`!
 
@@ -53,7 +53,7 @@ If a package has a rockspec in a git repo, you can point to it manually with the
 
 LuaRocks support includes C module compilation — lpm will download LuaJIT headers and compile native modules automatically. Platform-specific modules are handled too.
 
-This is an initial implementation. Things may not work perfectly across all packages — if you run into issues, please [report them](https://github.com/codebycruz/lpm/issues).
+This is an initial implementation. Things may not work perfectly across all packages — if you run into issues, please [report them](https://github.com/lde-org/lde/issues).
 
 ## Archive dependencies
 

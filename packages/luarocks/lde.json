@@ -3,6 +3,6 @@
 	"version": "0.1.0",
 	"dependencies": {},
 	"devDependencies": {
-		"lpm-test": { "path": "../lpm-test" }
+		"lde-test": { "path": "../lde-test" }
 	}
 }

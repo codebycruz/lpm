@@ -31,7 +31,7 @@ end
 ---@field path string
 
 ---@class lde.Config.RegistryDependency: lde.Config.BaseDependency
----@field version string # Pinned version from the lpm registry
+---@field version string # Pinned version from the lde registry
 
 ---@class lde.Config.LuarocksDependency: lde.Config.BaseDependency
 ---@field luarocks string # Package name on luarocks.org

@@ -9,7 +9,7 @@ local lde = require("lde-core")
 local function toolUninstall(args)
 	local toolName = args:pop()
 	if not toolName then
-		ansi.printf("{red}Usage: lpm uninstall <name>")
+		ansi.printf("{red}Usage: lde uninstall <name>")
 		return
 	end
 

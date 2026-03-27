@@ -70,7 +70,8 @@ local function runTests(package)
 			packagePath = luaPath,
 			packageCPath = luaCPath,
 			preload = {
-				["lpm-test"] = function() return testObj end
+				["lpm-test"] = function() return testObj end, -- Compat
+				["lde-test"] = function() return testObj end
 			}
 		})
 

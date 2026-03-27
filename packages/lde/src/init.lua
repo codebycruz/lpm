@@ -1,4 +1,4 @@
--- Bootstrapping mode for initial creation of an lpm binary for a platform.
+-- Bootstrapping mode for initial creation of an lde binary for a platform.
 -- Heavily unoptimized, do not use this.
 if os.getenv("BOOTSTRAP") then
 	local scriptPath = debug.getinfo(1, "S").source:sub(2)
@@ -42,7 +42,7 @@ if os.getenv("BOOTSTRAP") then
 
 	local pathPackages = {
 		"ansi", "clap", "fs", "http", "env", "path", "json", "git",
-		"process", "sea", "semver", "util", "lpm-core", "lpm-test", "rocked"
+		"process", "sea", "semver", "util", "lde-core", "lde-test", "rocked"
 	}
 
 	for _, pkg in ipairs(pathPackages) do
@@ -60,7 +60,7 @@ if os.getenv("BOOTSTRAP") then
 		end
 	end
 
-	local moduleDistPath = join(lpmModulesDir, "lpm")
+	local moduleDistPath = join(lpmModulesDir, "lde")
 	if not exists(moduleDistPath) then
 		local relSrcPath = join("..", "src")
 		local absSrcPath = join(baseDir, "src")

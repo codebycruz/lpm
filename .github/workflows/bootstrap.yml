@@ -15,7 +15,7 @@ jobs:
           - os: windows-11-arm
             platform: windows
             artifact: luajit-windows-aarch64-gnu
-            outfile: lpm-windows-aarch64
+            outfile: lde-windows-aarch64
 
     runs-on: ${{ matrix.os }}
 
@@ -43,10 +43,10 @@ jobs:
           Expand-Archive -Path llvm-mingw.zip -DestinationPath .
           echo "$env:GITHUB_WORKSPACE\llvm-mingw-20260311-ucrt-aarch64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      - name: Build lpm (Windows)
+      - name: Build lde (Windows)
         shell: pwsh
         run: |
-          cd packages/lpm
+          cd packages/lde
           $env:BOOTSTRAP=1
           $env:SEA_CC="clang"
           & "$env:GITHUB_WORKSPACE/${{ matrix.artifact }}/luajit.exe" ./src/init.lua compile --outfile ${{ matrix.outfile }}.exe
@@ -61,5 +61,5 @@ jobs:
             Automated nightly build from master.
             Commit: ${{ github.sha }}
             Run: https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }}
-          files: packages/lpm/${{ matrix.outfile }}.exe
+          files: packages/lde/${{ matrix.outfile }}.exe
           fail_on_unmatched_files: true

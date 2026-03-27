@@ -16,7 +16,7 @@ interface Package {
 }
 
 const REGISTRY_URL =
-	"https://raw.githubusercontent.com/codebycruz/lpm-registry/refs/heads/dist/index.json";
+	"https://raw.githubusercontent.com/lde-org/registry/refs/heads/dist/index.json";
 
 function PackageCard({ pkg }: { pkg: Package }) {
 	const installCmd = `lde add ${pkg.name}`;

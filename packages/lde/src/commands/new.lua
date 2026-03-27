@@ -7,7 +7,7 @@ local lde = require("lde-core")
 
 ---@param args clap.Args
 local function new(args)
-	local name = assert(args:pop(), "Usage: lpm new <name>")
+	local name = assert(args:pop(), "Usage: lde new <name>")
 
 	if fs.exists(name) then
 		error("Directory " .. name .. " already exists")

@@ -5,7 +5,7 @@ published: 2026-02-20
 description: Adds lpm install and lpm uninstall for globally available tools, native C module support via LuaJIT exports, and C library bundling in compiled binaries.
 ---
 
-> **NOTE**: This article was made before [the rebrand to lde](https://github.com/codebycruz/lpm/issues/73). Just replace `lpm` with `lde`.
+> **NOTE**: This article was made before [the rebrand to lde](https://github.com/lde-org/lde/issues/73). Just replace `lpm` with `lde`.
 
 > Upgrade to the latest version with `lpm upgrade`!
 

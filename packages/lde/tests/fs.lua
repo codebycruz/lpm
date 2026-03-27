@@ -4,7 +4,7 @@ local fs = require("fs")
 local env = require("env")
 local path = require("path")
 
-local tmpBase = path.join(env.tmpdir(), "lpm-fs-tests")
+local tmpBase = path.join(env.tmpdir(), "lde-fs-tests")
 
 fs.rmdir(tmpBase)
 

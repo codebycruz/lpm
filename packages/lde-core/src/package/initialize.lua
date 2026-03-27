@@ -35,8 +35,7 @@ local function initPackage(dir)
 
 	local idealGitignore = util.dedent([[
 		/target/
-		/lpm.lock # Reserved for future use
-		/lpm-lock.json
+		/lde.lock
 	]])
 
 	local gitignorePath = path.join(dir, ".gitignore")

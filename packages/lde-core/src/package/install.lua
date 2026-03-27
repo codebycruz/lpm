@@ -73,7 +73,7 @@ local function dependencyToPackage(alias, depInfo, relativeTo)
 
 		lockEntry.name = depInfo.name
 		return pkg, lockEntry
-	elseif depInfo.version then -- lpm registry
+	elseif depInfo.version then -- lde registry
 		lde.global.syncRegistry()
 
 		local portfile, registryErr = lde.global.lookupRegistryPackage(packageName)

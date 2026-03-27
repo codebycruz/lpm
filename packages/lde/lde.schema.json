@@ -133,11 +133,11 @@
 		},
 		"bin": {
 			"type": "string",
-			"description": "Entry point script to run when using lpm run without a file argument"
+			"description": "Entry point script to run when using lde run without a file argument"
 		},
 		"scripts": {
 			"type": "object",
-			"description": "Named scripts that can be run with lpm run <name> or lpm <name>",
+			"description": "Named scripts that can be run with lde run <name> or lde <name>",
 			"additionalProperties": {
 				"type": "string",
 				"description": "Shell command to execute"
@@ -145,7 +145,7 @@
 		},
 		"engine": {
 			"type": "string",
-			"enum": ["lua", "luajit", "lpm"],
+			"enum": ["lua", "luajit", "lde"],
 			"description": "The Lua engine to use"
 		},
 		"devDependencies": {

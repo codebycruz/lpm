@@ -7,7 +7,7 @@ local env = require("env")
 local path = require("path")
 local json = require("json")
 
-local tmpBase = path.join(env.tmpdir(), "lpm-lockfile-tests")
+local tmpBase = path.join(env.tmpdir(), "lde-lockfile-tests")
 
 -- Clean up from any previous test run
 fs.rmdir(tmpBase)
@@ -34,7 +34,7 @@ test.it("Lockfile:save writes to disk and Lockfile.open reads it back", function
 	fs.mkdir(tmpBase)
 	fs.mkdir(dir)
 
-	local lockPath = path.join(dir, "lpm-lock.json")
+	local lockPath = path.join(dir, "lde.lock")
 
 	local lf = lde.Lockfile.new(lockPath, {
 		alpha = { path = "../alpha" },
@@ -73,7 +73,7 @@ test.it("Lockfile:save produces valid JSON", function()
 	fs.mkdir(tmpBase)
 	fs.mkdir(dir)
 
-	local lockPath = path.join(dir, "lpm-lock.json")
+	local lockPath = path.join(dir, "lde.lock")
 
 	local lf = lde.Lockfile.new(lockPath, {
 		mylib = { path = "../mylib" }

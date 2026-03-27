@@ -41,7 +41,7 @@ end
 ---@param args string[]?
 ---@param vars table<string, string>?
 ---@param cwd string
-local function runStringWithLPM(package, code, args, vars, cwd)
+local function runStringWithLDE(package, code, args, vars, cwd)
 	local luaPath, luaCPath = getLuaPathsForPackage(package)
 	return runtime.executeString(code, {
 		args = args,
@@ -98,9 +98,9 @@ local function runFile(package, scriptPath, args, vars, cwd)
 
 	cwd = cwd or package:getDir()
 
-	local engine = config.engine or "lpm"
+	local engine = config.engine or "lde"
 	local ok, err
-	if engine == "lpm" then
+	if engine == "lde" or engine == "lpm" --[[ compat ]] then
 		ok, err = runFileWithLPM(package, scriptPath, args, vars, cwd)
 	else
 		ok, err = runFileWithLuaCLI(package, scriptPath, args, vars, engine, cwd)
@@ -121,10 +121,10 @@ local function runString(package, code, args, vars, cwd)
 	local config = package:readConfig()
 	cwd = cwd or package:getDir()
 
-	local engine = config.engine or "lpm"
+	local engine = config.engine or "lde"
 	local ok, err
-	if engine == "lpm" then
-		ok, err = runStringWithLPM(package, code, args, vars, cwd)
+	if engine == "lde" or engine == "lpm" --[[ compat ]] then
+		ok, err = runStringWithLDE(package, code, args, vars, cwd)
 	else
 		ok, err = runStringWithLuaCLI(package, code, args, vars, engine, cwd)
 	end

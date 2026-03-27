@@ -3,14 +3,14 @@ local ansi = require("ansi")
 ---@param _args clap.Args
 local function help(_args)
 	local commands = {
-		{ cmd = "run",       ex = nil,           color = "green",   desc = "Execute an lpm project" },
+		{ cmd = "run",       ex = nil,           color = "green",   desc = "Execute a project" },
 		{ cmd = "x",         ex = "--git <url>", color = "green",   desc = "Run a package from a git repo or path" },
 		{ cmd = "repl",      ex = nil,           color = "green",   desc = "Start an interactive LuaJIT REPL" },
 		{ cmd = "test",      ex = nil,           color = "green",   desc = "Run project tests" },
 		{},
-		{ cmd = "new",       ex = "myproject",   color = "red",     desc = "Create a new lpm project" },
-		{ cmd = "init",      ex = nil,           color = "red",     desc = "Initialize current directory as lpm project" },
-		{ cmd = "upgrade",   ex = nil,           color = "red",     desc = "Upgrade lpm to the latest version" },
+		{ cmd = "new",       ex = "myproject",   color = "red",     desc = "Create a new project" },
+		{ cmd = "init",      ex = nil,           color = "red",     desc = "Initialize current directory as a project" },
+		{ cmd = "upgrade",   ex = nil,           color = "red",     desc = "Upgrade lde to the latest version" },
 		{},
 		{ cmd = "install",   ex = nil,           color = "yellow",  desc = "Install deps, or a tool to PATH with --git/--path" },
 		{ cmd = "uninstall", ex = "busted",      color = "yellow",  desc = "Uninstall a tool from PATH" },
@@ -25,8 +25,8 @@ local function help(_args)
 		{ cmd = "bundle",    ex = nil,           color = "magenta", desc = "Bundle current project into a single lua file" }
 	}
 
-	ansi.printf("{blue}{bold}lpm{reset} is a package manager for Lua, written in Lua.\n")
-	ansi.printf("{bold}Usage:{reset} lpm <command> {magenta}[options]")
+	ansi.printf("{blue}{bold}lde{reset} is a package manager for Lua, written in Lua.\n")
+	ansi.printf("{bold}Usage:{reset} lde <command> {magenta}[options]")
 	ansi.printf("\n{bold}Commands:{reset}")
 	for _, command in ipairs(commands) do
 		if not command.cmd then -- Separator

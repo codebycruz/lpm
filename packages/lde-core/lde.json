@@ -1,7 +1,7 @@
 {
 	"name": "lde-core",
 	"version": "0.1.0",
-	"$schema": "./lpm.schema.json",
+	"$schema": "./lde.schema.json",
 	"dependencies": {
 		"json": { "path": "../json" },
 		"ansi": { "path": "../ansi" },
@@ -14,7 +14,7 @@
 		"util": { "path": "../util" },
 		"http": { "path": "../http" },
 		"semver": { "path": "../semver" },
-		"lpm-test": { "path": "../lpm-test" },
+		"lde-test": { "path": "../lde-test" },
 		"git": { "path": "../git" },
 		"rocked": { "path": "../rocked" },
 		"luarocks": { "path": "../luarocks" }

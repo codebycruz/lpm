@@ -44,7 +44,7 @@ local function updatePath(ldeDir, toolsDir)
 		end
 		ansi.printf("{yellow}Restart your terminal for the change to take effect.")
 	else
-		-- Unix: patch the first shell rc file that already mentions .lpm, or
+		-- Unix: patch the first shell rc file that already mentions .lde, or
 		-- the first that exists among the standard candidates.
 		local home = os.getenv("HOME") or ""
 		local rcFiles = {
@@ -55,19 +55,19 @@ local function updatePath(ldeDir, toolsDir)
 			home .. "/.profile"
 		}
 
-		local pathLine = 'export PATH="$HOME/.lpm:$HOME/.lpm/tools:$PATH"'
+		local pathLine = 'export PATH="$HOME/.lde:$HOME/.lde/tools:$PATH"'
 
-		-- Find a file that already has an lpm PATH entry and needs updating,
+		-- Find a file that already has an lde PATH entry and needs updating,
 		-- or the first rc file that exists (to append to).
 		local target = nil
 		for _, rc in ipairs(rcFiles) do
 			if fs.exists(rc) then
 				local content = fs.read(rc) or ""
-				if content:find("%.lpm", 1, true) then
-					-- Already has some lpm entry — check if tools is missing
-					if not content:find("%.lpm/tools", 1, true) then
-						-- Replace the existing lpm PATH line with the full one
-						local updated = content:gsub('export PATH="[^"]*%.lpm[^"]*"', pathLine)
+				if content:find("%.lde", 1, true) then
+					-- Already has some lde entry — check if tools is missing
+					if not content:find("%.lde/tools", 1, true) then
+						-- Replace the existing lde PATH line with the full one
+						local updated = content:gsub('export PATH="[^"]*%.lde[^"]*"', pathLine)
 						if updated == content then
 							-- Line format didn't match the pattern; just append
 							updated = content .. "\n" .. pathLine .. "\n"
@@ -83,10 +83,10 @@ local function updatePath(ldeDir, toolsDir)
 			end
 		end
 
-		-- No file had an lpm entry yet — append to the first existing rc
+		-- No file had an lde entry yet — append to the first existing rc
 		if target then
 			local content = fs.read(target) or ""
-			fs.write(target, content .. "\n# Added by lpm\n" .. pathLine .. "\n")
+			fs.write(target, content .. "\n# Added by lde\n" .. pathLine .. "\n")
 			ansi.printf("{green}Added PATH entry to %s", target)
 		else
 			ansi.printf("{yellow}Could not find a shell rc file to update.")

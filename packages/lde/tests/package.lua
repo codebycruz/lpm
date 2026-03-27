@@ -7,7 +7,7 @@ local env = require("env")
 local path = require("path")
 local json = require("json")
 
-local tmpBase = path.join(env.tmpdir(), "lpm-package-tests")
+local tmpBase = path.join(env.tmpdir(), "lde-package-tests")
 
 -- Clean up from any previous test run
 fs.rmdir(tmpBase)
@@ -214,7 +214,7 @@ test.it("rockspec dep: can require(packagename) from a consumer package", functi
 		}
 	]])
 
-	-- Consumer lpm package that depends on the rockspec package via path
+	-- Consumer lde package that depends on the rockspec package via path
 	local appDir = path.join(tmpBase, "rock-consumer")
 	fs.mkdir(appDir)
 	fs.mkdir(path.join(appDir, "src"))

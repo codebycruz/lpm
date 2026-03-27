@@ -21,7 +21,7 @@ local function buildPackage(package, destinationPath)
 
 	if package:hasBuildScript() then
 		-- Check stamp before showing progress so already-built packages are silent
-		local stampFile = path.join(destinationPath, ".lpm-built")
+		local stampFile = path.join(destinationPath, ".lde-built")
 		local alreadyDone = alreadyBuilt[destinationPath] or fs.exists(stampFile)
 		local p = (lde.verbose and not alreadyDone) and ansi.progress("Building " .. package:getName()) or nil
 		local ok, err = package:runBuildScript(destinationPath)

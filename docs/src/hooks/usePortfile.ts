@@ -39,7 +39,7 @@ function saveCache(name: string, data: Portfile) {
 }
 
 function portfileUrl(name: string) {
-	return `https://raw.githubusercontent.com/codebycruz/lpm-registry/master/packages/${name}.json`;
+	return `https://raw.githubusercontent.com/lde-org/registry/master/packages/${name}.json`;
 }
 
 export function usePortfile(name: string) {

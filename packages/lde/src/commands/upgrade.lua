@@ -9,13 +9,13 @@ local env = require("env")
 
 local lde = require("lde-core")
 
-local releasesUrl = "https://api.github.com/repos/codebycruz/lpm/releases"
+local releasesUrl = "https://api.github.com/repos/lde-org/lde/releases"
 
 local arch = jit.arch == "arm64" and "aarch64" or "x86-64"
 local artifactNames = {
-	win32 = "lpm-windows-" .. arch .. ".exe",
-	linux = "lpm-linux-" .. arch,
-	darwin = "lpm-macos-" .. arch
+	win32 = "lde-windows-" .. arch .. ".exe",
+	linux = "lde-linux-" .. arch,
+	darwin = "lde-macos-" .. arch
 }
 
 ---@param args clap.Args

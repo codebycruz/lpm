@@ -17,10 +17,10 @@ You can run any package from git or a local path.
 lde x triangle --git https://github.com/codebycruz/hood
 ```
 
-For short, lde registers a `lpx` alias for `lde x`, so you can also run:
+For short, lde registers a `ldx` alias for `lde x`, so you can also run:
 
 ```bash
-lpx triangle --git https://github.com/codebycruz/hood
+ldx triangle --git https://github.com/codebycruz/hood
 ```
 
 This clones the hood repository, resolves the triangle package, and then instantly runs the package. You can do this with --path dependencies as well.

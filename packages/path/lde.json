@@ -1,5 +1,4 @@
 {
 	"name": "path",
-	"engine": "lpm",
 	"version": "0.1.0"
 }

@@ -13,7 +13,7 @@ local lde = require("lde-core")
 local ansi = require("ansi")
 local util = require("util")
 
-local REGISTRY_URL = "https://github.com/codebycruz/lpm-registry"
+local REGISTRY_URL = "https://github.com/lde-org/registry"
 
 global.currentVersion = "0.8.0"
 
@@ -34,7 +34,7 @@ end
 
 function global.getDir()
 	local home = os.getenv("HOME") or os.getenv("USERPROFILE")
-	return path.join(home, ".lpm")
+	return path.join(home, ".lde")
 end
 
 function global.getGitCacheDir()
@@ -70,7 +70,7 @@ function global.syncRegistry()
 	if not fs.exists(registryDir) then
 		local ok, err = git.clone(REGISTRY_URL, registryDir)
 		if not ok then
-			error("Failed to clone lpm registry: " .. (err or "unknown error"))
+			error("Failed to clone lde registry: " .. (err or "unknown error"))
 		end
 	else
 		git.pull(registryDir)
@@ -84,7 +84,7 @@ function global.lookupRegistryPackage(name)
 	local portfilePath = path.join(global.getRegistryDir(), "packages", name .. ".json")
 	local content = fs.read(portfilePath)
 	if not content then
-		return nil, "Package '" .. name .. "' not found in lpm registry"
+		return nil, "Package '" .. name .. "' not found in lde registry"
 	end
 	return json.decode(content), nil
 end
@@ -103,7 +103,7 @@ function global.resolveRegistryVersion(portfile, version)
 	if version then
 		local commit = versions[version]
 		if not commit then
-			error("Version '" .. version .. "' of '" .. portfile.name .. "' not found in lpm registry")
+			error("Version '" .. version .. "' of '" .. portfile.name .. "' not found in lde registry")
 		end
 		return version, commit
 	end
@@ -269,21 +269,21 @@ function global.findNamedPackageIn(dir, name)
 	return nil, "No package named '" .. name .. "' found in: " .. dir
 end
 
---- Writes the platform-appropriate wrapper script into ~/.lpm/tools/.
+--- Writes the platform-appropriate wrapper script into ~/.lde/tools/.
 ---@param toolName string
 ---@param packageDir string
 ---@param packageName string
 function global.writeWrapper(toolName, packageDir, packageName)
 	local toolsDir = global.getToolsDir()
 	local invocation = packageDir
-		and ("lpm x --path '" .. packageDir .. "' " .. packageName)
-		or ("lpm x " .. packageName)
+		and ("lde x --path '" .. packageDir .. "' " .. packageName)
+		or ("lde x " .. packageName)
 
 	if process.platform == "win32" then
 		local wrapperPath = path.join(toolsDir, toolName .. ".cmd")
 		local winInvocation = packageDir
-			and ('lpm x --path \\"' .. packageDir .. '\\" ' .. packageName)
-			or ("lpm x " .. packageName)
+			and ('lde x --path \\"' .. packageDir .. '\\" ' .. packageName)
+			or ("lde x " .. packageName)
 
 		if not fs.write(wrapperPath, "@echo off\n" .. winInvocation .. " %*\n") then
 			error("Failed to write wrapper script: " .. wrapperPath)

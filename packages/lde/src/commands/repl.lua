@@ -5,7 +5,7 @@ local run = require("lde-core.package.run")
 
 ---@param _args clap.Args
 local function repl(_args)
-	ansi.printf("{blue}{bold}lpm repl{reset} — LuaJIT interactive shell")
+	ansi.printf("{blue}{bold}lde repl{reset} — LuaJIT interactive shell")
 	ansi.printf("{gray}Type {bold}exit(){reset}{gray} or press Ctrl+C to quit.\n")
 
 	local savedPath, savedCPath = package.path, package.cpath

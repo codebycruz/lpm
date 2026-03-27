@@ -5,7 +5,7 @@ local process = require("process")
 
 local lde = require("lde-core")
 
-local REGISTRY_REPO = "https://github.com/codebycruz/lpm-registry"
+local REGISTRY_REPO = "https://github.com/lde-org/registry"
 
 ---@param s string
 local function urlEncode(s)

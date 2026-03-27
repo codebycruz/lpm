@@ -40,10 +40,10 @@ lde run
 
 ## Running Lua Tools
 
-Run any remote tool easily with `lpx`!
+Run any remote tool easily with `ldx`!
 
 ```sh
-lpx cowsay hi
+ldx cowsay hi
 ```
 
 ```

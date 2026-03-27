@@ -1,8 +1,8 @@
 #!/bin/sh
 set -e
 
-DIR="$HOME/.lpm"
-REPO="codebycruz/lpm"
+DIR="$HOME/.lde"
+REPO="lde-org/lde"
 NIGHTLY=0
 VERSION=""
 
@@ -18,10 +18,10 @@ OS="$(uname -s)"
 ARCH="$(uname -m)"
 
 case "$OS-$ARCH" in
-    Linux-x86_64)          BIN="lpm-linux-x86-64" ;;
-    Linux-aarch64)         BIN="lpm-linux-aarch64" ;;
+    Linux-x86_64)          BIN="lde-linux-x86-64" ;;
+    Linux-aarch64)         BIN="lde-linux-aarch64" ;;
     Darwin-x86_64)         echo "Intel macOS is currently unsupported."; exit 1 ;;
-    Darwin-arm64)          BIN="lpm-macos-aarch64" ;;
+    Darwin-arm64)          BIN="lde-macos-aarch64" ;;
     *) echo "Unsupported platform: $OS $ARCH"; exit 1 ;;
 esac
 
@@ -34,5 +34,5 @@ else
 fi
 
 mkdir -p "$DIR"
-curl -fL "https://github.com/$REPO/releases/download/$TAG/$BIN" -o "$DIR/lpm"
-chmod +x "$DIR/lpm" && "$DIR/lpm" --setup
+curl -fL "https://github.com/$REPO/releases/download/$TAG/$BIN" -o "$DIR/lde"
+chmod +x "$DIR/lde" && "$DIR/lde" --setup

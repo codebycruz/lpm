@@ -5,13 +5,13 @@ published: 2026-03-14
 description: Launches the lpm package registry with lpm publish, adds lockfile support for reproducible installs, and introduces registry dependencies via lpm add.
 ---
 
-> **NOTE**: This article was made before [the rebrand to lde](https://github.com/codebycruz/lpm/issues/73). Just replace `lpm` with `lde`.
+> **NOTE**: This article was made before [the rebrand to lde](https://github.com/lde-org/lde/issues/73). Just replace `lpm` with `lde`.
 
 > Upgrade to the latest version with `lpm upgrade`!
 
 ## LPM Registry
 
-lpm now has its own package registry you can already contribute to. It takes the vcpkg approach of being a simple GitHub repo, so authentication and file hosting are handled by GitHub: [codebycruz/lpm-registry](https://github.com/codebycruz/lpm-registry)
+lpm now has its own package registry you can already contribute to. It takes the vcpkg approach of being a simple GitHub repo, so authentication and file hosting are handled by GitHub: [lde-org/lde-registry](https://github.com/lde-org/lde-registry)
 
 Publishing is as simple as running `lpm publish` from your package directory. It reads your git remote, branch, and current commit, builds the portfile automatically, and opens your browser straight to a GitHub PR with everything pre-filled.
 
