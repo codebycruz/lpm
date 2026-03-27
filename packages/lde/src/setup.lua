@@ -99,14 +99,14 @@ end
 ---@param ldeDir string
 local function installBinaries(ldeDir)
 	if process.platform == "win32" then
-		local lpxPath = path.join(ldeDir, "ldx.cmd")
-		fs.write(lpxPath, "@echo off\r\nlde x %*\r\n")
-		ansi.printf("{green}Installed ldx -> %s", lpxPath)
+		local ldxPath = path.join(ldeDir, "ldx.cmd")
+		fs.write(ldxPath, "@echo off\r\nlde x %*\r\n")
+		ansi.printf("{green}Installed ldx -> %s", ldxPath)
 	else
-		local lpxPath = path.join(ldeDir, "ldx")
-		fs.write(lpxPath, "#!/bin/sh\nexec lde x \"$@\"\n")
-		process.spawn("chmod", { "+x", lpxPath })
-		ansi.printf("{green}Installed ldx -> %s", lpxPath)
+		local ldxPath = path.join(ldeDir, "ldx")
+		fs.write(ldxPath, "#!/bin/sh\nexec lde x \"$@\"\n")
+		process.spawn("chmod", { "+x", ldxPath })
+		ansi.printf("{green}Installed ldx -> %s", ldxPath)
 	end
 end
 
