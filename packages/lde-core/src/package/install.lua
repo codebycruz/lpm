@@ -46,6 +46,14 @@ local function dependencyToPackage(alias, depInfo, relativeTo)
 			end
 		end
 
+		-- Compatibility
+		for _, config in ipairs(fs.scan(repoDir, "**" .. path.separator .. "lpm.json")) do
+			pkg = lde.Package.open(path.join(repoDir, path.dirname(config)))
+			if pkg and pkg:getName() == packageName then
+				return pkg, lockEntry
+			end
+		end
+
 		error("No lde.json with name '" .. packageName .. "' found in git repository")
 	elseif depInfo.path then
 		local localPackage, err = lde.Package.open(path.resolve(relativeTo, path.normalize(depInfo.path)),
