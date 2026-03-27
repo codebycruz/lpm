@@ -22,6 +22,11 @@ package.loaded[(...)] = Package
 
 ---@param dir string
 local function configPathAtDir(dir)
+	local legacyPath = path.join(dir, "lpm.json")
+	if fs.exists(legacyPath) then
+		return legacyPath
+	end
+
 	return path.join(dir, "lde.json")
 end
 
