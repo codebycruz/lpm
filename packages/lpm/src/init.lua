@@ -98,7 +98,8 @@ if args:flag("version") and args:count() == 0 then
 	return
 end
 
-if args:flag("help") then
+local hasPositional = args:count() > 0 and args:peek() ~= nil
+if args:flag("help") and not hasPositional then
 	require("lpm.commands.help")(args)
 	return
 end

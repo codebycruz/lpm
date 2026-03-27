@@ -124,6 +124,7 @@ local function executeFile(scriptPath, opts)
 	local ok, err = pcall(function()
 		package.path, package.cpath = opts.packagePath, opts.packageCPath
 		if opts.args then
+			-- SAFETY: opts.args should not be used by caller afterward as it can be mutated here.
 			arg = opts.args or {}
 			return callback(unpack(opts.args))
 		else
