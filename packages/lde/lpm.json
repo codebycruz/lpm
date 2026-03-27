@@ -1,22 +1,20 @@
 {
-	"name": "lpm-core",
+	"name": "lde",
 	"version": "0.1.0",
 	"$schema": "./lpm.schema.json",
 	"dependencies": {
 		"json": { "path": "../json" },
 		"ansi": { "path": "../ansi" },
-		"sea": { "path": "../sea" },
 		"path": { "path": "../path" },
 		"process": { "path": "../process" },
 		"clap": { "path": "../clap" },
 		"fs": { "path": "../fs" },
 		"env": { "path": "../env" },
-		"util": { "path": "../util" },
 		"http": { "path": "../http" },
 		"semver": { "path": "../semver" },
-		"lpm-test": { "path": "../lpm-test" },
+		"lpm-core": { "path": "../lpm-core" },
+		"winapi": { "git": "https://github.com/codebycruz/winapi" },
 		"git": { "path": "../git" },
-		"rocked": { "path": "../rocked" },
 		"luarocks": { "path": "../luarocks" }
 	}
 }
