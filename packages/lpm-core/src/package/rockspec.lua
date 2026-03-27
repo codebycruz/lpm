@@ -82,8 +82,21 @@ local function openRockspec(dir, rockspecPath)
 		end
 
 		-- Merge platform-specific modules
-		local platKey = process.platform == "darwin" and "macosx" or process.platform
-		local platBuild = spec.build.platforms and spec.build.platforms[platKey]
+		local platFallbacks = {
+			darwin = { "macosx", "unix" },
+			linux  = { "linux", "unix" },
+			win32  = { "win32", "mingw32" }
+		}
+
+		local platBuild
+		for _, key in ipairs(platFallbacks[process.platform] or { process.platform }) do
+			platBuild = spec.build.platforms and spec.build.platforms[key]
+			if platBuild then break end
+		end
+		if spec.build.platforms and not platBuild then
+			io.stderr:write("warning: " ..
+				(spec.package or "?") .. ": no platform config for '" .. process.platform .. "'\n")
+		end
 		for modname, src in pairs(platBuild and platBuild.modules or {}) do
 			if type(src) == "string" then
 				nativeModules[modname] = { sources = { src } }
