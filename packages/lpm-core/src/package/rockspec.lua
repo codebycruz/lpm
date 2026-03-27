@@ -71,13 +71,19 @@ local function openRockspec(dir, rockspecPath)
 	if spec.build then
 		for modname, src in pairs(spec.build.modules or {}) do
 			if type(src) == "string" then
-				if src:match("%.lua$") then
+				if path.extension(src) == "lua" then
 					modules[modname] = src
-				elseif src:match("%.c$") then
+				elseif path.extension(src) == "c" then
 					nativeModules[modname] = { sources = { src } }
+				else
+					io.stderr:write("warning: " ..
+					(spec.package or "?") .. ": unrecognised source type for module '" .. modname .. "': " .. src .. "\n")
 				end
 			elseif type(src) == "table" and src.sources then
 				nativeModules[modname] = src
+			elseif type(src) == "table" then
+				io.stderr:write("warning: " ..
+				(spec.package or "?") .. ": module '" .. modname .. "' has no sources field, skipping\n")
 			end
 		end
 
@@ -97,9 +103,14 @@ local function openRockspec(dir, rockspecPath)
 			io.stderr:write("warning: " ..
 				(spec.package or "?") .. ": no platform config for '" .. process.platform .. "'\n")
 		end
+
 		for modname, src in pairs(platBuild and platBuild.modules or {}) do
 			if type(src) == "string" then
-				nativeModules[modname] = { sources = { src } }
+				if path.extension(src) == "lua" then
+					modules[modname] = src
+				else
+					nativeModules[modname] = { sources = { src } }
+				end
 			elseif type(src) == "table" and src.sources then
 				nativeModules[modname] = src
 			end
