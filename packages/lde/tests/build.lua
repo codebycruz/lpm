@@ -169,7 +169,7 @@ test.skip("installDependencies re-runs build script on each call when output is 
 	-- The counter persists in a sibling file next to the output dir so it survives
 	-- the fs.copy that happens before each build script run.
 	local buildScript = [[
-local outputDir = os.getenv("LPM_OUTPUT_DIR")
+local outputDir = os.getenv("LDE_OUTPUT_DIR")
 local counterFile = outputDir .. ".count"
 local count = 0
 local f = io.open(counterFile, "r")

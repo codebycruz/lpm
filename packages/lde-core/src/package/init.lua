@@ -53,7 +53,10 @@ local function defaultBuildFn(pkg, outputDir)
 		return nil, "No build script found: " .. buildScriptPath
 	end
 
-	return pkg:runFile(buildScriptPath, nil, { LPM_OUTPUT_DIR = outputDir })
+	return pkg:runFile(buildScriptPath, nil, {
+		LDE_OUTPUT_DIR = outputDir,
+		LPM_OUTPUT_DIR = outputDir -- compat
+	})
 end
 
 function Package:hasBuildScript()
