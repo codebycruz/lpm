@@ -5,9 +5,9 @@ local process = require("process")
 
 local lde = require("lde-core")
 
----@param lpmDir string
+---@param ldeDir string
 ---@param toolsDir string
-local function updatePath(lpmDir, toolsDir)
+local function updatePath(ldeDir, toolsDir)
 	if process.platform == "win32" then
 		-- Read current user PATH, append missing dirs, write back via PowerShell
 		local getCmd = '[Environment]::GetEnvironmentVariable("Path","User")'
@@ -19,8 +19,8 @@ local function updatePath(lpmDir, toolsDir)
 		currentPath = currentPath and currentPath:gsub("%s+$", "") or ""
 
 		local dirsToAdd = {}
-		if not currentPath:find(lpmDir, 1, true) then
-			dirsToAdd[#dirsToAdd + 1] = lpmDir
+		if not currentPath:find(ldeDir, 1, true) then
+			dirsToAdd[#dirsToAdd + 1] = ldeDir
 		end
 		if not currentPath:find(toolsDir, 1, true) then
 			dirsToAdd[#dirsToAdd + 1] = toolsDir
@@ -96,26 +96,26 @@ local function updatePath(lpmDir, toolsDir)
 	end
 end
 
----@param lpmDir string
-local function installLpx(lpmDir)
+---@param ldeDir string
+local function installBinaries(ldeDir)
 	if process.platform == "win32" then
-		local lpxPath = path.join(lpmDir, "lpx.cmd")
-		fs.write(lpxPath, "@echo off\r\nlpm x %*\r\n")
-		ansi.printf("{green}Installed lpx -> %s", lpxPath)
+		local lpxPath = path.join(ldeDir, "ldx.cmd")
+		fs.write(lpxPath, "@echo off\r\nlde x %*\r\n")
+		ansi.printf("{green}Installed ldx -> %s", lpxPath)
 	else
-		local lpxPath = path.join(lpmDir, "lpx")
-		fs.write(lpxPath, "#!/bin/sh\nexec lpm x \"$@\"\n")
+		local lpxPath = path.join(ldeDir, "ldx")
+		fs.write(lpxPath, "#!/bin/sh\nexec lde x \"$@\"\n")
 		process.spawn("chmod", { "+x", lpxPath })
-		ansi.printf("{green}Installed lpx -> %s", lpxPath)
+		ansi.printf("{green}Installed ldx -> %s", lpxPath)
 	end
 end
 
 local function setup()
-	local lpmDir = lde.global.getDir()
+	local ldeDir = lde.global.getDir()
 	local toolsDir = lde.global.getToolsDir()
 
-	updatePath(lpmDir, toolsDir)
-	installLpx(lpmDir)
+	updatePath(ldeDir, toolsDir)
+	installBinaries(ldeDir)
 end
 
 return setup
