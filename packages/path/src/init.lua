@@ -10,6 +10,11 @@ function path.basename(p)
 end
 
 ---@param p string
+function path.extension(p)
+	return path.basename(p):match("%.([^%.]+)$") or ""
+end
+
+---@param p string
 function path.dirname(p)
 	return p:match("^(.*)[/\\]") or "."
 end
