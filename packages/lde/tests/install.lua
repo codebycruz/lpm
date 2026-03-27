@@ -54,7 +54,7 @@ if process.platform == "win32" and jit.arch ~= "x64" then
 	test.skip("install script tests (unsupported arch: " .. jit.arch .. ")")
 end
 
-test.skip("install.sh installs lde binary to $HOME/.lde/lde", function()
+test.skipIf(process.platform ~= "linux")("install.sh installs lde binary to $HOME/.lde/lde", function()
 	local fakeHome = path.join(tmpBase, "home")
 	fs.mkdir(fakeHome)
 
@@ -66,7 +66,7 @@ test.skip("install.sh installs lde binary to $HOME/.lde/lde", function()
 	test.truthy(fs.exists(path.join(fakeHome, ".lde", "lde")))
 end)
 
-test.skip("installed lde binary responds to --version", function()
+test.skipIf(process.platform ~= "linux")("installed lde binary responds to --version", function()
 	local fakeHome = path.join(tmpBase, "home2")
 	fs.mkdir(fakeHome)
 
