@@ -24,7 +24,7 @@ local function run(args)
 	if not pkg then
 		if name and fs.exists(name) then
 			local ok, err = lde.runtime.executeFile(name, {
-				args = scriptArgs,
+				args = #scriptArgs > 0 and scriptArgs or args:drain(0),
 				cwd = env.cwd(),
 				packagePath = "",
 				packageCPath = ""

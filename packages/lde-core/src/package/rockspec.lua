@@ -212,6 +212,44 @@ local function openRockspec(dir, rockspecPath)
 
 			fs.write(stampFile, buildStamp)
 			return true
+		elseif buildType == "command" then
+			local luajitPath = sea.getLuajitPath()
+			local ext = process.platform == "darwin" and "dylib" or "so"
+			local vars = {
+				LUA           = env.execPath(),
+				PREFIX        = modulesDir,
+				LUA_INCDIR    = path.join(luajitPath, "include"),
+				LUA_LIBDIR    = path.join(luajitPath, "lib"),
+				LUADIR        = modulesDir,
+				LIBDIR        = modulesDir,
+				CC            = "gcc",
+				LD            = "gcc",
+				CFLAGS        = "-fPIC",
+				LIBFLAG       = "-shared",
+				LIB_EXTENSION = ext,
+				OBJ_EXTENSION = "o"
+			}
+
+			local function expandVars(cmd)
+				return (cmd:gsub("%$%(([%w_]+)%)", function(k)
+					return vars[k] or ("$(" .. k .. ")")
+				end))
+			end
+
+			local commandOptions = { cwd = dir, env = vars }
+
+			if spec.build.build_command then
+				local ok, err = process.exec("sh", { "-c", expandVars(spec.build.build_command) }, commandOptions)
+				if not ok then return nil, "build_command failed: " .. (err or "") end
+			end
+
+			if spec.build.install_command then
+				local ok, err = process.exec("sh", { "-c", expandVars(spec.build.install_command) }, commandOptions)
+				if not ok then return nil, "install_command failed: " .. (err or "") end
+			end
+
+			fs.write(stampFile, buildStamp)
+			return true
 		elseif buildType == "builtin" then
 			for modname, src in pairs(modules) do
 				local modPath = modname:gsub("%.", path.separator)
