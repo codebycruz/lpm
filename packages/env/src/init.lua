@@ -32,7 +32,7 @@ local tmpCounter = 0
 --- Safe replacement for os.tmpname() which can segfault in compiled LuaJIT on Windows.
 function env.tmpfile()
 	tmpCounter = tmpCounter + 1
-	return path.join(env.tmpdir(), string.format("lpm_%d_%d.tmp", os.clock() * 1000, tmpCounter))
+	return path.join(env.tmpdir(), string.format("luaenv_%d_%d.tmp", os.clock() * 1000, tmpCounter))
 end
 
 return env

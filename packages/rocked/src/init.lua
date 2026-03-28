@@ -6,36 +6,47 @@ local rocked = {}
 ---@field homepage string
 ---@field license string
 
----@alias rocked.raw.builtin.Build.Source
---- | string
---- | { sources: string[], libraries: string[]?, incdirs: string[]?, libdirs: string[]? }
+---@class rocked.raw.NativeSource
+---@field sources string[]
+---@field defines string[]?
+---@field libraries string[]?
+---@field incdirs string[]?
+---@field libdirs string[]?
 
----@class rocked.raw.builtin.Build.Install
+---@alias rocked.raw.BuildSource
+--- | string
+--- | rocked.raw.NativeSource
+
+---@class rocked.raw.BuildInstall
 ---@field lua table<string, string>?
 ---@field bin table<string, string>?
 ---@field lib table<string, string>?
 ---@field conf table<string, string>?
 
----@class rocked.raw.builtin.Build
----@field type "builtin"
----@field modules table<string, rocked.raw.builtin.Build.Source>
----@field install rocked.raw.builtin.Build.Install?
+---@class rocked.raw.PlatformBuild
+---@field modules table<string, rocked.raw.BuildSource>?
+---@field install rocked.raw.BuildInstall?
+
+---@class rocked.raw.Build
+---@field type "builtin" | "module" | "make" | "cmake" | "none" | "command"
+---@field modules table<string, rocked.raw.BuildSource>?
+---@field install rocked.raw.BuildInstall?
 ---@field copy_directories string[]?
-
----@class rocked.raw.module.Build
----@field type "module"
----@field modules table<string, string>
-
----@alias rocked.raw.Build
---- | rocked.raw.builtin.Build
---- | rocked.raw.module.Build
+---@field platforms table<string, rocked.raw.PlatformBuild>?
+---@field makefile string?
+---@field build_target string?
+---@field install_target string?
+---@field build_variables table<string, string>?
+---@field install_variables table<string, string>?
+---@field build_command string?
+---@field install_command string?
 
 ---@class rocked.raw.Output
 ---@field version string
 ---@field package string
----@field description rocked.raw.Description
----@field source { url: string }
----@field dependencies string[]
+---@field description rocked.raw.Description?
+---@field source { url: string, branch: string?, tag: string? }
+---@field dependencies string[]?
 ---@field build rocked.raw.Build
 
 -- Things we'll provide to the rockspec sandbox
@@ -75,7 +86,11 @@ end
 
 local validRockTypes = {
 	["builtin"] = true,
-	["module"] = true
+	["module"]  = true,
+	["make"]    = true,
+	["cmake"]   = true,
+	["none"]    = true,
+	["command"] = true,
 }
 
 ---@overload fun(spec: string): false, string?
@@ -90,6 +105,8 @@ function rocked.parse(spec)
 	if not build then
 		return false, "No build section found"
 	end
+
+	build.type = build.type or "builtin"
 
 	if not validRockTypes[build.type] then
 		return false, "Invalid build type: " .. tostring(build.type)

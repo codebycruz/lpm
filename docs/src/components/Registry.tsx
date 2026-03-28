@@ -16,10 +16,10 @@ interface Package {
 }
 
 const REGISTRY_URL =
-	"https://raw.githubusercontent.com/codebycruz/lpm-registry/refs/heads/dist/index.json";
+	"https://raw.githubusercontent.com/lde-org/registry/refs/heads/dist/index.json";
 
 function PackageCard({ pkg }: { pkg: Package }) {
-	const installCmd = `lpm add ${pkg.name}`;
+	const installCmd = `lde add ${pkg.name}`;
 	const repoName = pkg.git
 		.replace(/\.git$/, "")
 		.replace(/\/$/, "")
@@ -143,6 +143,8 @@ export default function Registry() {
 					<line x1="21" y1="21" x2="16.65" y2="16.65" />
 				</svg>
 				<input
+					ref={searchRef}
+					autoFocus
 					type="text"
 					placeholder="Search packages..."
 					value={query}

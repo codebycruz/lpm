@@ -1,0 +1,22 @@
+{
+	"name": "lde-core",
+	"version": "0.1.0",
+	"$schema": "./lde.schema.json",
+	"dependencies": {
+		"json": { "path": "../json" },
+		"ansi": { "path": "../ansi" },
+		"sea": { "path": "../sea" },
+		"path": { "path": "../path" },
+		"process": { "path": "../process" },
+		"clap": { "path": "../clap" },
+		"fs": { "path": "../fs" },
+		"env": { "path": "../env" },
+		"util": { "path": "../util" },
+		"http": { "path": "../http" },
+		"semver": { "path": "../semver" },
+		"lde-test": { "path": "../lde-test" },
+		"git": { "path": "../git" },
+		"rocked": { "path": "../rocked" },
+		"luarocks": { "path": "../luarocks" }
+	}
+}

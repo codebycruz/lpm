@@ -10,6 +10,11 @@ function Args:pop()
 	return table.remove(self.raw, 1)
 end
 
+---@return string?
+function Args:peek()
+	return self.raw[1]
+end
+
 ---@param desiredKey string
 ---@return string? val
 ---@return number? beforePos # New position before the option key
@@ -87,6 +92,21 @@ function Args:flag(desiredKey)
 	end
 
 	return false, nil
+end
+
+---@param desiredKey string
+---@return string? val
+function Args:short(desiredKey)
+	local flag = "-" .. desiredKey
+	for i, arg in ipairs(self.raw) do
+		if arg == flag and self.raw[i + 1] ~= nil then
+			table.remove(self.raw, i)
+			return table.remove(self.raw, i)
+		elseif string.sub(arg, 1, #flag + 1) == flag .. "=" then
+			table.remove(self.raw, i)
+			return string.sub(arg, #flag + 2)
+		end
+	end
 end
 
 ---@param rawArgs string[]

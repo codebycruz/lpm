@@ -1,8 +1,8 @@
 $ErrorActionPreference = "Stop"
 
-$repo    = "codebycruz/lpm"
-$dir     = "$env:USERPROFILE\.lpm"
-$bin     = Join-Path $dir "lpm.exe"
+$repo    = "lde-org/lde"
+$dir     = "$env:USERPROFILE\.lde"
+$bin     = Join-Path $dir "lde.exe"
 $nightly = $args -contains "--nightly"
 $versionIndex = [array]::IndexOf($args, "--version")
 $version = if ($versionIndex -ge 0) { $args[$versionIndex + 1] } else { $null }
@@ -19,6 +19,6 @@ $rawArch = [System.Runtime.InteropServices.RuntimeInformation]::OSArchitecture
 $arch = if ($rawArch -eq "Arm64") { "aarch64" } else { "x86-64" }
 
 New-Item -ItemType Directory $dir -Force | Out-Null
-Invoke-WebRequest "https://github.com/$repo/releases/download/$tag/lpm-windows-$arch.exe" -OutFile $bin
+Invoke-WebRequest "https://github.com/$repo/releases/download/$tag/lde-windows-$arch.exe" -OutFile $bin
 
 & $bin --setup

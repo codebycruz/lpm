@@ -14,7 +14,7 @@ export interface Portfile {
 const CACHE_TTL = 5 * 60 * 1000;
 
 function cacheKey(name: string) {
-	return `lpm-portfile:${name}`;
+	return `lde-portfile:${name}`;
 }
 
 function loadCached(name: string): Portfile | null {
@@ -31,16 +31,21 @@ function loadCached(name: string): Portfile | null {
 
 function saveCache(name: string, data: Portfile) {
 	try {
-		localStorage.setItem(cacheKey(name), JSON.stringify({ data, ts: Date.now() }));
+		localStorage.setItem(
+			cacheKey(name),
+			JSON.stringify({ data, ts: Date.now() }),
+		);
 	} catch {}
 }
 
 function portfileUrl(name: string) {
-	return `https://raw.githubusercontent.com/codebycruz/lpm-registry/master/packages/${name}.json`;
+	return `https://raw.githubusercontent.com/lde-org/registry/master/packages/${name}.json`;
 }
 
 export function usePortfile(name: string) {
-	const [portfile, setPortfile] = useState<Portfile | null>(() => loadCached(name));
+	const [portfile, setPortfile] = useState<Portfile | null>(() =>
+		loadCached(name),
+	);
 	const [loading, setLoading] = useState(() => loadCached(name) === null);
 
 	useEffect(() => {

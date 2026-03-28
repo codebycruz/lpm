@@ -1,9 +1,9 @@
 {
-	"name": "lpm",
-	"compatibility_date": "2026-02-18",
-	"main": "@astrojs/cloudflare/entrypoints/server",
-	"compatibility_flags": ["nodejs_compat"],
-	"assets": {
-		"directory": "./dist",
-	},
+  "name": "lde",
+  "compatibility_date": "2026-02-18",
+  "main": "@astrojs/cloudflare/entrypoints/server",
+  "compatibility_flags": ["nodejs_compat"],
+  "assets": {
+    "directory": "./dist",
+  },
 }

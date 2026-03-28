@@ -6,6 +6,8 @@ local env = require("env")
 local fs = require("fs")
 local jit = require("jit")
 
+local util = require("util")
+
 local ljDistRepo = "codebycruz/lj-dist"
 local ljDistTag = "latest"
 
@@ -91,16 +93,6 @@ local CEscapes = {
 	["\\"] = "\\\\"
 }
 
----Compute a simple 32-bit FNV-1a hash of a string, returned as an 8-char hex string.
-local function fnv1a(s)
-	local h = 2166136261
-	for i = 1, #s do
-		h = bit.bxor(h, string.byte(s, i))
-		h = bit.band(h * 16777619, 0xFFFFFFFF)
-	end
-	return string.format("%08x", bit.band(h, 0xFFFFFFFF))
-end
-
 ---Convert binary content to a C uint8_t array initialiser string, e.g. "0x41,0x42,..."
 local function toByteLiteral(content)
 	local t = {}
@@ -150,7 +142,7 @@ function sea.compile(main, files, sharedLibs)
 	end
 
 	-- For each shared library, emit a uint8_t array and the write+preload logic.
-	-- The path is deterministic: /tmp/lpm-lib-<name>-<hash>.so so that
+	-- The path is deterministic: /tmp/lde-lib-<name>-<hash>.so so that
 	-- the file is only written once across runs with identical content.
 	local libDecls = {} -- top-level C declarations (arrays + path strings)
 	local libStartup = {} -- code that runs before lua_State is created
@@ -158,11 +150,11 @@ function sea.compile(main, files, sharedLibs)
 
 	for _, lib in ipairs(sharedLibs) do
 		local id                      = safeIdent(lib.name)
-		local hash                    = fnv1a(lib.content)
+		local hash                    = util.fnv1a(lib.content)
 		local ext                     = process.platform == "win32" and "dll"
 			or process.platform == "darwin" and "dylib"
 			or "so"
-		local libPath                 = string.format("/tmp/lpm-lib-%s-%s.%s", lib.name, hash, ext)
+		local libPath                 = string.format("/tmp/lde-lib-%s-%s.%s", lib.name, hash, ext)
 
 		libDecls[#libDecls + 1]       = string.format(
 			"static const uint8_t %sLibrary[] = {%s};",
@@ -178,7 +170,7 @@ function sea.compile(main, files, sharedLibs)
 		FILE* f = fopen(%sLibraryPath, "rb");
 		if (f == NULL) {
 			f = fopen(%sLibraryPath, "wb");
-			if (f == NULL) { perror("lpm-sea: cannot write %s"); return 1; }
+			if (f == NULL) { perror("lde-sea: cannot write %s"); return 1; }
 			fwrite(%sLibrary, 1, sizeof(%sLibrary), f);
 			fclose(f);
 		} else {
@@ -188,7 +180,7 @@ function sea.compile(main, files, sharedLibs)
 
 		libPreloads[#libPreloads + 1] = string.format([[
 	lua_pushstring(L, %sLibraryPath);
-	lua_pushcclosure(L, lpm_loadlib_loader, 1);
+	lua_pushcclosure(L, lde_loadlib_loader, 1);
 	lua_setfield(L, -2, "%s");]], id, string.gsub(lib.name, ".", CEscapes))
 	end
 
@@ -199,12 +191,12 @@ function sea.compile(main, files, sharedLibs)
 	local hasLibs        = #sharedLibs > 0
 	local stdintInclude  = hasLibs and "#include <stdint.h>" or ""
 
-	-- lpm_loadlib_loader: a C closure that calls package.loadlib(upvalue1, "*").
+	-- lde_loadlib_loader: a C closure that calls package.loadlib(upvalue1, "*").
 	-- Only emitted when there are shared libs to avoid dead-code warnings.
 	local loadlibHelper  = ""
 	if hasLibs then
 		loadlibHelper = [[
-static int lpm_loadlib_loader(lua_State* L) {
+static int lde_loadlib_loader(lua_State* L) {
 	const char* soPath = lua_tostring(L, lua_upvalueindex(1));
 	lua_getglobal(L, "package");
 	lua_getfield(L, -1, "loadlib");

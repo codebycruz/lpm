@@ -10,9 +10,9 @@ export interface RegistryPackage {
 }
 
 const REGISTRY_URL =
-	"https://raw.githubusercontent.com/codebycruz/lpm-registry/refs/heads/dist/index.json";
+	"https://raw.githubusercontent.com/lde-org/registry/refs/heads/dist/index.json";
 
-const CACHE_KEY = "lpm-registry-index";
+const CACHE_KEY = "lde-registry-index";
 const CACHE_TTL = 5 * 60 * 1000;
 
 function loadCached(): RegistryPackage[] | null {
@@ -29,16 +29,23 @@ function loadCached(): RegistryPackage[] | null {
 
 function saveCache(data: RegistryPackage[]) {
 	try {
-		localStorage.setItem(CACHE_KEY, JSON.stringify({ data, ts: Date.now() }));
+		localStorage.setItem(
+			CACHE_KEY,
+			JSON.stringify({ data, ts: Date.now() }),
+		);
 	} catch {}
 }
 
 function sortByDate(packages: RegistryPackage[]): RegistryPackage[] {
 	return [...packages].sort((a, b) => {
-		if (!a.lastUpdated && !b.lastUpdated) return a.name.localeCompare(b.name);
+		if (!a.lastUpdated && !b.lastUpdated)
+			return a.name.localeCompare(b.name);
 		if (!a.lastUpdated) return 1;
 		if (!b.lastUpdated) return -1;
-		return new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime();
+		return (
+			new Date(b.lastUpdated).getTime() -
+			new Date(a.lastUpdated).getTime()
+		);
 	});
 }
 
@@ -57,7 +64,8 @@ export function useRegistry() {
 
 		fetch(REGISTRY_URL)
 			.then((r) => {
-				if (!r.ok) throw new Error(`Failed to fetch registry (${r.status})`);
+				if (!r.ok)
+					throw new Error(`Failed to fetch registry (${r.status})`);
 				return r.json();
 			})
 			.then((data: RegistryPackage[]) => {

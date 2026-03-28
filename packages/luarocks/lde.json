@@ -1,0 +1,8 @@
+{
+	"name": "luarocks",
+	"version": "0.1.0",
+	"dependencies": {},
+	"devDependencies": {
+		"lde-test": { "path": "../lde-test" }
+	}
+}

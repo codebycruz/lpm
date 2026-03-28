@@ -1,0 +1,163 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"type": "object",
+	"required": ["name", "version", "dependencies"],
+	"definitions": {
+		"dependencyObject": {
+			"type": "object",
+			"additionalProperties": {
+				"type": "object",
+				"oneOf": [
+					{
+						"required": ["path"],
+						"properties": {
+							"path": {
+								"type": "string",
+								"description": "Local filesystem path to dependency"
+							},
+							"package": {
+								"type": "string",
+								"description": "Actual package name at the path, when aliasing (key is the require name)"
+							},
+							"rockspec": {
+								"type": "string",
+								"description": "Path to the rockspec file relative to the dependency directory"
+							}
+						},
+						"additionalProperties": false
+					},
+					{
+						"required": ["git"],
+						"properties": {
+							"git": {
+								"type": "string",
+								"description": "Git repository URL"
+							},
+							"branch": {
+								"type": "string",
+								"description": "Git branch to use"
+							},
+							"commit": {
+								"type": "string",
+								"description": "Git commit hash to pin"
+							},
+							"package": {
+								"type": "string",
+								"description": "Actual package name in the repository, when aliasing (key is the require name)"
+							},
+							"rockspec": {
+								"type": "string",
+								"description": "Path to the rockspec file relative to the dependency directory"
+							}
+						},
+						"additionalProperties": false
+					},
+					{
+						"required": ["version"],
+						"properties": {
+							"version": {
+								"type": "string",
+								"description": "Registry package version to install"
+							},
+							"package": {
+								"type": "string",
+								"description": "Actual package name in the registry, when aliasing (key is the require name)"
+							}
+						},
+						"additionalProperties": false
+					},
+					{
+						"required": ["luarocks"],
+						"properties": {
+							"luarocks": {
+								"type": "string",
+								"description": "Package name on luarocks.org"
+							},
+							"version": {
+								"type": "string",
+								"description": "Optional version constraint e.g. '>= 1.0'"
+							}
+						},
+						"additionalProperties": false
+					},
+					{
+						"required": ["archive"],
+						"properties": {
+							"archive": {
+								"type": "string",
+								"description": "URL to an archive (.zip, .tar.gz, .tar.bz2, etc.)"
+							},
+							"package": {
+								"type": "string",
+								"description": "Actual package name in the archive, when aliasing (key is the require name)"
+							},
+							"rockspec": {
+								"type": "string",
+								"description": "Path to the rockspec file relative to the dependency directory"
+							}
+						},
+						"additionalProperties": false
+					}
+				]
+			}
+		}
+	},
+	"properties": {
+		"name": {
+			"type": "string",
+			"description": "Package name"
+		},
+		"version": {
+			"type": "string",
+			"pattern": "^\\d+\\.\\d+\\.\\d+$",
+			"description": "Semantic version number"
+		},
+		"description": {
+			"type": "string",
+			"description": "Short description of the package"
+		},
+		"authors": {
+			"type": "array",
+			"items": { "type": "string" },
+			"description": "List of package authors"
+		},
+		"dependencies": {
+			"allOf": [
+				{
+					"$ref": "#/definitions/dependencyObject"
+				},
+				{
+					"description": "Package dependencies with source locations"
+				}
+			]
+		},
+		"bin": {
+			"type": "string",
+			"description": "Entry point script to run when using lde run without a file argument"
+		},
+		"scripts": {
+			"type": "object",
+			"description": "Named scripts that can be run with lde run <name> or lde <name>",
+			"additionalProperties": {
+				"type": "string",
+				"description": "Shell command to execute"
+			}
+		},
+		"engine": {
+			"type": "string",
+			"enum": ["lua", "luajit", "lde"],
+			"description": "The Lua engine to use"
+		},
+		"devDependencies": {
+			"allOf": [
+				{
+					"$ref": "#/definitions/dependencyObject"
+				},
+				{
+					"description": "Development dependencies with source locations"
+				}
+			]
+		}
+	},
+	"additionalProperties": false
+}

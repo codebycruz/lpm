@@ -1,0 +1,11 @@
+{
+	"name": "sea",
+	"version": "0.1.0",
+	"dependencies": {
+		"process": { "path": "../process" },
+		"fs": { "path": "../fs" },
+		"path": { "path": "../path" },
+		"env": { "path": "../env" },
+		"util": { "path": "../util" }
+	}
+}
