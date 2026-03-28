@@ -1,23 +1,22 @@
 {
   "nodes": {
-    "lpm": {
+    "lde": {
       "inputs": {
         "nixpkgs": [
           "nixpkgs"
         ]
       },
       "locked": {
-        "lastModified": 1774517031,
-        "narHash": "sha256-MbPJ4TdFDteQ+HAWZEgkdkX/bwGlzaMEG7MOVl9DtK4=",
+        "lastModified": 1774723686,
+        "narHash": "sha256-GX0YcvuHXUrRdVd7qDzmEhjjRjFMj4uaFtweFGXIVwg=",
         "owner": "Silzinc",
-        "repo": "lpm-nix",
-        "rev": "d887ef46754a7cb1418afe0261863585c9069bdd",
+        "repo": "lde-nix",
+        "rev": "7ed99f8d028b2b626911a7bf1d66a421fa11416e",
         "type": "github"
       },
       "original": {
         "owner": "Silzinc",
-        "ref": "refs/tags/v0.8.0",
-        "repo": "lpm-nix",
+        "repo": "lde-nix",
         "type": "github"
       }
     },
@@ -39,7 +38,7 @@
     },
     "root": {
       "inputs": {
-        "lpm": "lpm",
+        "lde": "lde",
         "nixpkgs": "nixpkgs"
       }
     }
