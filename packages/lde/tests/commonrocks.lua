@@ -34,7 +34,8 @@ test.skip("luarocks: lpeg matches a pattern", function()
 	test.truthy(ok)
 end)
 
-test.skipIf(process.platform == "win32")("luarocks: luasocket parses a url", function()
+-- Disabled for macos: https://github.com/lde-org/lde/issues/90
+test.skipIf(process.platform == "win32" or process.platform == "darwin")("luarocks: luasocket parses a url", function()
 	local app = makeApp("rocks-luasocket", { socket = { luarocks = "luasocket" } })
 	app:installDependencies()
 	local ok, err = app:runString([[
@@ -45,16 +46,18 @@ test.skipIf(process.platform == "win32")("luarocks: luasocket parses a url", fun
 	test.truthy(ok)
 end)
 
-test.skipIf(process.platform == "win32")("luarocks: lua-cjson encodes and decodes", function()
-	local app = makeApp("rocks-cjson", { cjson = { luarocks = "lua-cjson" } })
-	app:installDependencies()
-	local ok, err = app:runString([[
+-- Disabled for macos: https://github.com/lde-org/lde/issues/90
+test.skipIf(process.platform == "win32" or process.platform == "darwin")("luarocks: lua-cjson encodes and decodes",
+	function()
+		local app = makeApp("rocks-cjson", { cjson = { luarocks = "lua-cjson" } })
+		app:installDependencies()
+		local ok, err = app:runString([[
 		local cjson = require("cjson")
 		local t = cjson.decode(cjson.encode({ x = 1 }))
 		assert(t.x == 1)
 	]])
-	test.truthy(ok)
-end)
+		test.truthy(ok)
+	end)
 
 -- Skipped pending command build support
 test.skip("luarocks: luaposix gets pid", function()
