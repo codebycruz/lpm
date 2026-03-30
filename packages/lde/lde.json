@@ -19,5 +19,8 @@
 		},
 		"git": { "path": "../git" },
 		"luarocks": { "path": "../luarocks" }
+	},
+	"features": {
+		"windows": ["winapi"]
 	}
 }

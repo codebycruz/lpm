@@ -3,10 +3,16 @@
 	"type": "object",
 	"required": ["name", "version", "dependencies"],
 	"definitions": {
+		"featureFlag": {
+			"anyOf": [
+				{ "type": "string", "enum": ["windows", "linux", "macos"] },
+				{ "type": "string" }
+			]
+		},
 		"dependencyFeatures": {
 			"features": {
 				"type": "array",
-				"items": { "type": "string" },
+				"items": { "$ref": "#/definitions/featureFlag" },
 				"description": "Feature flags to enable for this dependency"
 			}
 		},
@@ -32,7 +38,7 @@
 							},
 							"features": {
 								"type": "array",
-								"items": { "type": "string" },
+								"items": { "$ref": "#/definitions/featureFlag" },
 								"description": "Feature flags to enable for this dependency"
 							},
 							"optional": {
@@ -67,7 +73,7 @@
 							},
 							"features": {
 								"type": "array",
-								"items": { "type": "string" },
+								"items": { "$ref": "#/definitions/featureFlag" },
 								"description": "Feature flags to enable for this dependency"
 							},
 							"optional": {
@@ -90,7 +96,7 @@
 							},
 							"features": {
 								"type": "array",
-								"items": { "type": "string" },
+								"items": { "$ref": "#/definitions/featureFlag" },
 								"description": "Feature flags to enable for this dependency"
 							},
 							"optional": {
@@ -113,7 +119,7 @@
 							},
 							"features": {
 								"type": "array",
-								"items": { "type": "string" },
+								"items": { "$ref": "#/definitions/featureFlag" },
 								"description": "Feature flags to enable for this dependency"
 							},
 							"optional": {
@@ -140,7 +146,7 @@
 							},
 							"features": {
 								"type": "array",
-								"items": { "type": "string" },
+								"items": { "$ref": "#/definitions/featureFlag" },
 								"description": "Feature flags to enable for this dependency"
 							},
 							"optional": {
