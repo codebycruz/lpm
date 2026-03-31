@@ -13,9 +13,9 @@ So why not Lua? That's why lde comes with a built-in test runner!
 
 ## lde test
 
-This command is used to run a set of lua files you create inside of your /tests/ folder. You can nest them in folders however you like.
+This command is used to run a set of lua files you create inside of your `/tests/` folder. You can nest them in folders however you like.
 
-It will run all of the files in that folder using the [LDE runtime](/docs/features/runtime).
+It will run all files matching `*.test.lua` in that folder using the [LDE runtime](/docs/features/runtime).
 
 But just running files isn't traditionally enough. Usually you write more than a single test per file.
 
@@ -44,4 +44,32 @@ Simply add the types to your package and use the built-in LuaCATs types for lde-
 
 ```
 lde add lde-test --dev --git https://github.com/lde-org/lde
+```
+
+## Test Fixtures
+
+Your `tests/` folder is automatically exposed as a package named `tests`, so any `.lua` file inside it can be required using the `tests.` prefix — the same way you'd require any other dependency.
+
+Note that this is not relative require support. You must always use the full `tests.<module>` path, just as you would with `require("mypackage.util")`.
+
+This is useful for sharing helpers or fixtures across multiple test files:
+
+```lua
+-- tests/fixture.lua
+return {
+	makeUser = function(name)
+		return { name = name, active = true }
+	end
+}
+```
+
+```lua
+-- tests/users.test.lua
+local test = require("lde-test")
+local fixture = require("tests.fixture")
+
+test.it("user is active by default", function()
+	local user = fixture.makeUser("alice")
+	test.equal(user.active, true)
+end)
 ```

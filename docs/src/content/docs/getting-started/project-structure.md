@@ -19,5 +19,6 @@ myproject/
 ├── src/
 │   └── init.lua # Your entrypoint
 └── tests/
-    └── test.lua # Can have multiple files, name doesn't matter
+    ├── fixture.lua # Shared helpers, required as require("tests.fixture")
+    └── main.test.lua # Must end in .test.lua to be picked up by lde test
 ```
