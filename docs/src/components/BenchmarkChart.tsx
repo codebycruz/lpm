@@ -100,6 +100,7 @@ export default function BenchmarkChart() {
 												alt=""
 											/>
 											lde
+											{rank > 0 && <a href="https://github.com/lde-org/lde/issues/102" target="_blank" rel="noopener noreferrer" class="ml-1" title="tracking issue">😞</a>}
 										</>
 									) : (
 										r.tool
