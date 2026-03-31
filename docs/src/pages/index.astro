@@ -3,6 +3,7 @@ import Layout from "../layouts/Layout.astro";
 import InstallTabs from "../components/InstallTabs";
 import TerminalDemo from "../components/TerminalDemo";
 import { GITHUB_RELEASES_URL } from "../data/info";
+import BenchmarkChart from "../components/BenchmarkChart";
 
 const comparison = [
 	["Written in", "Lua", "Rust", "Teal"],
@@ -358,6 +359,16 @@ const comparison = [
 			</table>
 		</div>
 	</div>
+	</div>
+
+	<div class="w-full border-t border-black/10 dark:border-white/10">
+		<div class="max-w-3xl mx-auto px-8 py-16">
+			<h2 id="benchmarks" class="text-5xl font-semibold mb-2 text-center scroll-mt-20">Are we fast yet?</h2>
+			<p class="text-base text-black/50 dark:text-white/40 mb-10 text-center">
+				Averages over 4 runs on Linux x86-64. Lower is better.
+			</p>
+			<BenchmarkChart client:idle />
+		</div>
 	</div>
 
 	<div class="w-full border-t border-black/10 dark:border-white/10 min-h-[50vh] flex items-center justify-center">
