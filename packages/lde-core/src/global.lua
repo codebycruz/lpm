@@ -2,16 +2,12 @@ local global = {}
 
 local fs = require("fs")
 local git = require("git")
-local http = require("http")
 local json = require("json")
-local luarocks = require("luarocks")
 local path = require("path")
 local process = require("process")
-local rocked = require("rocked")
 local semver = require("semver")
 local lde = require("lde-core")
 local ansi = require("ansi")
-local util = require("util")
 
 local REGISTRY_URL = "https://github.com/lde-org/registry"
 
