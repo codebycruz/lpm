@@ -453,3 +453,50 @@ build = {
 	test.equal(fs.exists(path.join(modulesDir, "mypkg", "http.so")), false)
 	test.equal(fs.exists(path.join(modulesDir, "mypkg", "extra.so")), false)
 end)
+
+--
+-- runTests: target/tests setup
+--
+
+local testFixture = 'return { magic = 42 }'
+local testFile = [[
+local t = require("lde-test")
+local fixture = require("tests.fixture")
+t.it("can require tests.fixture", function()
+	t.equal(fixture.magic, 42)
+end)
+]]
+
+test.it("runTests can require tests.fixture without build script", function()
+	local dir = makePackageWithSrc("runtests-symlink", { ["init.lua"] = 'return true' })
+
+	local testsDir = path.join(dir, "tests")
+	fs.mkdir(testsDir)
+	fs.write(path.join(testsDir, "fixture.lua"), testFixture)
+	fs.write(path.join(testsDir, "main.test.lua"), testFile)
+
+	local pkg = lde.Package.open(dir)
+	local results = pkg:runTests()
+
+	test.equal(results.failures, 0)
+	test.equal(results.error, nil)
+end)
+
+test.it("runTests can require tests.fixture with build script", function()
+	local dir = makePackageWithSrc("runtests-copy", { ["init.lua"] = 'return true' })
+
+	local f = io.open(path.join(dir, "build.lua"), "w")
+	f:write('local f = io.open(os.getenv("LDE_OUTPUT_DIR") .. "/init.lua", "w"); f:write("return true"); f:close()')
+	f:close()
+
+	local testsDir = path.join(dir, "tests")
+	fs.mkdir(testsDir)
+	fs.write(path.join(testsDir, "fixture.lua"), testFixture)
+	fs.write(path.join(testsDir, "main.test.lua"), testFile)
+
+	local pkg = lde.Package.open(dir)
+	local results = pkg:runTests()
+
+	test.equal(results.failures, 0)
+	test.equal(results.error, nil)
+end)
