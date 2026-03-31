@@ -16,14 +16,7 @@ local function ldecli(args)
 	return process.exec(ldePath, args)
 end
 
-test.it("should do that", function()
-	local ok, out = ldecli { "--version" }
-end)
-
--- Regression test for: lde x no longer respects --git (#95)
--- `lde x triangle --git <url>` was failing with "Package 'triangle' not found in lde registry"
--- because the alias name was consumed as a sub-package name instead of being ignored.
-test.it("lde x: alias name before --git does not cause registry lookup", function()
+test.it("should not ignore --git in ldx", function()
 	-- Pre-populate the git cache so no real clone happens
 	local repoDir = lde.global.getGitRepoDir("hood")
 	fs.rmdir(repoDir)
@@ -38,7 +31,8 @@ test.it("lde x: alias name before --git does not cause registry lookup", functio
 	fs.write(path.join(repoDir, "src", "init.lua"), "")
 
 	local ok, out = ldecli { "x", "triangle", "--git", "https://github.com/codebycruz/hood" }
-	test.falsy(out and out:find("not found in lde registry"), out)
+	test.falsy(out:find("not found in lde registry"))
+	test.includes(out, "No package named 'triangle'")
 
 	fs.rmdir(repoDir)
 end)
