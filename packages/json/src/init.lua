@@ -63,7 +63,7 @@ local sq_esc    = {
 	['\t'] = '\\t'
 }
 
----@param tape  buffer
+---@param tape  string.buffer
 ---@param s     string
 ---@param style json.StringStyle | nil
 local function putString(tape, s, style)
@@ -82,7 +82,7 @@ local function putString(tape, s, style)
 	end
 end
 
----@type fun(tape: buffer, v: json.Value, indent: string, level: integer, valueStyle: json.StringStyle | nil)
+---@type fun(tape: string.buffer, v: json.Value, indent: string, level: integer, valueStyle: json.StringStyle | nil)
 local putValue -- forward decl
 
 ---@param t table
@@ -97,7 +97,7 @@ local function isArray(t)
 	return true
 end
 
----@param tape   buffer
+---@param tape   string.buffer
 ---@param t      json.Array
 ---@param indent string
 ---@param level  integer
@@ -124,7 +124,7 @@ local function putArray(tape, t, indent, level)
 	tape:put("]")
 end
 
----@param tape   buffer
+---@param tape   string.buffer
 ---@param t      json.Object
 ---@param indent string
 ---@param level  integer
@@ -196,7 +196,12 @@ end
 local floor = math.floor
 local huge  = math.huge
 
-putValue    = function(tape, v, indent, level, valueStyle)
+---@param tape string.buffer
+---@param v json.Value
+---@param indent string
+---@param level number
+---@param valueStyle json.StringStyle
+function putValue(tape, v, indent, level, valueStyle)
 	local t = type(v)
 	if t == "nil" or v == json.null then
 		tape:put("null")
