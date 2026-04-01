@@ -10,19 +10,19 @@ local C         = ffi.C
 
 -- ── types ─────────────────────────────────────────────────────────────────────
 
----@alias json.Primitive string | number | boolean | nil
----@alias json.Value     json.Primitive | json.Object | json.Array | table
----@alias json.Object    table<string, json.Value>
----@alias json.Array     json.Value[]
----@alias json.KeyStyle  "ident" | "single" | "double"
+---@alias json.Primitive   string | number | boolean | nil
+---@alias json.Value       json.Primitive | json.Object | json.Array | table
+---@alias json.Object      table<string, json.Value>
+---@alias json.Array       json.Value[]
+---@alias json.KeyStyle    "ident" | "single" | "double"
 ---@alias json.StringStyle "single" | "double"
 
 ---@class json.KeyMeta
 ---@field keyStyle   json.KeyStyle
----@field before     string
----@field between    string
----@field afterColon string
----@field afterValue string
+---@field before     string | nil
+---@field between    string | nil
+---@field afterColon string | nil
+---@field afterValue string | nil
 ---@field valueStyle json.StringStyle | nil
 
 ---@class json.TableMeta
@@ -39,7 +39,7 @@ local keyStore  = setmetatable({}, { __mode = "k" })
 ---@type table<table, json.TableMeta>
 local metaStore = setmetatable({}, { __mode = "k" })
 
--- ── encode (flat string.buffer tape) ─────────────────────────────────────────
+-- ── encode ────────────────────────────────────────────────────────────────────
 
 ---@type table<string, string>
 local dq_esc    = {
@@ -51,7 +51,6 @@ local dq_esc    = {
 	['\r'] = '\\r',
 	['\t'] = '\\t'
 }
-
 ---@type table<string, string>
 local sq_esc    = {
 	["'"] = "\\'",
@@ -63,21 +62,21 @@ local sq_esc    = {
 	['\t'] = '\\t'
 }
 
+-- Hoisted (not closures) so JIT can compile through putString without FNEW NYI
+local function dq_replace(c) return dq_esc[c] or string.format("\\u%04x", string.byte(c)) end
+local function sq_replace(c) return sq_esc[c] or string.format("\\u%04x", string.byte(c)) end
+
 ---@param tape  string.buffer
 ---@param s     string
 ---@param style json.StringStyle | nil
 local function putString(tape, s, style)
 	if style == "single" then
 		tape:put("'")
-		tape:put((string.gsub(s, "[%z\1-\31'\\]", function(c)
-			return sq_esc[c] or string.format("\\u%04x", string.byte(c))
-		end)))
+		tape:put((string.gsub(s, "[%z\1-\31'\\]", sq_replace)))
 		tape:put("'")
 	else
 		tape:put('"')
-		tape:put((string.gsub(s, '[%z\1-\31"\\]', function(c)
-			return dq_esc[c] or string.format("\\u%04x", string.byte(c))
-		end)))
+		tape:put((string.gsub(s, '[%z\1-\31"\\]', dq_replace)))
 		tape:put('"')
 	end
 end
@@ -106,10 +105,10 @@ local function putArray(tape, t, indent, level)
 	if n == 0 then
 		tape:put("[]"); return
 	end
-	local meta = metaStore[t]
-	local nextIndent = string.rep(indent, level + 1)
+	local meta          = metaStore[t]
+	local nextIndent    = string.rep(indent, level + 1)
 	local defaultBefore = "\n" .. nextIndent
-	local closing = (meta and meta.__closingTrivia) or ("\n" .. string.rep(indent, level))
+	local closing       = (meta and meta.__closingTrivia) or ("\n" .. string.rep(indent, level))
 	tape:put("[")
 	for i = 1, n do
 		if i > 1 then tape:put(",") end
@@ -196,12 +195,7 @@ end
 local floor = math.floor
 local huge  = math.huge
 
----@param tape string.buffer
----@param v json.Value
----@param indent string
----@param level number
----@param valueStyle json.StringStyle
-function putValue(tape, v, indent, level, valueStyle)
+putValue    = function(tape, v, indent, level, valueStyle)
 	local t = type(v)
 	if t == "nil" or v == json.null then
 		tape:put("null")
@@ -268,15 +262,15 @@ end
 
 -- ── decoder ───────────────────────────────────────────────────────────────────
 
----@type ffi.cdata*  kept alive by src_s
-local src_ptr
+---@type ffi.cdata*
+local src_ptr -- kept alive by src_s
 ---@type integer
 local src_len
 ---@type string
 local src_s
 
----@param pos integer  1-based
----@return integer     1-based
+---@param pos integer 1-based
+---@return integer    1-based
 local function skipWS(pos)
 	local i = pos - 1
 	while i < src_len do
@@ -287,14 +281,14 @@ local function skipWS(pos)
 	return i + 1
 end
 
----@param pos         integer  1-based, sitting on '/'
----@param triviaStart integer  1-based start of trivia span
----@return string trivia
----@return integer    1-based position after trivia
+---@param pos         integer 1-based, sitting on '/'
+---@param triviaStart integer 1-based start of trivia span
+---@return string  trivia
+---@return integer 1-based position after trivia
 local function collectComments(pos, triviaStart)
 	while pos <= src_len do
-		local b1 = src_ptr[pos]
 		if src_ptr[pos - 1] ~= 47 then break end
+		local b1 = src_ptr[pos]
 		if b1 == 47 then -- '//'
 			local nl = C.memchr(src_ptr + pos + 1, 10, src_len - pos - 1)
 			pos = nl ~= nil and (ffi.cast("const uint8_t*", nl) - src_ptr + 2) or (src_len + 1)
@@ -308,12 +302,9 @@ local function collectComments(pos, triviaStart)
 				local sp  = ffi.cast("const uint8_t*", star)
 				local off = sp - src_ptr
 				if off + 1 < src_len and src_ptr[off + 1] == 47 then
-					pos   = off + 3
-					found = true
-					break
+					pos = off + 3; found = true; break
 				end
-				p   = sp + 1
-				rem = src_len - (off + 1)
+				p = sp + 1; rem = src_len - (off + 1)
 			end
 			if not found then error("unterminated block comment") end
 		else
@@ -324,14 +315,18 @@ local function collectComments(pos, triviaStart)
 	return string.sub(src_s, triviaStart, pos - 1), pos
 end
 
----@param pos integer  1-based
----@return string  trivia (whitespace + comments)
----@return integer 1-based position after trivia
+-- Returns (trivia_or_nil, newPos).
+-- Returns nil trivia (not "") when there is no trivia — avoids string.sub alloc.
+---@param pos integer 1-based
+---@return string | nil trivia
+---@return integer      1-based position after trivia
 local function collectTrivia(pos)
 	local npos = skipWS(pos)
 	if npos <= src_len and src_ptr[npos - 1] == 47 then
 		return collectComments(npos, pos)
 	end
+	-- return nil when trivia is empty to avoid string.sub allocation
+	if npos == pos then return nil, npos end
 	return string.sub(src_s, pos, npos - 1), npos
 end
 
@@ -351,9 +346,9 @@ local escapeMap = {
 	[116] = '\t'
 }
 
----@param pos integer  1-based, pointing at opening quote
----@return string       decoded string value
----@return integer      1-based position after closing quote
+---@param pos integer 1-based, pointing at opening quote
+---@return string            decoded string value
+---@return integer           1-based position after closing quote
 ---@return json.StringStyle  quote style used
 local function decodeString(pos)
 	local quote = src_ptr[pos - 1]
@@ -387,7 +382,7 @@ local function decodeString(pos)
 	error("unterminated string")
 end
 
----@param pos integer  1-based
+---@param pos integer 1-based
 ---@return string  identifier
 ---@return integer 1-based position after identifier
 local function decodeIdentifier(pos)
@@ -396,10 +391,34 @@ local function decodeIdentifier(pos)
 	return id, pos + #id
 end
 
----@param pos integer  1-based
+---@param pos integer 1-based
 ---@return number  parsed number
 ---@return integer 1-based position after number
 local function decodeNumber(pos)
+	-- Fast path: plain integer (most common in real JSON)
+	local i   = pos - 1       -- 0-based
+	local neg = src_ptr[i] == 45 -- '-'
+	if neg then i = i + 1 end
+	local b = src_ptr[i]
+	if b >= 48 and b <= 57 then -- digit
+		-- bail out for hex (0x...) before consuming anything
+		if b == 48 then
+			local b2 = src_ptr[i + 1]
+			if b2 == 120 or b2 == 88 then goto slow end -- 'x' or 'X'
+		end
+		local n = 0
+		while i < src_len do
+			b = src_ptr[i]
+			if b < 48 or b > 57 then break end
+			n = n * 10 + (b - 48)
+			i = i + 1
+		end
+		if b ~= 46 and b ~= 101 and b ~= 69 then -- not '.', 'e', 'E'
+			return neg and -n or n, i + 1
+		end
+	end
+	::slow::
+	-- slow path: float, hex, Infinity, NaN
 	local hex = string.match(src_s, "^-?0[xX]%x+", pos)
 	if hex then return tonumber(hex), pos + #hex end
 	local sub = string.sub(src_s, pos, pos + 8)
@@ -411,43 +430,55 @@ local function decodeNumber(pos)
 	return tonumber(numStr), pos + #numStr
 end
 
----@param pos integer  1-based, pointing at '['
+---@param pos integer 1-based, pointing at '['
 ---@return json.Array
----@return integer     1-based position after ']'
+---@return integer    1-based position after ']'
 local function decodeArray(pos)
 	local arr          = {} --[[@as json.Array]]
-	local meta         = { __trailingComma = false } --[[@as json.TableMeta]]
-	metaStore[arr]     = meta
+	local meta         = nil --[[@as json.TableMeta | nil]]
 
 	local trivia, npos = collectTrivia(pos + 1)
 	pos                = npos
-	if src_ptr[pos - 1] == 93 then
-		meta.__closingTrivia = trivia
+	if src_ptr[pos - 1] == 93 then -- ']'
+		if trivia then
+			meta = { __trailingComma = false, __closingTrivia = trivia }
+			metaStore[arr] = meta
+		end
 		return arr, pos + 1
 	end
 
 	local i = 0
 	while true do
 		i = i + 1
-		local km = { before = trivia } --[[@as json.KeyMeta]]
 		local val, vstyle
 		val, pos, vstyle = decodeValue(pos)
-		km.valueStyle = vstyle
 		arr[i] = val
 
-		trivia, pos = collectTrivia(pos)
-		km.afterValue = trivia
-		meta[i] = km
-
+		local afterVal, npos2 = collectTrivia(pos)
+		pos = npos2
 		local c = src_ptr[pos - 1]
-		if c == 93 then
-			meta.__closingTrivia = ""
+
+		-- only allocate km/meta when there's actual trivia or style to preserve
+		if trivia or afterVal or vstyle then
+			if not meta then
+				meta = { __trailingComma = false }
+				metaStore[arr] = meta
+			end
+			local km = { before = trivia, afterValue = afterVal, valueStyle = vstyle } --[[@as json.KeyMeta]]
+			meta[i] = km
+		end
+
+		if c == 93 then -- ']'
+			if meta then meta.__closingTrivia = "" end
 			return arr, pos + 1
 		end
 		if c ~= 44 then error("expected ',' or ']'") end
 		pos = pos + 1
 		trivia, pos = collectTrivia(pos)
 		if src_ptr[pos - 1] == 93 then
+			if not meta then
+				meta = { __trailingComma = false }; metaStore[arr] = meta
+			end
 			meta.__trailingComma = true
 			meta.__closingTrivia = trivia
 			return arr, pos + 1
@@ -455,26 +486,27 @@ local function decodeArray(pos)
 	end
 end
 
----@param pos integer  1-based, pointing at '{'
+---@param pos integer 1-based, pointing at '{'
 ---@return json.Object
 ---@return integer     1-based position after '}'
 local function decodeObject(pos)
 	local obj          = {} --[[@as json.Object]]
 	local keys         = {} --[[@as string[] ]]
-	local meta         = { __trailingComma = false } --[[@as json.TableMeta]]
+	local meta         = nil --[[@as json.TableMeta | nil]]
 	keyStore[obj]      = keys
-	metaStore[obj]     = meta
 
 	local trivia, npos = collectTrivia(pos + 1)
 	pos                = npos
-	if src_ptr[pos - 1] == 125 then
-		meta.__closingTrivia = trivia
+	if src_ptr[pos - 1] == 125 then -- '}'
+		if trivia then
+			meta = { __trailingComma = false, __closingTrivia = trivia }
+			metaStore[obj] = meta
+		end
 		return obj, pos + 1
 	end
 
 	while true do
-		local km = { before = trivia } --[[@as json.KeyMeta]]
-		local c  = src_ptr[pos - 1]
+		local c = src_ptr[pos - 1]
 		local key, keyStyle
 		if c == 34 or c == 39 then
 			local style
@@ -482,36 +514,53 @@ local function decodeObject(pos)
 			keyStyle = style
 		else
 			key, pos = decodeIdentifier(pos)
-			keyStyle = "ident"
+			keyStyle = "ident" --[[@as json.KeyStyle]]
 		end
-		km.keyStyle = keyStyle --[[@as json.KeyStyle]]
 
-		trivia, pos = collectTrivia(pos)
-		km.between = trivia
+		local between, npos2 = collectTrivia(pos)
+		pos = npos2
 		if src_ptr[pos - 1] ~= 58 then error("expected ':'") end
 		pos = pos + 1
-		trivia, pos = collectTrivia(pos)
-		km.afterColon = trivia
+		local afterColon, npos3 = collectTrivia(pos)
+		pos = npos3
 
 		local val, vstyle
 		val, pos, vstyle = decodeValue(pos)
-		km.valueStyle = vstyle
 		obj[key] = val
 		keys[#keys + 1] = key
 
-		trivia, pos = collectTrivia(pos)
-		km.afterValue = trivia
-		meta[key] = km
+		local afterVal, npos4 = collectTrivia(pos)
+		pos = npos4
+
+		-- only allocate km/meta when there's something to preserve
+		if trivia or between or afterColon or afterVal or vstyle
+			or keyStyle == "single" or keyStyle == "ident" then
+			if not meta then
+				meta = { __trailingComma = false }
+				metaStore[obj] = meta
+			end
+			meta[key] = {
+				before     = trivia,
+				keyStyle   = keyStyle, --[[@as json.KeyStyle]]
+				between    = between,
+				afterColon = afterColon,
+				afterValue = afterVal,
+				valueStyle = vstyle
+			} --[[@as json.KeyMeta]]
+		end
 
 		c = src_ptr[pos - 1]
-		if c == 125 then
-			meta.__closingTrivia = ""
+		if c == 125 then -- '}'
+			if meta then meta.__closingTrivia = "" end
 			return obj, pos + 1
 		end
 		if c ~= 44 then error("expected ',' or '}'") end
 		pos = pos + 1
 		trivia, pos = collectTrivia(pos)
 		if src_ptr[pos - 1] == 125 then
+			if not meta then
+				meta = { __trailingComma = false }; metaStore[obj] = meta
+			end
 			meta.__trailingComma = true
 			meta.__closingTrivia = trivia
 			return obj, pos + 1
@@ -519,9 +568,9 @@ local function decodeObject(pos)
 	end
 end
 
----@param pos integer  1-based
+---@param pos integer 1-based
 ---@return json.Value
----@return integer       1-based position after value
+---@return integer           1-based position after value
 ---@return json.StringStyle | nil
 decodeValue = function(pos)
 	local trivia
