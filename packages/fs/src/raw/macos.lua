@@ -1,41 +1,83 @@
 local ffi = require("ffi")
 
+if jit.arch == "arm64" then
+	ffi.cdef([[typedef uint64_t ino_t;]])
+else
+	ffi.cdef([[typedef uint32_t ino_t;]])
+end
+
 ffi.cdef([[
 	struct timespec {
 		long tv_sec;
 		long tv_nsec;
 	};
-
-	struct stat {
-		int32_t         st_dev;
-		uint16_t        st_mode;
-		uint16_t        st_nlink;
-		uint64_t        st_ino;
-		uint32_t        st_uid;
-		uint32_t        st_gid;
-		int32_t         st_rdev;
-		struct timespec st_atimespec;
-		struct timespec st_mtimespec;
-		struct timespec st_ctimespec;
-		struct timespec st_birthtimespec;
-		int64_t         st_size;
-		int64_t         st_blocks;
-		int32_t         st_blksize;
-		uint32_t        st_flags;
-		uint32_t        st_gen;
-		int32_t         st_lspare;
-		int64_t         st_qspare[2];
-	};
-
-	struct dirent {
-		uint64_t d_ino;
-		uint64_t d_seekoff;
-		uint16_t d_reclen;
-		uint16_t d_namlen;
-		uint8_t  d_type;
-		char     d_name[1024];
-	};
 ]])
+
+if jit.arch == "arm64" then
+	ffi.cdef([[
+		struct stat {
+			int32_t         st_dev;
+			uint16_t        st_mode;
+			uint16_t        st_nlink;
+			ino_t           st_ino;
+			uint32_t        st_uid;
+			uint32_t        st_gid;
+			int32_t         st_rdev;
+			struct timespec st_atimespec;
+			struct timespec st_mtimespec;
+			struct timespec st_ctimespec;
+			struct timespec st_birthtimespec;
+			int64_t         st_size;
+			int64_t         st_blocks;
+			int32_t         st_blksize;
+			uint32_t        st_flags;
+			uint32_t        st_gen;
+			int32_t         st_lspare;
+			int64_t         st_qspare[2];
+		};
+
+		struct dirent {
+			ino_t d_ino;
+			uint64_t d_seekoff;
+			uint16_t d_reclen;
+			uint16_t d_namlen;
+			uint8_t  d_type;
+			char     d_name[1024];
+		};
+	]])
+else
+	-- x86-64 macOS
+	ffi.cdef([[
+		struct stat {
+			int32_t         st_dev;
+			ino_t           st_ino;
+			int16_t         st_mode;
+			uint16_t        st_nlink;
+			uint32_t        st_uid;
+			uint32_t        st_gid;
+			int32_t         st_rdev;
+			struct timespec st_atimespec;
+			struct timespec st_mtimespec;
+			struct timespec st_ctimespec;
+			struct timespec st_birthtimespec;
+			int64_t         st_size;
+			int64_t         st_blocks;
+			int32_t         st_blksize;
+			uint32_t        st_flags;
+			uint32_t        st_gen;
+			int32_t         st_lspare;
+			int64_t         st_qspare[2];
+		};
+
+		struct dirent {
+			uint32_t d_ino;
+			uint16_t d_reclen;
+			uint8_t  d_type;
+			uint8_t  d_namlen;
+			char     d_name[1024];
+		};
+	]])
+end
 
 pcall(ffi.cdef, [[
 	int kqueue(void);
@@ -65,16 +107,16 @@ pcall(ffi.cdef, [[
 
 local O_EVTONLY    = 0x8000
 local EVFILT_VNODE = -4
-local EV_ADD    = 0x0001
-local EV_ENABLE = 0x0004
-local EV_CLEAR  = 0x0020
-local NOTE_WRITE  = 0x00000002
-local NOTE_DELETE = 0x00000001
-local NOTE_RENAME = 0x00000020
-local NOTE_ATTRIB = 0x00000008
+local EV_ADD       = 0x0001
+local EV_ENABLE    = 0x0004
+local EV_CLEAR     = 0x0020
+local NOTE_WRITE   = 0x00000002
+local NOTE_DELETE  = 0x00000001
+local NOTE_RENAME  = 0x00000020
+local NOTE_ATTRIB  = 0x00000008
 
 ---@class fs.raw.macos: fs.raw.posix
-local fs = require("fs.raw.posix")(function(s, modeToStatType)
+local fs           = require("fs.raw.posix")(function(s, modeToStatType)
 	return {
 		size = s.st_size,
 		modifyTime = s.st_mtimespec.tv_sec,
@@ -117,15 +159,17 @@ function fs.watch(p, callback, opts)
 	end
 
 	local dirfd = ffi.C.open(p, O_EVTONLY)
-	if dirfd < 0 then ffi.C.close(kq); return nil end
+	if dirfd < 0 then
+		ffi.C.close(kq); return nil
+	end
 	register(dirfd)
 
 	-- fd -> relative path (from p) for all watched entries
-	local filefds  = {} ---@type table<number, string>  fd -> relative path
+	local filefds   = {} ---@type table<number, string>  fd -> relative path
 	-- fd -> absolute dir path for watched subdirs (recursive mode)
 	local subdirfds = {} ---@type table<number, string>  fd -> absolute dir path
 	-- dir absolute path -> snapshot of children names
-	local dirSnaps = {} ---@type table<string, table<string, boolean>>
+	local dirSnaps  = {} ---@type table<string, table<string, boolean>>
 
 	local function watchEntry(absPath, relPath, isDirectory)
 		local fd = ffi.C.open(absPath, O_EVTONLY)
@@ -174,7 +218,7 @@ function fs.watch(p, callback, opts)
 	end
 
 	local events = ffi.new("struct kevent[16]")
-	local zero = ffi.new("struct timespec_kq[1]", {{0, 0}})
+	local zero = ffi.new("struct timespec_kq[1]", { { 0, 0 } })
 
 	local function process(n)
 		for i = 0, n - 1 do
@@ -199,9 +243,11 @@ function fs.watch(p, callback, opts)
 					prev = curr
 					dirSnaps[p] = curr
 				end
-				if bit.band(ff, NOTE_DELETE) ~= 0 then callback("delete", p)
-				elseif bit.band(ff, NOTE_RENAME) ~= 0 then callback("rename", p) end
-
+				if bit.band(ff, NOTE_DELETE) ~= 0 then
+					callback("delete", p)
+				elseif bit.band(ff, NOTE_RENAME) ~= 0 then
+					callback("rename", p)
+				end
 			elseif subdirfds[ident] then
 				-- Event on a watched subdir (recursive mode)
 				local absDir = subdirfds[ident]
@@ -224,9 +270,11 @@ function fs.watch(p, callback, opts)
 					end
 					dirSnaps[absDir] = curr
 				end
-				if bit.band(ff, NOTE_DELETE) ~= 0 then callback("delete", relDir)
-				elseif bit.band(ff, NOTE_RENAME) ~= 0 then callback("rename", relDir) end
-
+				if bit.band(ff, NOTE_DELETE) ~= 0 then
+					callback("delete", relDir)
+				elseif bit.band(ff, NOTE_RENAME) ~= 0 then
+					callback("rename", relDir)
+				end
 			else
 				local relPath = filefds[ident]
 				if relPath then
@@ -241,8 +289,11 @@ function fs.watch(p, callback, opts)
 					if bit.band(ff, NOTE_WRITE) ~= 0 or bit.band(ff, NOTE_ATTRIB) ~= 0 then
 						callback("modify", p)
 					end
-					if bit.band(ff, NOTE_DELETE) ~= 0 then callback("delete", p)
-					elseif bit.band(ff, NOTE_RENAME) ~= 0 then callback("rename", p) end
+					if bit.band(ff, NOTE_DELETE) ~= 0 then
+						callback("delete", p)
+					elseif bit.band(ff, NOTE_RENAME) ~= 0 then
+						callback("rename", p)
+					end
 				end
 			end
 		end
