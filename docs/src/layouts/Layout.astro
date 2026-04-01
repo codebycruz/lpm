@@ -68,7 +68,7 @@ const ogImage = `${SITE_URL}/og/${ogSlug}.png`;
 	<body
 		class="bg-white dark:bg-gray-950 text-black dark:text-white flex flex-col min-h-screen lg:min-w-fit"
 	>
-		<Navbar />
+		<Navbar><slot name="tabs" slot="default" /></Navbar>
 		<slot />
 		{!hideFooter && <Footer />}
 		<CodeBlocks client:only="preact" />

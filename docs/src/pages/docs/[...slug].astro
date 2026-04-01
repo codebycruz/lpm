@@ -3,6 +3,7 @@ import { getCollection, render } from "astro:content";
 import { Icon } from "astro-icon/components";
 import Layout from "../../layouts/Layout.astro";
 import SidebarTree from "../../components/SidebarTree.astro";
+import DocsTabs from "../../components/DocsTabs.astro";
 import type { TreeItem } from "../../components/SidebarTree.astro";
 import { GITHUB_URL } from "../../data/info";
 
@@ -19,68 +20,93 @@ const { Content } = await render(entry);
 
 const allEntries = await getCollection("docs");
 
-function prettifySection(name: string): string {
-	return name
-		.split("-")
-		.map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-		.join(" ");
+// Top-level folder = tab id  (e.g. "package-manager/getting-started/intro" → "package-manager")
+function tabOf(id: string) {
+	return id.split("/")[0];
 }
 
-const sections = new Map<
-	string,
-	{
-		label: string;
-		children: { label: string; href: string; order: number }[];
-	}
->();
-
-for (const e of allEntries) {
-	const parts = e.id.split("/");
-	const sectionKey =
-		parts.length > 1 ? parts.slice(0, -1).join("/") : "_root";
-	const sectionLabel =
-		sectionKey === "_root"
-			? "Docs"
-			: prettifySection(parts[parts.length - 2]);
-
-	if (!sections.has(sectionKey)) {
-		sections.set(sectionKey, { label: sectionLabel, children: [] });
-	}
-
-	sections.get(sectionKey)!.children.push({
-		label: e.data.title,
-		href: `/docs/${e.id}`,
-		order: e.data.order,
-	});
+function prettify(slug: string) {
+	return slug.split("-").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ");
 }
+
+const TAB_ORDER = ["general", "package-manager", "runtime", "test-runner", "bundler"];
+
+const TAB_LABELS: Record<string, string> = {
+	"general": "General",
+	"package-manager": "Package Manager",
+	"runtime": "Runtime",
+	"test-runner": "Test Runner",
+	"bundler": "Bundler / Compiler",
+};
 
 const SECTION_ORDER: Record<string, number> = {
 	"getting-started": 0,
-	features: 1,
-	utilities: 2,
-	guides: 3,
+	"dependencies": 1,
+	"features": 2,
+	"guides": 3,
+	"utilities": 4,
 };
 
 const SECTION_ICON: Record<string, string> = {
 	"getting-started": "lucide:rocket",
-	features: "lucide:sparkles",
-	utilities: "lucide:wrench",
-	guides: "lucide:book-open",
+	"dependencies": "lucide:package",
+	"features": "lucide:sparkles",
+	"guides": "lucide:book-open",
+	"utilities": "lucide:wrench",
 };
 
-const sidebarItems: TreeItem[] = [...sections.entries()]
-	.map(([key, section]) => ({
-		label: section.label,
-		icon: SECTION_ICON[key] ?? undefined,
-		sectionOrder: SECTION_ORDER[key] ?? 99,
-		children: section.children.sort((a, b) => a.order - b.order),
-	}))
-	.sort((a, b) => a.sectionOrder - b.sectionOrder)
-	.map(({ label, icon, children }) => ({
-		label,
-		icon,
-		children: children.map(({ label, href }) => ({ label, href })),
-	}));
+function buildSidebar(tabId: string): TreeItem[] {
+	const entries = allEntries.filter((e) => tabOf(e.id) === tabId);
+
+	const sections = new Map<string, { label: string; icon?: string; order: number; children: { label: string; href: string; order: number }[] }>();
+
+	for (const e of entries) {
+		const parts = e.id.split("/"); // [tab, section?, file] or [tab, file]
+		// If 3 parts → has a section; if 2 parts → flat, group under "_root"
+		const sectionKey = parts.length > 2 ? parts[1] : "_root";
+
+		if (!sections.has(sectionKey)) {
+			sections.set(sectionKey, {
+				label: sectionKey === "_root" ? "" : prettify(sectionKey),
+				icon: SECTION_ICON[sectionKey],
+				order: SECTION_ORDER[sectionKey] ?? 99,
+				children: [],
+			});
+		}
+
+		sections.get(sectionKey)!.children.push({
+			label: e.data.title,
+			href: `/docs/${e.id}`,
+			order: e.data.order,
+		});
+	}
+
+	return [...sections.values()]
+		.sort((a, b) => a.order - b.order)
+		.map(({ label, icon, children }) => ({
+			label,
+			icon,
+			children: children.sort((a, b) => a.order - b.order).map(({ label, href }) => ({ label, href })),
+		}));
+}
+
+function firstHref(tabId: string): string {
+	const items = buildSidebar(tabId);
+	for (const section of items) {
+		if (section.children?.[0]?.href) return section.children[0].href;
+	}
+	return "/docs/";
+}
+
+const activeTab = tabOf(entry.id);
+
+const tabs = TAB_ORDER.map((id) => ({
+	id,
+	label: TAB_LABELS[id] ?? prettify(id),
+	firstHref: firstHref(id),
+}));
+
+const sidebarItems = buildSidebar(activeTab);
 ---
 
 <Layout
@@ -88,86 +114,46 @@ const sidebarItems: TreeItem[] = [...sections.entries()]
 	description={`${entry.data.title} — lde documentation`}
 	hideFooter
 >
+	<DocsTabs slot="tabs" tabs={tabs} activeTab={activeTab} />
+
 	<div class="flex w-full lg:w-7xl mx-auto">
-		<div
-			class="hidden lg:flex flex-col sticky top-14 h-[calc(100vh-3.5rem)] overflow-y-auto shrink-0 pl-4 md:pl-8 pr-3 pt-3"
-		>
+		<div class="hidden lg:flex flex-col self-start sticky top-[6.5rem] max-h-[calc(100vh-6.5rem)] overflow-y-auto shrink-0 pl-4 md:pl-8 pr-3 pt-3">
 			<SidebarTree items={sidebarItems} />
 			<div class="shrink-0 h-8"></div>
 		</div>
-		<main class="flex-1 min-w-0 p-4 md:p-8 markdown lg:max-w-3xl">
+		<main class="flex-1 min-w-0 px-4 pt-2 pb-4 md:px-8 md:pt-3 md:pb-8 markdown lg:max-w-3xl">
 			<!-- Mobile nav -->
-			<details
-				class="lg:hidden not-prose mb-6 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden"
-			>
-				<summary
-					class="flex items-center justify-between px-4 py-3 cursor-pointer text-sm font-medium select-none bg-gray-50 dark:bg-gray-900 list-none [&::-webkit-details-marker]:hidden"
-				>
+			<details class="lg:hidden not-prose mb-6 border border-gray-200 dark:border-gray-800 rounded-xl overflow-hidden">
+				<summary class="flex items-center justify-between px-4 py-3 cursor-pointer text-sm font-medium select-none bg-gray-50 dark:bg-gray-900 list-none [&::-webkit-details-marker]:hidden">
 					<span class="font-semibold">Browse docs</span>
-					<Icon
-						name="lucide:chevron-down"
-						class="size-4 shrink-0 opacity-50 transition-transform [[open]_&]:rotate-180"
-					/>
+					<Icon name="lucide:chevron-down" class="size-4 shrink-0 opacity-50 transition-transform [[open]_&]:rotate-180" />
 				</summary>
 				<div class="px-3 py-3 bg-white dark:bg-gray-950">
 					<SidebarTree items={sidebarItems} />
 				</div>
 			</details>
 			<Content />
-			<div
-				class="mt-12 pt-6 border-t border-black/10 dark:border-white/10 not-prose flex items-center justify-between flex-wrap gap-4"
-			>
+			<div class="mt-12 pt-6 border-t border-black/10 dark:border-white/10 not-prose flex items-center justify-between flex-wrap gap-4">
 				<a
 					href={`${GITHUB_URL}/edit/master/docs/src/content/docs/${entry.id}.md`}
 					target="_blank"
 					rel="noopener noreferrer"
 					class="inline-flex items-center gap-1.5 text-sm text-black/40 dark:text-white/40 hover:text-black dark:hover:text-white transition-colors"
 				>
-					<svg
-						xmlns="http://www.w3.org/2000/svg"
-						class="size-3.5"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
-					>
-						<path
-							d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"
-						></path>
-						<path
-							d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"
-						></path>
+					<svg xmlns="http://www.w3.org/2000/svg" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+						<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+						<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
 					</svg>
 					Edit this page
 				</a>
-				<div
-					class="flex items-center gap-4 text-black/40 dark:text-white/40"
-				>
-					<a
-						href={GITHUB_URL}
-						target="_blank"
-						rel="noopener noreferrer"
-						class="hover:text-black dark:hover:text-white transition-colors"
-						aria-label="GitHub"
-					>
+				<div class="flex items-center gap-4 text-black/40 dark:text-white/40">
+					<a href={GITHUB_URL} target="_blank" rel="noopener noreferrer" class="hover:text-black dark:hover:text-white transition-colors" aria-label="GitHub">
 						<Icon name="simple-icons:github" class="size-4" />
 					</a>
-					<a
-						href="/discord"
-						target="_blank"
-						rel="noopener noreferrer"
-						class="hover:text-black dark:hover:text-white transition-colors"
-						aria-label="Discord"
-					>
+					<a href="/discord" target="_blank" rel="noopener noreferrer" class="hover:text-black dark:hover:text-white transition-colors" aria-label="Discord">
 						<Icon name="simple-icons:discord" class="size-4" />
 					</a>
-					<a
-						href="/rss.xml"
-						class="hover:text-black dark:hover:text-white transition-colors"
-						aria-label="RSS"
-					>
+					<a href="/rss.xml" class="hover:text-black dark:hover:text-white transition-colors" aria-label="RSS">
 						<Icon name="simple-icons:rss" class="size-4" />
 					</a>
 				</div>

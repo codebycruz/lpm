@@ -1,6 +1,6 @@
 ---
 title: Setting up your PATH
-order: 2
+order: 4
 ---
 
 # Setting up your PATH

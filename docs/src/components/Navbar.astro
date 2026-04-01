@@ -4,15 +4,15 @@ import { GITHUB_URL, GITHUB_RELEASES_URL } from "../data/info";
 import Search from "./Search.tsx";
 
 const entries = [
-	{ display: "Docs", href: "/docs/getting-started/introduction/" },
+	{ display: "Docs", href: "/docs/general/getting-started/introduction" },
 	{ display: "Blog", href: "/blog/" },
 	{ display: "Registry", href: "/registry/" },
 ];
 
 const pathname = Astro.url.pathname;
 function isActive(href: string) {
-	if (href === "/docs/getting-started/introduction/")
-		return pathname.startsWith("/docs/");
+	if (href === "/docs/general/getting-started/introduction")
+		return false;
 	return pathname.startsWith(href);
 }
 ---
@@ -286,4 +286,5 @@ function isActive(href: string) {
 			closeIcon.classList.toggle("hidden", open);
 		});
 	</script>
+	<slot />
 </nav>

@@ -1,6 +1,6 @@
 ---
 title: Upgrading LDE
-order: 1
+order: 3
 ---
 
 # Upgrading LDE

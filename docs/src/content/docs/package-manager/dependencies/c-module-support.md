@@ -1,6 +1,6 @@
 ---
 title: C Module Support
-order: 5
+order: 6
 ---
 
 # C Module Support

@@ -1,6 +1,6 @@
 ---
 title: Single File Apps
-order: 9
+order: 2
 ---
 
 # Single File Apps

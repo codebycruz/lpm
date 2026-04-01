@@ -1,6 +1,6 @@
 ---
 title: Registry
-order: 7
+order: 3
 ---
 
 # Registry

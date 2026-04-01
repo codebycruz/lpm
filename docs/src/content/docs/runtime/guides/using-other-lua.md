@@ -1,6 +1,6 @@
 ---
 title: Alternate Lua Engines
-order: 3
+order: 2
 ---
 
 # Using an Alternate Lua Engine

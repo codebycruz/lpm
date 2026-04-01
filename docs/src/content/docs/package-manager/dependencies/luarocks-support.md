@@ -1,6 +1,6 @@
 ---
 title: Luarocks Support
-order: 9
+order: 4
 ---
 
 # Luarocks Support
