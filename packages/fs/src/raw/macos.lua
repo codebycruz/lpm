@@ -37,7 +37,7 @@ ffi.cdef([[
 	};
 ]])
 
-ffi.cdef([[
+pcall(ffi.cdef, [[
 	int kqueue(void);
 	typedef int64_t intptr_t;
 	typedef uint64_t uintptr_t;
@@ -63,8 +63,7 @@ ffi.cdef([[
 	int close(int fd);
 ]])
 
-local O_RDONLY   = 0x0000
-local O_EVTONLY  = 0x8000  -- macOS: open for event notification only
+local O_EVTONLY    = 0x8000
 local EVFILT_VNODE = -4
 local EV_ADD    = 0x0001
 local EV_ENABLE = 0x0004
@@ -100,7 +99,7 @@ function fs.watch(p, callback)
 	local kq = ffi.C.kqueue()
 	if kq < 0 then return nil end
 
-	local fd = ffi.C.open(p, bit.bor(O_RDONLY, O_EVTONLY))
+	local fd = ffi.C.open(p, O_EVTONLY)
 	if fd < 0 then
 		ffi.C.close(kq)
 		return nil
@@ -119,6 +118,19 @@ function fs.watch(p, callback)
 	local events = ffi.new("struct kevent[8]")
 	local zero = ffi.new("struct timespec_kq[1]", {{0, 0}})
 
+	-- Snapshot directory contents for diffing
+	local function snapshot()
+		local s = {}
+		local iter = fs.readdir(p)
+		if iter then
+			for entry in iter do s[entry.name] = true end
+		end
+		return s
+	end
+
+	local isDir = fs.isdir(p)
+	local prev = isDir and snapshot() or nil
+
 	---@type fs.Watcher
 	local watcher = {}
 
@@ -126,17 +138,25 @@ function fs.watch(p, callback)
 		local n = ffi.C.kevent(kq, nil, 0, events, 8, zero)
 		for i = 0, n - 1 do
 			local ff = events[i].fflags
-			local event ---@type fs.WatchEvent
-			if bit.band(ff, NOTE_DELETE) ~= 0 then
-				event = "delete"
-			elseif bit.band(ff, NOTE_RENAME) ~= 0 then
-				event = "rename"
-			elseif bit.band(ff, NOTE_WRITE) ~= 0 then
-				event = "modify"
-			elseif bit.band(ff, NOTE_ATTRIB) ~= 0 then
-				event = "modify"
+			if isDir and bit.band(ff, NOTE_WRITE) ~= 0 then
+				local curr = snapshot()
+				local changed = false
+				for name in pairs(curr) do
+					if not prev[name] then callback("create", name); changed = true end
+				end
+				for name in pairs(prev) do
+					if not curr[name] then callback("delete", name); changed = true end
+				end
+				if not changed then callback("modify", p) end
+				prev = curr
+			elseif not isDir and (bit.band(ff, NOTE_WRITE) ~= 0 or bit.band(ff, NOTE_ATTRIB) ~= 0) then
+				callback("modify", p)
 			end
-			if event then callback(event, p) end
+			if bit.band(ff, NOTE_DELETE) ~= 0 then
+				callback("delete", p)
+			elseif bit.band(ff, NOTE_RENAME) ~= 0 then
+				callback("rename", p)
+			end
 		end
 	end
 
