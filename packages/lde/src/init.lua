@@ -131,6 +131,7 @@ commands.run = require("lde.commands.run")
 commands.x = require("lde.commands.x")
 commands.install = require("lde.commands.install")
 commands.i = commands.install
+commands.sync = require("lde.commands.sync")
 commands.bundle = require("lde.commands.bundle")
 commands.compile = require("lde.commands.compile")
 commands.test = require("lde.commands.test")
