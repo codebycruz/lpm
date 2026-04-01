@@ -1,48 +1,159 @@
-local json = {}
+local json   = {}
+local ffi    = require("ffi")
+local strbuf = require("string.buffer")
 
-local encodeValue
+ffi.cdef[[ void* memchr(const void* s, int c, size_t n); ]]
+local C = ffi.C
 
--- ── shared weak stores ────────────────────────────────────────────────────────
+-- ── weak stores ───────────────────────────────────────────────────────────────
 
--- keyStore[t]  = ordered list of keys
 local keyStore  = setmetatable({}, { __mode = "k" })
-
--- metaStore[t] = {
---   __before  = trivia before the opening brace/bracket,
---   __after   = trivia after the closing brace/bracket,
---   __trailingComma = bool,
---   [key] = {
---     keyStyle   = "ident"|"single"|"double"  (objects only)
---     before     = trivia before the key/value
---     between    = trivia between key and ':'  (objects only)
---     afterColon = trivia after ':'            (objects only)
---     afterValue = trivia after value (before comma or closing)
---     valueStyle = "single"|"double"           (string values only)
---   }
--- }
 local metaStore = setmetatable({}, { __mode = "k" })
 
--- ── encode ────────────────────────────────────────────────────────────────────
+-- ── encode (flat string.buffer tape) ─────────────────────────────────────────
 
-local function encodeString(s, style)
-	local q = (style == "single") and "'" or '"'
-	local replacements = {
-		['"']  = '\\"',  ["'"] = "\\'",
-		['\\'] = '\\\\',
-		['\b'] = '\\b',  ['\f'] = '\\f',
-		['\n'] = '\\n',  ['\r'] = '\\r',
-		['\t'] = '\\t',
-	}
-	-- only escape the quote char that matches our chosen delimiter
-	local pat = (style == "single") and "[%z\1-\31'\\]" or '[%z\1-\31"\\]'
-	return q .. string.gsub(s, pat, function(c)
-		return replacements[c] or string.format("\\u%04x", string.byte(c))
-	end) .. q
+local dq_esc = {
+	['"']  = '\\"', ['\\'] = '\\\\',
+	['\b'] = '\\b', ['\f'] = '\\f',
+	['\n'] = '\\n', ['\r'] = '\\r', ['\t'] = '\\t',
+}
+local sq_esc = {
+	["'"]  = "\\'", ['\\'] = '\\\\',
+	['\b'] = '\\b', ['\f'] = '\\f',
+	['\n'] = '\\n', ['\r'] = '\\r', ['\t'] = '\\t',
+}
+
+local function putString(tape, s, style)
+	if style == "single" then
+		tape:put("'")
+		tape:put((string.gsub(s, "[%z\1-\31'\\]", function(c)
+			return sq_esc[c] or string.format("\\u%04x", string.byte(c))
+		end)))
+		tape:put("'")
+	else
+		tape:put('"')
+		tape:put((string.gsub(s, '[%z\1-\31"\\]', function(c)
+			return dq_esc[c] or string.format("\\u%04x", string.byte(c))
+		end)))
+		tape:put('"')
+	end
 end
 
-local function encodeKey(k, style)
-	if style == "ident" then return k end
-	return encodeString(k, style or "double")
+local putValue  -- forward decl
+
+local function isArray(t)
+	if keyStore[t] then return false end
+	local i = 0
+	for _ in pairs(t) do
+		i = i + 1
+		if t[i] == nil then return false end
+	end
+	return true
+end
+
+local function putArray(tape, t, indent, level)
+	local n = #t
+	if n == 0 then tape:put("[]"); return end
+	local meta = metaStore[t]
+	local nextIndent = string.rep(indent, level + 1)
+	local defaultBefore = "\n" .. nextIndent
+	local closing = (meta and meta.__closingTrivia) or ("\n" .. string.rep(indent, level))
+	tape:put("[")
+	for i = 1, n do
+		if i > 1 then tape:put(",") end
+		local km = meta and meta[i]
+		tape:put((km and km.before) or defaultBefore)
+		putValue(tape, t[i], indent, level + 1, km and km.valueStyle)
+		local av = km and km.afterValue
+		if av and av ~= "" then tape:put(av) end
+	end
+	if meta and meta.__trailingComma then tape:put(",") end
+	tape:put(closing)
+	tape:put("]")
+end
+
+local function putObject(tape, t, indent, level)
+	local keys = keyStore[t]
+	if not keys then
+		keys = {}
+		for k in pairs(t) do keys[#keys + 1] = k end
+		table.sort(keys)
+	end
+	local n = #keys
+	if n == 0 then tape:put("{}"); return end
+	local meta = metaStore[t]
+
+	if not meta then
+		-- try inline via scratch buffer
+		local scratch = strbuf.new()
+		scratch:put("{ ")
+		for i, k in ipairs(keys) do
+			if i > 1 then scratch:put(", ") end
+			putString(scratch, tostring(k), nil)
+			scratch:put(": ")
+			putValue(scratch, t[k], indent, level + 1, nil)
+		end
+		scratch:put(" }")
+		local s = scratch:tostring()
+		if #s <= 50 then tape:put(s); return end
+		local nextIndent = string.rep(indent, level + 1)
+		tape:put("{\n")
+		for i, k in ipairs(keys) do
+			if i > 1 then tape:put(",\n") end
+			tape:put(nextIndent)
+			putString(tape, tostring(k), nil)
+			tape:put(": ")
+			putValue(tape, t[k], indent, level + 1, nil)
+		end
+		tape:put("\n")
+		tape:put(string.rep(indent, level))
+		tape:put("}")
+		return
+	end
+
+	tape:put("{")
+	for i, k in ipairs(keys) do
+		if i > 1 then tape:put(",") end
+		local km = meta[k]
+		tape:put((km and km.before) or " ")
+		local ks = km and km.keyStyle
+		if ks == "ident" then tape:put(tostring(k))
+		else putString(tape, tostring(k), ks) end
+		tape:put((km and km.between) or "")
+		tape:put(":")
+		tape:put((km and km.afterColon) or " ")
+		putValue(tape, t[k], indent, level + 1, km and km.valueStyle)
+		local av = km and km.afterValue
+		if av and av ~= "" then tape:put(av) end
+	end
+	if meta.__trailingComma then tape:put(",") end
+	tape:put(meta.__closingTrivia or " ")
+	tape:put("}")
+end
+
+local floor = math.floor
+local huge  = math.huge
+
+putValue = function(tape, v, indent, level, valueStyle)
+	local t = type(v)
+	if t == "nil" or v == json.null then
+		tape:put("null")
+	elseif t == "boolean" then
+		tape:put(v and "true" or "false")
+	elseif t == "number" then
+		if v ~= v          then tape:put("NaN")
+		elseif v ==  huge  then tape:put("Infinity")
+		elseif v == -huge  then tape:put("-Infinity")
+		elseif v == floor(v) then tape:put(string.format("%d", v))
+		else tape:put(tostring(v)) end
+	elseif t == "string" then
+		putString(tape, v, valueStyle)
+	elseif t == "table" then
+		if isArray(v) then putArray(tape, v, indent, level)
+		else putObject(tape, v, indent, level) end
+	else
+		error("unsupported type: " .. t)
+	end
 end
 
 ---@param t table
@@ -66,184 +177,140 @@ function json.removeField(t, key)
 	end
 end
 
-local function isArray(t)
-	if keyStore[t] then return false end
-	local i = 0
-	for _ in pairs(t) do
-		i = i + 1
-		if t[i] == nil then return false end
-	end
-	return true
-end
-
-local function encodeArray(t, indent, level)
-	if #t == 0 then return "[]" end
-	local meta = metaStore[t]
-	local items = {}
-	local nextIndent = string.rep(indent, level + 1)
-	for i = 1, #t do
-		local km = meta and meta[i]
-		local before     = (km and km.before)     or "\n" .. nextIndent
-		local afterValue = (km and km.afterValue)  or ""
-		items[i] = before .. encodeValue(t[i], indent, level + 1, km and km.valueStyle) .. afterValue
-	end
-	local trailingComma = meta and meta.__trailingComma and "," or ""
-	local closing = (meta and meta.__closingTrivia) or ("\n" .. string.rep(indent, level))
-	return "[" .. table.concat(items, ",") .. trailingComma .. closing .. "]"
-end
-
-local function encodeObject(t, indent, level)
-	local keys = keyStore[t]
-	if not keys then
-		keys = {}
-		for k in pairs(t) do keys[#keys + 1] = k end
-		table.sort(keys)
-	end
-	if #keys == 0 then return "{}" end
-	local meta = metaStore[t]
-	local parts = {}
-	for i, k in ipairs(keys) do
-		local km = meta and meta[k]
-		local keyStyle   = km and km.keyStyle
-		local before     = (km and km.before)     or (i == 1 and " " or " ")
-		local between    = (km and km.between)    or ""
-		local afterColon = (km and km.afterColon) or " "
-		local afterValue = (km and km.afterValue) or ""
-		parts[i] = before
-			.. encodeKey(tostring(k), keyStyle)
-			.. between .. ":" .. afterColon
-			.. encodeValue(t[k], indent, level + 1, km and km.valueStyle)
-			.. afterValue
-	end
-	local trailingComma = meta and meta.__trailingComma and "," or ""
-	-- if we have preserved meta, use it; otherwise fall back to pretty/inline
-	if meta then
-		local closing = meta.__closingTrivia or " "
-		return "{" .. table.concat(parts, ",") .. trailingComma .. closing .. "}"
-	end
-	-- no meta: pretty-print
-	local inline = "{ " .. table.concat(parts, ", ") .. " }"
-	if #inline <= 50 then return inline end
-	local nextIndent = string.rep(indent, level + 1)
-	local items = {}
-	for i, p in ipairs(parts) do items[i] = nextIndent .. p end
-	return "{\n" .. table.concat(items, ",\n") .. "\n" .. string.rep(indent, level) .. "}"
-end
-
-function encodeValue(v, indent, level, valueStyle)
-	local t = type(v)
-	if v == nil or v == json.null then
-		return "null"
-	elseif t == "boolean" then
-		return tostring(v)
-	elseif t == "number" then
-		if v ~= v then return "NaN" end
-		if v == math.huge  then return "Infinity"  end
-		if v == -math.huge then return "-Infinity" end
-		if v == math.floor(v) then return string.format("%d", v) end
-		return tostring(v)
-	elseif t == "string" then
-		return encodeString(v, valueStyle)
-	elseif t == "table" then
-		if isArray(v) then
-			return encodeArray(v, indent, level)
-		else
-			return encodeObject(v, indent, level)
-		end
-	end
-	error("unsupported type: " .. t)
-end
-
 ---@param value any
 ---@return string
 function json.encode(value)
-	return encodeValue(value, "\t", 0) .. "\n"
+	local tape = strbuf.new()
+	putValue(tape, value, "\t", 0, nil)
+	tape:put("\n")
+	return tape:tostring()
 end
 
 -- ── decoder ───────────────────────────────────────────────────────────────────
 
--- Returns (triviaString, newPos).  Trivia = whitespace + comments.
-local function collectTrivia(s, pos)
-	local start = pos
-	while pos <= #s do
-		local next = string.match(s, "^%s*()", pos)
-		if next ~= pos then pos = next end
-		if string.sub(s, pos, pos + 1) == "//" then
-			pos = (string.find(s, "\n", pos, true) or #s) + 1
-		elseif string.sub(s, pos, pos + 1) == "/*" then
-			local e = string.find(s, "*/", pos + 2, true)
-			if not e then error("unterminated block comment") end
-			pos = e + 2
+-- module-level parse state (reset per json.decode call)
+local src_ptr  -- const uint8_t*  (kept alive by src_s)
+local src_len  -- integer
+local src_s    -- Lua string
+
+local function skipWS(pos)
+	local i = pos - 1
+	while i < src_len do
+		local b = src_ptr[i]
+		if b ~= 32 and b ~= 9 and b ~= 10 and b ~= 13 then break end
+		i = i + 1
+	end
+	return i + 1
+end
+
+local function collectComments(pos, triviaStart)
+	-- pos is 1-based, sitting on '/'
+	while pos <= src_len do
+		local b1 = src_ptr[pos]  -- byte after '/' (0-based: pos = 1-based pos, so ptr[pos] is next)
+		if src_ptr[pos - 1] ~= 47 then break end  -- not '/'
+		if b1 == 47 then  -- '//'
+			local nl = C.memchr(src_ptr + pos + 1, 10, src_len - pos - 1)
+			pos = nl ~= nil and (ffi.cast("const uint8_t*", nl) - src_ptr + 2) or (src_len + 1)
+		elseif b1 == 42 then  -- '/*'
+			local p   = src_ptr + pos + 1
+			local rem = src_len - pos - 1
+			local found = false
+			while rem > 0 do
+				local star = C.memchr(p, 42, rem)
+				if star == nil then error("unterminated block comment") end
+				local sp  = ffi.cast("const uint8_t*", star)
+				local off = sp - src_ptr
+				if off + 1 < src_len and src_ptr[off + 1] == 47 then
+					pos   = off + 3
+					found = true
+					break
+				end
+				p   = sp + 1
+				rem = src_len - (off + 1)
+			end
+			if not found then error("unterminated block comment") end
 		else
 			break
 		end
+		pos = skipWS(pos)
 	end
-	return string.sub(s, start, pos - 1), pos
+	return string.sub(src_s, triviaStart, pos - 1), pos
 end
 
-local decodeValue
+local function collectTrivia(pos)
+	local npos = skipWS(pos)
+	if npos <= src_len and src_ptr[npos - 1] == 47 then
+		return collectComments(npos, pos)
+	end
+	return string.sub(src_s, pos, npos - 1), npos
+end
+
+local decodeValue  -- forward decl
 
 local escapeMap = {
-	['"'] = '"', ["'"] = "'", ['\\'] = '\\', ['/'] = '/',
-	['b'] = '\b', ['f'] = '\f', ['n'] = '\n', ['r'] = '\r', ['t'] = '\t',
+	[34]  = '"',  [39]  = "'",  [92]  = '\\', [47]  = '/',
+	[98]  = '\b', [102] = '\f', [110] = '\n', [114] = '\r', [116] = '\t',
 }
 
--- Returns value, newPos, style ("single"|"double")
-local function decodeString(s, pos)
-	local quoteChar = string.sub(s, pos, pos)
-	local quote = string.byte(s, pos)
-	local style = (quoteChar == "'") and "single" or "double"
-	local buf = {}
-	local i = pos + 1
-	while i <= #s do
-		local c = string.byte(s, i)
-		if c == quote then
-			return table.concat(buf), i + 1, style
-		elseif c == 92 then
-			local esc = string.sub(s, i + 1, i + 1)
-			if esc == 'u' then
-				local hex = string.sub(s, i + 2, i + 5)
-				buf[#buf + 1] = string.char(tonumber(hex, 16))
-				i = i + 6
-			elseif esc == '\n' or esc == '\r' then
-				i = i + 2
-			else
-				buf[#buf + 1] = escapeMap[esc] or esc
-				i = i + 2
-			end
+local function decodeString(pos)
+	local quote = src_ptr[pos - 1]  -- 34=" 39='
+	local style = (quote == 39) and "single" or "double"
+	local buf   = {}
+	local i     = pos + 1  -- 1-based index of first content char
+	while i <= src_len do
+		local rem  = src_len - i + 1
+		local base = src_ptr + i - 1
+		local pbs  = C.memchr(base, 92, rem)   -- backslash
+		local pq   = C.memchr(base, quote, rem) -- closing quote
+		local bs_off = pbs ~= nil and (ffi.cast("const uint8_t*", pbs) - src_ptr) or src_len
+		local q_off  = pq  ~= nil and (ffi.cast("const uint8_t*", pq)  - src_ptr) or src_len
+		if q_off <= bs_off then
+			if q_off >= src_len then error("unterminated string") end
+			if q_off > i - 1 then buf[#buf + 1] = string.sub(src_s, i, q_off) end
+			return table.concat(buf), q_off + 2, style
+		end
+		-- backslash first
+		if bs_off > i - 1 then buf[#buf + 1] = string.sub(src_s, i, bs_off) end
+		local esc = src_ptr[bs_off + 1]
+		if esc == 117 then  -- 'u'
+			buf[#buf + 1] = string.char(tonumber(string.sub(src_s, bs_off + 2, bs_off + 5), 16))
+			i = bs_off + 7
+		elseif esc == 10 or esc == 13 then  -- line continuation
+			i = bs_off + 3
 		else
-			buf[#buf + 1] = string.char(c)
-			i = i + 1
+			buf[#buf + 1] = escapeMap[esc] or string.char(esc)
+			i = bs_off + 3
 		end
 	end
 	error("unterminated string")
 end
 
-local function decodeIdentifier(s, pos)
-	local id = string.match(s, "^[%a_$][%w_$]*", pos)
+local function decodeIdentifier(pos)
+	local id = string.match(src_s, "^[%a_$][%w_$]*", pos)
 	if not id then error("invalid identifier at pos " .. pos) end
 	return id, pos + #id
 end
 
-local function decodeNumber(s, pos)
-	local hex = string.match(s, "^-?0[xX]%x+", pos)
+local function decodeNumber(pos)
+	local hex = string.match(src_s, "^-?0[xX]%x+", pos)
 	if hex then return tonumber(hex), pos + #hex end
-	if string.sub(s, pos, pos + 7)  == "Infinity"  then return math.huge,   pos + 8 end
-	if string.sub(s, pos, pos + 8)  == "+Infinity" then return math.huge,   pos + 9 end
-	if string.sub(s, pos, pos + 8)  == "-Infinity" then return -math.huge,  pos + 9 end
-	if string.sub(s, pos, pos + 2)  == "NaN"       then return 0/0,         pos + 3 end
-	local numStr = string.match(s, "^[+-]?%d+%.?%d*[eE]?[+-]?%d*", pos)
+	local sub = string.sub(src_s, pos, pos + 8)
+	if sub:sub(1, 8) == "Infinity"  then return  huge, pos + 8 end
+	if sub:sub(1, 9) == "+Infinity" then return  huge, pos + 9 end
+	if sub:sub(1, 9) == "-Infinity" then return -huge, pos + 9 end
+	if sub:sub(1, 3) == "NaN"       then return  0/0,  pos + 3 end
+	local numStr = string.match(src_s, "^[+-]?%d+%.?%d*[eE]?[+-]?%d*", pos)
 	return tonumber(numStr), pos + #numStr
 end
 
-local function decodeArray(s, pos)
+local function decodeArray(pos)
 	local arr  = {}
 	local meta = { __trailingComma = false }
 	metaStore[arr] = meta
 
-	local trivia, npos = collectTrivia(s, pos + 1)
+	local trivia, npos = collectTrivia(pos + 1)
 	pos = npos
-	if string.byte(s, pos) == 93 then
+	if src_ptr[pos - 1] == 93 then  -- ']'
 		meta.__closingTrivia = trivia
 		return arr, pos + 1
 	end
@@ -253,23 +320,23 @@ local function decodeArray(s, pos)
 		i = i + 1
 		local km = { before = trivia }
 		local val, vstyle
-		val, pos, vstyle = decodeValue(s, pos)
+		val, pos, vstyle = decodeValue(pos)
 		km.valueStyle = vstyle
 		arr[i] = val
 
-		trivia, pos = collectTrivia(s, pos)
+		trivia, pos = collectTrivia(pos)
 		km.afterValue = trivia
 		meta[i] = km
 
-		local c = string.byte(s, pos)
-		if c == 93 then
+		local c = src_ptr[pos - 1]
+		if c == 93 then  -- ']'
 			meta.__closingTrivia = ""
 			return arr, pos + 1
 		end
 		if c ~= 44 then error("expected ',' or ']'") end
 		pos = pos + 1
-		trivia, pos = collectTrivia(s, pos)
-		if string.byte(s, pos) == 93 then
+		trivia, pos = collectTrivia(pos)
+		if src_ptr[pos - 1] == 93 then
 			meta.__trailingComma = true
 			meta.__closingTrivia = trivia
 			return arr, pos + 1
@@ -277,60 +344,60 @@ local function decodeArray(s, pos)
 	end
 end
 
-local function decodeObject(s, pos)
+local function decodeObject(pos)
 	local obj  = {}
 	local keys = {}
 	local meta = { __trailingComma = false }
 	keyStore[obj]  = keys
 	metaStore[obj] = meta
 
-	local trivia, npos = collectTrivia(s, pos + 1)
+	local trivia, npos = collectTrivia(pos + 1)
 	pos = npos
-	if string.byte(s, pos) == 125 then
+	if src_ptr[pos - 1] == 125 then  -- '}'
 		meta.__closingTrivia = trivia
 		return obj, pos + 1
 	end
 
 	while true do
 		local km = { before = trivia }
-		local c  = string.byte(s, pos)
+		local c  = src_ptr[pos - 1]
 		local key, keyStyle
 		if c == 34 or c == 39 then
 			local style
-			key, pos, style = decodeString(s, pos)
+			key, pos, style = decodeString(pos)
 			keyStyle = style
 		else
-			key, pos = decodeIdentifier(s, pos)
+			key, pos = decodeIdentifier(pos)
 			keyStyle = "ident"
 		end
 		km.keyStyle = keyStyle
 
-		trivia, pos = collectTrivia(s, pos)
+		trivia, pos = collectTrivia(pos)
 		km.between = trivia
-		if string.byte(s, pos) ~= 58 then error("expected ':'") end
+		if src_ptr[pos - 1] ~= 58 then error("expected ':'") end
 		pos = pos + 1
-		trivia, pos = collectTrivia(s, pos)
+		trivia, pos = collectTrivia(pos)
 		km.afterColon = trivia
 
 		local val, vstyle
-		val, pos, vstyle = decodeValue(s, pos)
+		val, pos, vstyle = decodeValue(pos)
 		km.valueStyle = vstyle
 		obj[key] = val
 		keys[#keys + 1] = key
 
-		trivia, pos = collectTrivia(s, pos)
+		trivia, pos = collectTrivia(pos)
 		km.afterValue = trivia
 		meta[key] = km
 
-		c = string.byte(s, pos)
-		if c == 125 then
+		c = src_ptr[pos - 1]
+		if c == 125 then  -- '}'
 			meta.__closingTrivia = ""
 			return obj, pos + 1
 		end
 		if c ~= 44 then error("expected ',' or '}'") end
 		pos = pos + 1
-		trivia, pos = collectTrivia(s, pos)
-		if string.byte(s, pos) == 125 then
+		trivia, pos = collectTrivia(pos)
+		if src_ptr[pos - 1] == 125 then
 			meta.__trailingComma = true
 			meta.__closingTrivia = trivia
 			return obj, pos + 1
@@ -338,25 +405,17 @@ local function decodeObject(s, pos)
 	end
 end
 
--- Returns value, newPos, valueStyle (only non-nil for strings)
-function decodeValue(s, pos)
+decodeValue = function(pos)
 	local trivia
-	trivia, pos = collectTrivia(s, pos)
-	local c = string.byte(s, pos)
-	if c == 34 or c == 39 then
-		local v, npos, style = decodeString(s, pos)
-		return v, npos, style
-	elseif c == 123 then
-		local v, npos = decodeObject(s, pos)
-		return v, npos
-	elseif c == 91 then
-		local v, npos = decodeArray(s, pos)
-		return v, npos
+	trivia, pos = collectTrivia(pos)
+	local c = src_ptr[pos - 1]
+	if c == 34 or c == 39 then return decodeString(pos)
+	elseif c == 123 then return decodeObject(pos)
+	elseif c == 91  then return decodeArray(pos)
 	elseif c == 116 then return true,      pos + 4
 	elseif c == 102 then return false,     pos + 5
 	elseif c == 110 then return json.null, pos + 4
-	else
-		return decodeNumber(s, pos)
+	else                 return decodeNumber(pos)
 	end
 end
 
@@ -365,8 +424,10 @@ json.null = setmetatable({}, { __tostring = function() return "null" end })
 ---@param s string
 ---@return any
 function json.decode(s)
-	local val = decodeValue(s, 1)
-	return val
+	src_s   = s
+	src_len = #s
+	src_ptr = ffi.cast("const uint8_t*", s)
+	return decodeValue(1)
 end
 
 return json
