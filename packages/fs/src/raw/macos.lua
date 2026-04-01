@@ -51,7 +51,7 @@ else
 		struct stat {
 			int32_t         st_dev;
 			ino_t           st_ino;
-			int16_t         st_mode;
+			uint16_t        st_mode;
 			uint16_t        st_nlink;
 			uint32_t        st_uid;
 			uint32_t        st_gid;
