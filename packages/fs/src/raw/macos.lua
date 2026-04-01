@@ -99,69 +99,102 @@ function fs.watch(p, callback)
 	local kq = ffi.C.kqueue()
 	if kq < 0 then return nil end
 
-	local fd = ffi.C.open(p, O_EVTONLY)
-	if fd < 0 then
-		ffi.C.close(kq)
-		return nil
-	end
+	local isDir = fs.isdir(p)
 
 	local change = ffi.new("struct kevent[1]")
-	change[0].ident  = fd
-	change[0].filter = EVFILT_VNODE
-	change[0].flags  = bit.bor(EV_ADD, EV_ENABLE, EV_CLEAR)
-	change[0].fflags = bit.bor(NOTE_WRITE, NOTE_DELETE, NOTE_RENAME, NOTE_ATTRIB)
-	change[0].data   = 0
-	change[0].udata  = nil
-
-	ffi.C.kevent(kq, change, 1, nil, 0, nil)
-
-	local events = ffi.new("struct kevent[8]")
-	local zero = ffi.new("struct timespec_kq[1]", {{0, 0}})
-
-	-- Snapshot directory contents for diffing
-	local function snapshot()
-		local s = {}
-		local iter = fs.readdir(p)
-		if iter then
-			for entry in iter do s[entry.name] = true end
-		end
-		return s
+	local function register(fd)
+		change[0].ident  = fd
+		change[0].filter = EVFILT_VNODE
+		change[0].flags  = bit.bor(EV_ADD, EV_ENABLE, EV_CLEAR)
+		change[0].fflags = bit.bor(NOTE_WRITE, NOTE_DELETE, NOTE_RENAME, NOTE_ATTRIB)
+		change[0].data   = 0
+		change[0].udata  = nil
+		ffi.C.kevent(kq, change, 1, nil, 0, nil)
 	end
 
-	local isDir = fs.isdir(p)
-	local prev = isDir and snapshot() or nil
+	local dirfd = ffi.C.open(p, O_EVTONLY)
+	if dirfd < 0 then ffi.C.close(kq); return nil end
+	register(dirfd)
+
+	-- fd -> name map for file watches inside a directory
+	local filefds = {} ---@type table<number, string>  fd -> filename
+
+	local function watchFile(name)
+		local fd = ffi.C.open(p .. "/" .. name, O_EVTONLY)
+		if fd >= 0 then
+			register(fd)
+			filefds[tonumber(fd)] = name
+		end
+	end
+
+	local prev ---@type table<string, boolean>?
+	if isDir then
+		prev = {}
+		local iter = fs.readdir(p)
+		if iter then
+			for entry in iter do
+				prev[entry.name] = true
+				watchFile(entry.name)
+			end
+		end
+	end
+
+	local events = ffi.new("struct kevent[16]")
+	local zero = ffi.new("struct timespec_kq[1]", {{0, 0}})
 
 	---@type fs.Watcher
 	local watcher = {}
 
 	function watcher.poll()
-		local n = ffi.C.kevent(kq, nil, 0, events, 8, zero)
+		local n = ffi.C.kevent(kq, nil, 0, events, 16, zero)
 		for i = 0, n - 1 do
-			local ff = events[i].fflags
-			if isDir and bit.band(ff, NOTE_WRITE) ~= 0 then
-				local curr = snapshot()
-				local changed = false
-				for name in pairs(curr) do
-					if not prev[name] then callback("create", name); changed = true end
+			local ident = tonumber(events[i].ident)
+			local ff    = events[i].fflags
+
+			if ident == tonumber(dirfd) then
+				-- Event on the directory itself
+				if isDir and bit.band(ff, NOTE_WRITE) ~= 0 then
+					local curr = {}
+					local iter = fs.readdir(p)
+					if iter then for entry in iter do curr[entry.name] = true end end
+					for name in pairs(curr) do
+						if not prev[name] then
+							callback("create", name)
+							watchFile(name)
+						end
+					end
+					for name in pairs(prev) do
+						if not curr[name] then callback("delete", name) end
+					end
+					prev = curr
 				end
-				for name in pairs(prev) do
-					if not curr[name] then callback("delete", name); changed = true end
+				if bit.band(ff, NOTE_DELETE) ~= 0 then callback("delete", p)
+				elseif bit.band(ff, NOTE_RENAME) ~= 0 then callback("rename", p) end
+			else
+				-- Event on a watched file inside the directory
+				local name = filefds[ident]
+				if name then
+					if bit.band(ff, NOTE_WRITE) ~= 0 or bit.band(ff, NOTE_ATTRIB) ~= 0 then
+						callback("modify", name)
+					end
+					if bit.band(ff, NOTE_DELETE) ~= 0 or bit.band(ff, NOTE_RENAME) ~= 0 then
+						ffi.C.close(ident)
+						filefds[ident] = nil
+					end
+				elseif not isDir then
+					if bit.band(ff, NOTE_WRITE) ~= 0 or bit.band(ff, NOTE_ATTRIB) ~= 0 then
+						callback("modify", p)
+					end
+					if bit.band(ff, NOTE_DELETE) ~= 0 then callback("delete", p)
+					elseif bit.band(ff, NOTE_RENAME) ~= 0 then callback("rename", p) end
 				end
-				if not changed then callback("modify", p) end
-				prev = curr
-			elseif not isDir and (bit.band(ff, NOTE_WRITE) ~= 0 or bit.band(ff, NOTE_ATTRIB) ~= 0) then
-				callback("modify", p)
-			end
-			if bit.band(ff, NOTE_DELETE) ~= 0 then
-				callback("delete", p)
-			elseif bit.band(ff, NOTE_RENAME) ~= 0 then
-				callback("rename", p)
 			end
 		end
 	end
 
 	function watcher.close()
-		ffi.C.close(fd)
+		for fd in pairs(filefds) do ffi.C.close(fd) end
+		ffi.C.close(dirfd)
 		ffi.C.close(kq)
 	end
 
