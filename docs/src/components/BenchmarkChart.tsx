@@ -4,25 +4,25 @@ const benchmarks = [
 	{
 		name: "Busted (Cold)",
 		results: [
-			{ tool: "lde", time: 1.4 },
-			{ tool: "luarocks", time: 4.307 },
-			{ tool: "lx", time: 8.066 },
+			{ tool: "lde", time: 0.746 },
+			{ tool: "luarocks", time: 8.251 },
+			{ tool: "lx", time: 2.950 },
 		],
 	},
 	{
 		name: "Busted (Warm)",
 		results: [
-			{ tool: "lde", time: 0.134 },
-			{ tool: "luarocks", time: 0.795 },
-			{ tool: "lx", time: 2.284 },
+			{ tool: "lde", time: 0.008 },
+			{ tool: "luarocks", time: 1.196 },
+			{ tool: "lx", time: 2.297 },
 		],
 	},
 	{
 		name: "LuaFileSystem",
 		results: [
-			{ tool: "lde", time: 1.013 },
-			{ tool: "luarocks", time: 0.438 },
-			{ tool: "lx", time: 1.142 },
+			{ tool: "lde", time: 0.312 },
+			{ tool: "luarocks", time: 0.757 },
+			{ tool: "lx", time: 1.096 },
 		],
 	},
 ];
@@ -135,7 +135,7 @@ export default function BenchmarkChart() {
 			</div>
 			{/* Footer */}
 			<div class="px-6 py-3 border-t border-gray-200 dark:border-gray-700 flex items-center justify-between">
-				<span class="text-xs text-gray-400 dark:text-gray-500">Linux x86-64 · 16 cores · avg of 4 runs · 3/31/26, latest versions</span>
+				<span class="text-xs text-gray-400 dark:text-gray-500">Linux x86-64 · 4 cores · avg of 5 runs · latest versions</span>
 				<a href="https://github.com/lde-org/lde/tree/master/benchmarks" class="text-xs text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">View source</a>
 			</div>
 		</div>
