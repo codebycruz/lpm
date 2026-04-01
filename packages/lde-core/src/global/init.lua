@@ -1,5 +1,3 @@
-local global = {}
-
 local fs = require("fs")
 local git = require("git")
 local json = require("json")
@@ -9,8 +7,10 @@ local semver = require("semver")
 local lde = require("lde-core")
 local ansi = require("ansi")
 
-local REGISTRY_URL = "https://github.com/lde-org/registry"
+local global = {}
+package.loaded[(...)] = global
 
+global.getConfig = require("lde-core.global.config")
 global.currentVersion = "0.8.1"
 
 ---@class lde.Portfile
@@ -40,6 +40,10 @@ function global.getDir()
 	if dirOverride then return dirOverride end
 	local home = os.getenv("HOME") or os.getenv("USERPROFILE")
 	return path.join(home, ".lde")
+end
+
+function global.getConfigPath()
+	return path.join(global.getDir(), "config.json")
 end
 
 function global.getGitCacheDir()
@@ -73,7 +77,7 @@ function global.syncRegistry()
 
 	local registryDir = global.getRegistryDir()
 	if not fs.exists(registryDir) then
-		local ok, err = git.clone(REGISTRY_URL, registryDir)
+		local ok, err = git.clone(global.getConfig().registry, registryDir)
 		if not ok then
 			error("Failed to clone lde registry: " .. (err or "unknown error"))
 		end

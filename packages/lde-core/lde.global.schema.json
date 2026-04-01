@@ -1,0 +1,14 @@
+{
+	"$schema": "http://json-schema.org/draft-07/schema#",
+	"title": "lde global config",
+	"description": "Global configuration for lde, stored at ~/.lde/config.json",
+	"type": "object",
+	"additionalProperties": false,
+	"properties": {
+		"registry": {
+			"type": "string",
+			"description": "Override the default lde registry URL",
+			"default": "https://github.com/lde-org/registry"
+		}
+	}
+}
