@@ -12,7 +12,7 @@
         nixpkgs.lib.genAttrs [
           "aarch64-darwin"
           "aarch64-linux"
-          # "x86_64-darwin" # not supported yet
+          "x86_64-darwin"
           "x86_64-linux"
         ] (system: fn system nixpkgs.legacyPackages.${system});
     in

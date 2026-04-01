@@ -19,8 +19,8 @@ jobs:
             outfile: lde-dev.exe
           - os: windows-11-arm
             outfile: lde-dev.exe
-          # - os: macos-15-intel
-          #   outfile: lde-dev
+          - os: macos-15-intel
+            outfile: lde-dev
           - os: macos-15
             outfile: lde-dev
 
