@@ -159,10 +159,22 @@ const comparison = [
 				</div>
 
 				<div class="relative hidden lg:block mt-4">
-					<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-[500px] rounded-full border border-slate-500/40 dark:border-slate-400/25 pointer-events-none"></div>
-					<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-[680px] rounded-full border border-slate-500/25 dark:border-slate-400/15 pointer-events-none"></div>
-					<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-[880px] rounded-full border border-slate-500/15 dark:border-slate-400/[0.08] pointer-events-none"></div>
-					<div class="absolute inset-0 bg-blue-500/30 dark:bg-blue-500/20 rounded-full blur-3xl scale-110 pointer-events-none z-0"></div>
+					<div
+						class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-[500px] rounded-full border border-slate-500/40 dark:border-slate-400/25 pointer-events-none"
+					>
+					</div>
+					<div
+						class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-[680px] rounded-full border border-slate-500/25 dark:border-slate-400/15 pointer-events-none"
+					>
+					</div>
+					<div
+						class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 size-[880px] rounded-full border border-slate-500/15 dark:border-slate-400/[0.08] pointer-events-none"
+					>
+					</div>
+					<div
+						class="absolute inset-0 bg-blue-500/30 dark:bg-blue-500/20 rounded-full blur-3xl scale-110 pointer-events-none z-0"
+					>
+					</div>
 					<div class="relative z-10">
 						<TerminalDemo client:idle />
 					</div>
@@ -173,104 +185,201 @@ const comparison = [
 
 	<div class="w-full border-t border-white/10 px-8 pt-24 pb-8">
 		<div class="max-w-7xl mx-auto">
-			<h2 id="features" class="text-5xl font-semibold text-center scroll-mt-20">All in one</h2>
-			<p class="text-base text-black/50 dark:text-white/40 mt-2 text-center">
+			<h2
+				id="features"
+				class="text-5xl font-semibold text-center scroll-mt-20"
+			>
+				All in one
+			</h2>
+			<p
+				class="text-base text-black/50 dark:text-white/40 mt-2 text-center"
+			>
 				Everything you need to write, test, and ship Lua.
 			</p>
 		</div>
 	</div>
 	<div
-		class="w-full max-w-7xl mx-auto px-8 pb-24 grid grid-cols-1 md:grid-cols-2 gap-8"
+		class="w-full max-w-7xl mx-auto px-8 pb-24 grid grid-cols-1 md:grid-cols-2 gap-6"
 		id="features"
 	>
 		<a
-			href="/docs/features/runtime"
-			class="feature-card rounded-2xl border border-white/10 bg-white/5 dark:bg-white/[0.03] p-12 backdrop-blur-sm hover:border-blue-500/40 hover:bg-blue-500/5 transition-colors"
+			href="/docs/runtime/getting-started/runtime"
+			class="feature-card group relative rounded-2xl border border-white/10 bg-white/5 dark:bg-white/[0.03] p-8 backdrop-blur-sm hover:border-blue-500/40 hover:bg-blue-500/5 transition-all duration-300 flex flex-col gap-6 overflow-hidden"
 		>
-			<h2 class="text-xl font-semibold mb-4">Runtime</h2>
-			<ul
-				class="text-sm text-black/60 dark:text-white/50 leading-relaxed space-y-2 list-disc list-inside mb-6"
+			<div
+				class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-500/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
 			>
-				<li>LuaJIT built-in w/ no setup required</li>
-				<li>Works cross-platform, including Windows</li>
-				<li>
-					<code class="text-blue-400">lde repl</code> for interactive Lua
-					inside your project context
-				</li>
-			</ul>
+			</div>
+			<div class="flex items-start gap-4">
+				<div
+					class="shrink-0 size-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400"
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="18"
+						height="18"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						><polyline points="4 17 10 11 4 5"></polyline><line
+							x1="12"
+							x2="20"
+							y1="19"
+							y2="19"></line></svg
+					>
+				</div>
+				<div>
+					<h2 class="text-base font-semibold mb-1">Runtime</h2>
+					<p
+						class="text-sm text-black/50 dark:text-white/40 leading-relaxed"
+					>
+						LuaJIT built-in, works cross-platform including Windows.
+						Interactive REPL inside your project context.
+					</p>
+				</div>
+			</div>
 			<code
-				class="text-sm text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-lg"
+				class="mt-auto text-xs text-blue-400 bg-blue-500/10 border border-blue-500/15 px-3 py-2 rounded-lg w-fit"
 				>$ lde ./file.lua</code
 			>
 		</a>
 
 		<a
-			href="/docs/features/package-manager"
-			class="feature-card rounded-2xl border border-white/10 bg-white/5 dark:bg-white/[0.03] p-12 backdrop-blur-sm hover:border-blue-500/40 hover:bg-blue-500/5 transition-colors"
+			href="/docs/package-manager/getting-started/quick-start"
+			class="feature-card group relative rounded-2xl border border-white/10 bg-white/5 dark:bg-white/[0.03] p-8 backdrop-blur-sm hover:border-blue-500/40 hover:bg-blue-500/5 transition-all duration-300 flex flex-col gap-6 overflow-hidden"
 		>
-			<h2 class="text-xl font-semibold mb-4">Package Manager</h2>
-			<ul
-				class="text-sm text-black/60 dark:text-white/50 leading-relaxed space-y-2 list-disc list-inside mb-6"
+			<div
+				class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-500/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
 			>
-				<li>LuaRocks support, backwards compatible</li>
-				<li>
-					<code class="text-blue-400">build.lua</code> scripts for seamless
-					preprocessing
-				</li>
-				<li>Works with external runtimes like LÖVE</li>
-			</ul>
+			</div>
+			<div class="flex items-start gap-4">
+				<div
+					class="shrink-0 size-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400"
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="18"
+						height="18"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						><path
+							d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"
+						></path></svg
+					>
+				</div>
+				<div>
+					<h2 class="text-base font-semibold mb-1">
+						Package Manager
+					</h2>
+					<p
+						class="text-sm text-black/50 dark:text-white/40 leading-relaxed"
+					>
+						LuaRocks compatible. <code class="text-blue-400"
+							>build.lua</code
+						> scripts for preprocessing. Works with LÖVE and other runtimes.
+					</p>
+				</div>
+			</div>
 			<code
-				class="text-sm text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-lg"
-				>$ lde install</code
+				class="mt-auto text-xs text-blue-400 bg-blue-500/10 border border-blue-500/15 px-3 py-2 rounded-lg w-fit"
+				>$ lde add &lt;package&gt;</code
 			>
 		</a>
 
 		<a
-			href="/docs/features/test-runner"
-			class="feature-card rounded-2xl border border-white/10 bg-white/5 dark:bg-white/[0.03] p-12 backdrop-blur-sm hover:border-blue-500/40 hover:bg-blue-500/5 transition-colors"
+			href="/docs/test-runner/getting-started/test-runner"
+			class="feature-card group relative rounded-2xl border border-white/10 bg-white/5 dark:bg-white/[0.03] p-8 backdrop-blur-sm hover:border-blue-500/40 hover:bg-blue-500/5 transition-all duration-300 flex flex-col gap-6 overflow-hidden"
 		>
-			<h2 class="text-xl font-semibold mb-4">Test Runner</h2>
-			<ul
-				class="text-sm text-black/60 dark:text-white/50 leading-relaxed space-y-2 list-disc list-inside mb-6"
+			<div
+				class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-500/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
 			>
-				<li>Simple and minimal, inspired by tape.js</li>
-				<li>
-					Ships with the runtime as <code class="text-blue-400"
-						>lde-test</code
+			</div>
+			<div class="flex items-start gap-4">
+				<div
+					class="shrink-0 size-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400"
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="18"
+						height="18"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"
+						></path><polyline points="22 4 12 14.01 9 11.01"
+						></polyline></svg
 					>
-				</li>
-				<li>
-					Run your tests with <code class="text-blue-400"
-						>lde test</code
+				</div>
+				<div>
+					<h2 class="text-base font-semibold mb-1">Test Runner</h2>
+					<p
+						class="text-sm text-black/50 dark:text-white/40 leading-relaxed"
 					>
-				</li>
-			</ul>
+						Simple and minimal. Ships as <code class="text-blue-400"
+							>lde-test</code
+						> built-in to the lde runtime. Just <code
+							class="text-blue-400">require("lde-test")</code
+						>.
+					</p>
+				</div>
+			</div>
 			<code
-				class="text-sm text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-lg"
+				class="mt-auto text-xs text-blue-400 bg-blue-500/10 border border-blue-500/15 px-3 py-2 rounded-lg w-fit"
 				>$ lde test</code
 			>
 		</a>
 
 		<a
-			href="/docs/features/single-file-apps"
-			class="feature-card rounded-2xl border border-white/10 bg-white/5 dark:bg-white/[0.03] p-12 backdrop-blur-sm hover:border-blue-500/40 hover:bg-blue-500/5 transition-colors"
+			href="/docs/bundler/getting-started/single-file-apps"
+			class="feature-card group relative rounded-2xl border border-white/10 bg-white/5 dark:bg-white/[0.03] p-8 backdrop-blur-sm hover:border-blue-500/40 hover:bg-blue-500/5 transition-all duration-300 flex flex-col gap-6 overflow-hidden"
 		>
-			<h2 class="text-xl font-semibold mb-4">Bundler & Compiler</h2>
-			<ul
-				class="text-sm text-black/60 dark:text-white/50 leading-relaxed space-y-2 list-disc list-inside mb-6"
+			<div
+				class="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-blue-500/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
 			>
-				<li>
-					<code class="text-blue-400">lde bundle</code> to combine project
-					and deps into a single Lua file
-				</li>
-				<li>
-					<code class="text-blue-400">lde compile</code> to produce a standalone
-					binary under 1mB
-				</li>
-				<li>No Lua required on the target machine</li>
-			</ul>
+			</div>
+			<div class="flex items-start gap-4">
+				<div
+					class="shrink-0 size-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-400"
+				>
+					<svg
+						xmlns="http://www.w3.org/2000/svg"
+						width="18"
+						height="18"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+						><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path
+							d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"
+						></path></svg
+					>
+				</div>
+				<div>
+					<h2 class="text-base font-semibold mb-1">
+						Bundler & Compiler
+					</h2>
+					<p
+						class="text-sm text-black/50 dark:text-white/40 leading-relaxed"
+					>
+						Bundle into a single Lua file or compile to a standalone
+						binary under 1mB. No Lua required on the target machine.
+					</p>
+				</div>
+			</div>
 			<code
-				class="text-sm text-blue-400 bg-blue-500/10 px-3 py-1.5 rounded-lg"
+				class="mt-auto text-xs text-blue-400 bg-blue-500/10 border border-blue-500/15 px-3 py-2 rounded-lg w-fit"
 				>$ lde compile</code
 			>
 		</a>
@@ -278,111 +387,155 @@ const comparison = [
 
 	<div class="w-full border-t border-black/10 dark:border-white/10">
 		<div class="max-w-3xl mx-auto px-8 py-16">
-			<h2 id="compare" class="text-5xl font-semibold mb-2 text-center scroll-mt-20">How does lde compare?</h2>
-		<p class="text-base text-black/50 dark:text-white/40 mb-8 text-center">
-			Corrections welcome via <a
-				class="underline text-blue-400"
-				href="https://github.com/lde-org/lde/pulls">pull request</a
-			>.
-		</p>
-		<div class="overflow-x-auto rounded-2xl border border-black/10 dark:border-white/10">
-			<table class="w-full text-base">
-				<thead>
-					<tr
-						class="border-b border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/[0.03]"
+			<h2
+				id="compare"
+				class="text-5xl font-semibold mb-2 text-center scroll-mt-20"
+			>
+				How does lde compare?
+			</h2>
+			<p
+				class="text-base text-black/50 dark:text-white/40 mb-8 text-center"
+			>
+				Corrections welcome via <a
+					class="underline text-blue-400"
+					href="https://github.com/lde-org/lde/pulls">pull request</a
+				>.
+			</p>
+			<div
+				class="overflow-x-auto rounded-2xl border border-black/10 dark:border-white/10"
+			>
+				<table class="w-full text-base">
+					<thead>
+						<tr
+							class="border-b border-black/10 dark:border-white/10 bg-black/5 dark:bg-white/[0.03]"
+						>
+							<th
+								class="text-left px-6 py-5 font-medium text-black/50 dark:text-white/40"
+							></th>
+							<th
+								class="text-left px-6 py-5 font-semibold text-blue-400"
+								><img
+									src="/lde-nospace.svg"
+									class="h-6 inline mr-2"
+									alt=""
+								/>lde</th
+							>
+							<th class="text-left px-6 py-5 font-medium">lux</th>
+							<th class="text-left px-6 py-5 font-medium"
+								>luarocks</th
+							>
+						</tr>
+					</thead>
+					<tbody
+						class="divide-y divide-black/10 dark:divide-white/10"
 					>
-						<th
-							class="text-left px-6 py-5 font-medium text-black/50 dark:text-white/40"
-						></th>
-						<th
-							class="text-left px-6 py-5 font-semibold text-blue-400"
-							><img
-								src="/lde-nospace.svg"
-								class="h-6 inline mr-2"
-								alt=""
-							/>lde</th
-						>
-						<th class="text-left px-6 py-5 font-medium">lux</th>
-						<th class="text-left px-6 py-5 font-medium">luarocks</th
-						>
-					</tr>
-				</thead>
-				<tbody class="divide-y divide-black/10 dark:divide-white/10">
-					{
-						comparison.map(([feature, ...cols]) => (
-							<tr class="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
-								<td class="px-6 py-4 text-black/60 dark:text-white/50">
-									{feature}
-								</td>
-								{cols.map((val, i) => {
-									const blue = i === 0;
-									const base = `px-6 py-4 ${blue ? "text-blue-400 font-medium" : "text-black/70 dark:text-white/60"}`;
-									if (val === "y")
-										return (
-											<td class={base}>
-												<span class="text-green-400 font-bold">
-													✓
-												</span>
-											</td>
-										);
-									if (val === "n")
-										return (
-											<td class={base}>
-												<span class="text-red-400/70 font-bold">
-													✗
-												</span>
-											</td>
-										);
-									if (val === "wip")
-										return (
-											<td class={base}>
-												<span class="text-yellow-400 text-lg">⚠</span>
-											</td>
-										);
-									if (val.startsWith("y:"))
-										return (
-											<td class={base}>
-												<span class="text-green-400 font-bold">
-													✓
-												</span>{" "}
-												<span class="text-sm opacity-60">
-													({val.slice(2)})
-												</span>
-											</td>
-										);
-									return <td class={base}>{val}</td>;
-								})}
-							</tr>
-						))
-					}
-				</tbody>
-			</table>
+						{
+							comparison.map(([feature, ...cols]) => (
+								<tr class="hover:bg-black/[0.02] dark:hover:bg-white/[0.02] transition-colors">
+									<td class="px-6 py-4 text-black/60 dark:text-white/50">
+										{feature}
+									</td>
+									{cols.map((val, i) => {
+										const blue = i === 0;
+										const base = `px-6 py-4 ${blue ? "text-blue-400 font-medium" : "text-black/70 dark:text-white/60"}`;
+										if (val === "y")
+											return (
+												<td class={base}>
+													<span class="text-green-400 font-bold">
+														✓
+													</span>
+												</td>
+											);
+										if (val === "n")
+											return (
+												<td class={base}>
+													<span class="text-red-400/70 font-bold">
+														✗
+													</span>
+												</td>
+											);
+										if (val === "wip")
+											return (
+												<td class={base}>
+													<span class="text-yellow-400 text-lg">
+														⚠
+													</span>
+												</td>
+											);
+										if (val.startsWith("y:"))
+											return (
+												<td class={base}>
+													<span class="text-green-400 font-bold">
+														✓
+													</span>{" "}
+													<span class="text-sm opacity-60">
+														({val.slice(2)})
+													</span>
+												</td>
+											);
+										return <td class={base}>{val}</td>;
+									})}
+								</tr>
+							))
+						}
+					</tbody>
+				</table>
+			</div>
 		</div>
-	</div>
 	</div>
 
 	<div class="w-full border-t border-black/10 dark:border-white/10">
 		<div class="max-w-3xl mx-auto px-8 py-16">
-			<h2 id="benchmarks" class="text-5xl font-semibold mb-2 text-center scroll-mt-20">Are we fast yet?</h2>
-			<p class="text-base text-black/50 dark:text-white/40 mb-10 text-center">
+			<h2
+				id="benchmarks"
+				class="text-5xl font-semibold mb-2 text-center scroll-mt-20"
+			>
+				Are we fast yet?
+			</h2>
+			<p
+				class="text-base text-black/50 dark:text-white/40 mb-10 text-center"
+			>
 				Averages over 4 runs on Linux x86-64. Lower is better.
 			</p>
 			<BenchmarkChart client:idle />
 		</div>
 	</div>
 
-	<div class="w-full border-t border-black/10 dark:border-white/10 min-h-[50vh] flex items-center justify-center">
+	<div
+		class="w-full border-t border-black/10 dark:border-white/10 min-h-[50vh] flex items-center justify-center"
+	>
 		<div class="py-24 w-full max-w-3xl px-8">
-			<h2 id="learn" class="text-5xl font-semibold mb-3 text-center scroll-mt-20">Learn more</h2>
-			<p class="text-base text-black/50 dark:text-white/40 mb-8 text-center">Dive into the docs or read the latest from the blog.</p>
+			<h2
+				id="learn"
+				class="text-5xl font-semibold mb-3 text-center scroll-mt-20"
+			>
+				Learn more
+			</h2>
+			<p
+				class="text-base text-black/50 dark:text-white/40 mb-8 text-center"
+			>
+				Dive into the docs or read the latest from the blog.
+			</p>
 			<div class="flex gap-6 w-full">
-				<a href="/docs/getting-started/introduction" class="flex-1 py-12 px-10 rounded-2xl border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.03] hover:border-blue-500/40 hover:bg-blue-500/5 transition-colors font-medium text-2xl flex flex-col gap-2">
+				<a
+					href="/docs/general/getting-started/introduction"
+					class="flex-1 py-12 px-10 rounded-2xl border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.03] hover:border-blue-500/40 hover:bg-blue-500/5 transition-colors font-medium text-2xl flex flex-col gap-2"
+				>
 					Get started
-					<span class="text-sm font-normal text-black/50 dark:text-white/40">Read the docs and set up your first project</span>
+					<span
+						class="text-sm font-normal text-black/50 dark:text-white/40"
+						>Read the docs and set up your first project</span
+					>
 				</a>
-				<a href="/blog" class="flex-1 py-12 px-10 rounded-2xl border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.03] hover:border-blue-500/40 hover:bg-blue-500/5 transition-colors font-medium text-2xl flex flex-col gap-2">
+				<a
+					href="/blog"
+					class="flex-1 py-12 px-10 rounded-2xl border border-black/10 dark:border-white/10 bg-black/[0.03] dark:bg-white/[0.03] hover:border-blue-500/40 hover:bg-blue-500/5 transition-colors font-medium text-2xl flex flex-col gap-2"
+				>
 					Blog
-					<span class="text-sm font-normal text-black/50 dark:text-white/40">Release notes and updates</span>
+					<span
+						class="text-sm font-normal text-black/50 dark:text-white/40"
+						>Release notes and updates</span
+					>
 				</a>
 			</div>
 		</div>
