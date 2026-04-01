@@ -200,7 +200,14 @@ function global.getOrInitArchive(url)
 			error("Failed to download archive '" .. url .. "': " .. (err or ""))
 		end
 		local ok2, err2
-		if url:match("%.zip$") and process.platform == "linux" then
+		if url:match("%.src%.rock$") then
+			-- .src.rock is a zip with no single top-level dir; extract directly
+			if process.platform == "linux" then
+				ok2, err2 = process.exec("unzip", { "-q", archiveFile, "-d", archiveDir })
+			else
+				ok2, err2 = process.exec("tar", { "-xf", archiveFile, "-C", archiveDir })
+			end
+		elseif url:match("%.zip$") and process.platform == "linux" then
 			local tmpDir = archiveDir .. "_tmp"
 			ok2, err2 = process.exec("unzip", { "-q", archiveFile, "-d", tmpDir })
 			if ok2 then

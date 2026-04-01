@@ -145,24 +145,54 @@ function util.openLuarocksPackage(name, version)
 	-- For unversioned lookups, check the URL cache first to skip manifest scan
 	local cache = loadUrlCache()
 	local cacheKey = name .. (version and ("@" .. version) or "")
-	local cachedUrl = (not version) and cache[cacheKey] or nil
+	local cachedEntry = (not version) and cache[cacheKey] or nil
 
-	local url
-	if cachedUrl then
-		url = cachedUrl
+	local url, arch
+	if cachedEntry then
+		url = type(cachedEntry) == "table" and cachedEntry.url or cachedEntry
+		arch = type(cachedEntry) == "table" and cachedEntry.arch or "rockspec"
 	else
 		local manifest, err = getManifest()
 		if not manifest then return nil, nil, err end
 
 		local uerr
-		url, uerr = luarocks.getRockspecUrl(manifest, name, version)
+		url, arch, uerr = luarocks.getUrl(manifest, name, version)
 		if not url then return nil, nil, uerr end
 
 		-- Cache the resolved URL for future invocations
 		if not version then
-			cache[cacheKey] = url
+			cache[cacheKey] = { url = url, arch = arch }
 			saveUrlCache()
 		end
+	end
+
+	if arch == "src" then
+		local archiveDir = lde.global.getOrInitArchive(url)
+		-- .src.rock extracts with the rockspec at root and source in a subdirectory.
+		-- Scan once to find both the rockspec and the source subdir.
+		local rockspecPath, srcDir
+		local iter = fs.readdir(archiveDir)
+		if iter then
+			for entry in iter do
+				if entry.type == "file" and entry.name:match("%.rockspec$") then
+					rockspecPath = path.join(archiveDir, entry.name)
+				elseif entry.type == "dir" and not srcDir then
+					srcDir = path.join(archiveDir, entry.name)
+				end
+			end
+		end
+		if not rockspecPath then
+			return nil, nil, "No rockspec found in src rock for '" .. name .. "'"
+		end
+
+		local pkg, err = lde.Package.openRockspec(srcDir or archiveDir, rockspecPath)
+		if not pkg then
+			return nil, nil, "Failed to load src rock '" .. name .. "': " .. (err or "")
+		end
+
+		---@type lde.Lockfile.ArchiveDependency
+		local lockEntry = { archive = url }
+		return pkg, lockEntry
 	end
 
 	return util.openRockspecUrl(name, url)
