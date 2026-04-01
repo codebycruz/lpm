@@ -467,7 +467,7 @@ local WAIT_OBJECT_0  = 0
 local WAIT_TIMEOUT   = 0x102
 
 --- Watch a directory for changes. Calls callback(event, name) for each change.
---- Returns a watcher with :poll() (non-blocking) and :close().
+--- Returns a watcher with :poll() (non-blocking), :wait() (blocking), and :close().
 ---@param p string
 ---@param callback fun(event: fs.WatchEvent, name: string)
 ---@return fs.Watcher?
@@ -507,12 +507,9 @@ function fs.watch(p, callback)
 
 	issueRead()
 
-	---@type fs.Watcher
-	local watcher = {}
+	local INFINITE = 0xFFFFFFFF
 
-	function watcher.poll()
-		if kernel32.WaitForSingleObject(event, 0) ~= WAIT_OBJECT_0 then return end
-
+	local function drain()
 		local transferred = ffi.new("DWORD[1]")
 		if kernel32.GetOverlappedResult(handle, overlapped, transferred, 0) == 0 then
 			issueRead(); return
@@ -547,6 +544,19 @@ function fs.watch(p, callback)
 		end
 
 		issueRead()
+	end
+
+	---@type fs.Watcher
+	local watcher = {}
+
+	function watcher.poll()
+		if kernel32.WaitForSingleObject(event, 0) ~= WAIT_OBJECT_0 then return end
+		drain()
+	end
+
+	function watcher.wait()
+		kernel32.WaitForSingleObject(event, INFINITE)
+		drain()
 	end
 
 	function watcher.close()

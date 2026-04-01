@@ -76,6 +76,13 @@ local IN_MOVED_FROM = 0x00000040
 local IN_MOVED_TO   = 0x00000080
 local IN_NONBLOCK   = 0x800
 
+pcall(ffi.cdef, [[
+	int fcntl(int fd, int cmd, ...);
+]])
+local F_GETFL = 3
+local F_SETFL = 4
+local O_NONBLOCK = 0x800
+
 ---@class fs.raw.linux: fs.raw.posix
 local fs            = require("fs.raw.posix")(function(s, modeToStatType)
 	return {
@@ -92,9 +99,10 @@ end)
 ---@class fs.Watcher
 ---@field close fun()
 ---@field poll fun()
+---@field wait fun()
 
 --- Watch a path for changes. Calls callback(event, name) for each change.
---- Returns a watcher with :poll() (non-blocking) and :close().
+--- Returns a watcher with :poll() (non-blocking), :wait() (blocking), and :close().
 ---@param p string
 ---@param callback fun(event: fs.WatchEvent, name: string)
 ---@return fs.Watcher?
@@ -112,10 +120,7 @@ function fs.watch(p, callback)
 	local bufSize = 4096
 	local buf = ffi.new("uint8_t[?]", bufSize)
 
-	---@type fs.Watcher
-	local watcher = {}
-
-	function watcher.poll()
+	local function drain()
 		local n = ffi.C.read(ifd, buf, bufSize)
 		if n <= 0 then return end
 
@@ -140,6 +145,21 @@ function fs.watch(p, callback)
 			if event then callback(event, name) end
 			i = i + 16 + nameLen
 		end
+	end
+
+	---@type fs.Watcher
+	local watcher = {}
+
+	function watcher.poll()
+		drain()
+	end
+
+	function watcher.wait()
+		-- Temporarily make the fd blocking, read (sleeps until event), restore
+		local flags = ffi.C.fcntl(ifd, F_GETFL)
+		ffi.C.fcntl(ifd, F_SETFL, bit.band(flags, bit.bnot(O_NONBLOCK)))
+		drain()
+		ffi.C.fcntl(ifd, F_SETFL, flags)
 	end
 
 	function watcher.close()

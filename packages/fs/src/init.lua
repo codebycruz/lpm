@@ -18,6 +18,7 @@ local path = require("path")
 
 ---@class fs.Watcher
 ---@field poll fun()
+---@field wait fun()
 ---@field close fun()
 
 ---@class fs.raw

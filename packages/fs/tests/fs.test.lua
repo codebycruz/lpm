@@ -279,3 +279,66 @@ test.it("watch detects file deletion via poll", function()
 	test.truthy(#events > 0)
 	test.equal(events[1].event, "delete")
 end)
+
+test.it("wait blocks until file creation", function()
+	local d = tmp("wait-create")
+	fs.mkdir(d)
+
+	local events = {}
+	local w = fs.watch(d, function(event, name)
+		events[#events + 1] = { event = event, name = name }
+	end)
+	test.truthy(w)
+
+	-- Write in a coroutine so wait() can block the main thread
+	local co = coroutine.create(function()
+		fs.write(path.join(d, "new.txt"), "hello")
+	end)
+
+	-- Issue the write before wait() so the event is queued
+	coroutine.resume(co)
+	w.wait()
+
+	w.close()
+	test.truthy(#events > 0)
+	test.equal(events[1].event, "create")
+end)
+
+test.it("wait blocks until file modification", function()
+	local d = tmp("wait-modify")
+	fs.mkdir(d)
+	local p = path.join(d, "mod.txt")
+	fs.write(p, "v1")
+
+	local events = {}
+	local w = fs.watch(d, function(event, name)
+		events[#events + 1] = { event = event, name = name }
+	end)
+	test.truthy(w)
+
+	fs.write(p, "v2")
+	w.wait()
+
+	w.close()
+	test.truthy(#events > 0)
+end)
+
+test.it("wait blocks until file deletion", function()
+	local d = tmp("wait-delete")
+	fs.mkdir(d)
+	local p = path.join(d, "gone.txt")
+	fs.write(p, "bye")
+
+	local events = {}
+	local w = fs.watch(d, function(event, name)
+		events[#events + 1] = { event = event, name = name }
+	end)
+	test.truthy(w)
+
+	fs.delete(p)
+	w.wait()
+
+	w.close()
+	test.truthy(#events > 0)
+	test.equal(events[1].event, "delete")
+end)

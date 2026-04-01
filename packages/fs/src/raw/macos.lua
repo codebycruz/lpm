@@ -89,9 +89,10 @@ end)
 ---@class fs.Watcher
 ---@field close fun()
 ---@field poll fun()
+---@field wait fun()
 
 --- Watch a path for changes. Calls callback(event, name) for each change.
---- Returns a watcher with :poll() (non-blocking) and :close().
+--- Returns a watcher with :poll() (non-blocking), :wait() (blocking), and :close().
 ---@param p string
 ---@param callback fun(event: fs.WatchEvent, name: string)
 ---@return fs.Watcher?
@@ -142,11 +143,7 @@ function fs.watch(p, callback)
 	local events = ffi.new("struct kevent[16]")
 	local zero = ffi.new("struct timespec_kq[1]", {{0, 0}})
 
-	---@type fs.Watcher
-	local watcher = {}
-
-	function watcher.poll()
-		local n = ffi.C.kevent(kq, nil, 0, events, 16, zero)
+	local function process(n)
 		for i = 0, n - 1 do
 			local ident = tonumber(events[i].ident)
 			local ff    = events[i].fflags
@@ -190,6 +187,20 @@ function fs.watch(p, callback)
 				end
 			end
 		end
+	end
+
+	---@type fs.Watcher
+	local watcher = {}
+
+	function watcher.poll()
+		local n = ffi.C.kevent(kq, nil, 0, events, 16, zero)
+		process(n)
+	end
+
+	function watcher.wait()
+		-- nil timeout = block indefinitely until an event arrives
+		local n = ffi.C.kevent(kq, nil, 0, events, 16, nil)
+		process(n)
 	end
 
 	function watcher.close()
