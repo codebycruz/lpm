@@ -121,7 +121,7 @@ test.it("exec with stdout=null discards output", function()
 end)
 
 test.it("exec with stderr=null discards stderr", function()
-	local cmd = isWindows and "echo err 1>&2" or "printf err >&2"
+	local cmd = isWindows and "echo err>&2" or "printf err >&2"
 	local code, stdout, stderr = process2.exec(sh, { shc, cmd }, { stderr = "null" })
 	test.equal(code, 0)
 	test.falsy(stderr)
