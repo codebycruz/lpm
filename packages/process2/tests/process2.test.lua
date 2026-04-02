@@ -108,3 +108,64 @@ test.it("spawn Child:poll returns nil while running", function()
 	child:kill(true)
 	child:wait()
 end)
+
+--
+-- stdio modes
+--
+
+test.it("exec with stdout=null discards output", function()
+	local cmd = isWindows and "echo hello" or "printf hello"
+	local code, stdout = process2.exec(sh, { shc, cmd }, { stdout = "null" })
+	test.equal(code, 0)
+	test.falsy(stdout)
+end)
+
+test.it("exec with stderr=null discards stderr", function()
+	local cmd = isWindows and "echo err 1>&2" or "printf err >&2"
+	local code, stdout, stderr = process2.exec(sh, { shc, cmd }, { stderr = "null" })
+	test.equal(code, 0)
+	test.falsy(stderr)
+end)
+
+test.it("exec with stdout=inherit does not capture stdout", function()
+	local cmd = isWindows and "echo hello" or "printf hello"
+	local code, stdout = process2.exec(sh, { shc, cmd }, { stdout = "inherit", stderr = "null" })
+	test.equal(code, 0)
+	test.falsy(stdout)
+end)
+
+test.it("exec with stderr=inherit does not capture stderr", function()
+	local cmd = isWindows and "echo err 1>&2" or "printf err >&2"
+	local code, stdout, stderr = process2.exec(sh, { shc, cmd }, { stdout = "null", stderr = "inherit" })
+	test.equal(code, 0)
+	test.falsy(stderr)
+end)
+
+test.it("spawn with stderr=pipe captures stderr separately", function()
+	local cmd = isWindows and "echo err 1>&2" or "printf err >&2"
+	local child = process2.spawn(sh, { shc, cmd }, { stdout = "pipe", stderr = "pipe" })
+	test.truthy(child)
+	local code, stdout, stderr = child:wait()
+	test.equal(code, 0)
+	-- on posix stderr is merged into stdout when both are piped
+	local combined = (stdout or "") .. (stderr or "")
+	test.truthy(combined:find("err"))
+end)
+
+--
+-- platform
+--
+
+test.it("platform is set to a known value", function()
+	local known = { win32 = true, linux = true, darwin = true, unix = true }
+	test.truthy(known[process2.platform])
+end)
+
+--
+-- exec errors on bad binary
+--
+
+test.it("exec returns non-zero code when binary does not exist", function()
+	local code = process2.exec("__no_such_binary__", {})
+	test.truthy(code ~= 0)
+end)

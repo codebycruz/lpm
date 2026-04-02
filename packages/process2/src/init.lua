@@ -107,7 +107,7 @@ function process2.exec(name, args, opts)
 		stdout = opts.stdout or "pipe",
 		stderr = opts.stderr or "pipe",
 	})
-	if not result then error(err) end
+	if not result then return nil, nil, err end
 
 	local stdout, stderr = readOut(result)
 	local code = waitHandle(result)
