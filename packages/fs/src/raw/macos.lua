@@ -1,10 +1,6 @@
 local ffi = require("ffi")
 
-if jit.arch == "arm64" then
-	ffi.cdef([[typedef uint64_t ino_t;]])
-else
-	ffi.cdef([[typedef uint32_t ino_t;]])
-end
+ffi.cdef([[typedef uint64_t ino_t;]])
 
 ffi.cdef([[
 	struct timespec {
@@ -46,16 +42,17 @@ if jit.arch == "arm64" then
 		};
 	]])
 else
-	-- x86-64 macOS
+	-- x86-64 macOS: plain `stat` uses old 32-bit inode layout; must use stat$INODE64
 	ffi.cdef([[
 		struct stat {
 			int32_t         st_dev;
-			ino_t           st_ino;
 			uint16_t        st_mode;
 			uint16_t        st_nlink;
+			ino_t           st_ino;
 			uint32_t        st_uid;
 			uint32_t        st_gid;
 			int32_t         st_rdev;
+			int32_t         st_rdev_pad;
 			struct timespec st_atimespec;
 			struct timespec st_mtimespec;
 			struct timespec st_ctimespec;
@@ -68,6 +65,8 @@ else
 			int32_t         st_lspare;
 			int64_t         st_qspare[2];
 		};
+		int stat(const char* pathname, struct stat* statbuf) asm("stat$INODE64");
+		int lstat(const char* pathname, struct stat* statbuf) asm("lstat$INODE64");
 
 		struct dirent {
 			uint32_t d_ino;
