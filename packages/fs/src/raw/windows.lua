@@ -329,7 +329,7 @@ function fs.mklink(src, dest)
 		return createJunction(src, dest)
 	end
 
-	return kernel32.CreateSymbolicLinkA(dest, src, 0) ~= 0
+	return kernel32.CreateSymbolicLinkA(dest, src, 0x2) ~= 0
 end
 
 ---@param p string
@@ -431,24 +431,24 @@ end
 ---@field close fun()
 ---@field poll fun()
 
-local FILE_LIST_DIRECTORY    = 0x0001
-local FILE_SHARE_READ        = 0x00000001
-local FILE_SHARE_WRITE       = 0x00000002
-local FILE_SHARE_DELETE      = 0x00000004
-local OPEN_EXISTING_W        = 3
-local FILE_FLAG_BACKUP_SEMANTICS_W = 0x02000000
-local FILE_FLAG_OVERLAPPED   = 0x40000000
+local FILE_LIST_DIRECTORY           = 0x0001
+local FILE_SHARE_READ               = 0x00000001
+local FILE_SHARE_WRITE              = 0x00000002
+local FILE_SHARE_DELETE             = 0x00000004
+local OPEN_EXISTING_W               = 3
+local FILE_FLAG_BACKUP_SEMANTICS_W  = 0x02000000
+local FILE_FLAG_OVERLAPPED          = 0x40000000
 
 local FILE_NOTIFY_CHANGE_FILE_NAME  = 0x00000001
 local FILE_NOTIFY_CHANGE_DIR_NAME   = 0x00000002
 local FILE_NOTIFY_CHANGE_LAST_WRITE = 0x00000010
 local FILE_NOTIFY_CHANGE_SIZE       = 0x00000008
 
-local FILE_ACTION_ADDED    = 1
-local FILE_ACTION_REMOVED  = 2
-local FILE_ACTION_MODIFIED = 3
-local FILE_ACTION_RENAMED_OLD = 4
-local FILE_ACTION_RENAMED_NEW = 5
+local FILE_ACTION_ADDED             = 1
+local FILE_ACTION_REMOVED           = 2
+local FILE_ACTION_MODIFIED          = 3
+local FILE_ACTION_RENAMED_OLD       = 4
+local FILE_ACTION_RENAMED_NEW       = 5
 
 ffi.cdef([[
 	typedef struct {
@@ -463,8 +463,8 @@ ffi.cdef([[
 	DWORD WaitForSingleObject(HANDLE hHandle, DWORD dwMilliseconds);
 ]])
 
-local WAIT_OBJECT_0  = 0
-local WAIT_TIMEOUT   = 0x102
+local WAIT_OBJECT_0 = 0
+local WAIT_TIMEOUT  = 0x102
 
 --- Watch a directory for changes. Calls callback(event, name) for each change.
 --- Returns a watcher with :poll() (non-blocking), :wait() (blocking), and :close().
@@ -486,8 +486,10 @@ function fs.watch(p, callback, opts)
 	)
 	if handle == INVALID_HANDLE_VALUE then return nil end
 
-	local event = kernel32.CreateEventA(nil, 1, 0, nil)  -- manual reset, initially unsignaled
-	if event == nil then kernel32.CloseHandle(handle); return nil end
+	local event = kernel32.CreateEventA(nil, 1, 0, nil) -- manual reset, initially unsignaled
+	if event == nil then
+		kernel32.CloseHandle(handle); return nil
+	end
 
 	local bufSize = 4096
 	local buf = ffi.new("uint8_t[?]", bufSize)
@@ -505,7 +507,8 @@ function fs.watch(p, callback, opts)
 	local function issueRead()
 		ffi.fill(overlapped, ffi.sizeof("OVERLAPPED_W"))
 		overlapped[0].hEvent = event
-		kernel32.ReadDirectoryChangesW(handle, buf, bufSize, recursive and 1 or 0, notifyFilter, bytesReturned, overlapped, nil)
+		kernel32.ReadDirectoryChangesW(handle, buf, bufSize, recursive and 1 or 0, notifyFilter, bytesReturned,
+			overlapped, nil)
 	end
 
 	issueRead()
@@ -519,26 +522,32 @@ function fs.watch(p, callback, opts)
 		end
 
 		local n = tonumber(transferred[0])
-		if not n or n == 0 then issueRead(); return end
+		if not n or n == 0 then
+			issueRead(); return
+		end
 
 		-- FILE_NOTIFY_INFORMATION: NextEntryOffset(4), Action(4), FileNameLength(4), FileName[...]
 		local i = 0
 		while i < n do
-			local ptr = buf + i
-			local nextOff  = ffi.cast("uint32_t*", ptr)[0]
-			local action   = ffi.cast("uint32_t*", ptr + 4)[0]
-			local nameLen  = ffi.cast("uint32_t*", ptr + 8)[0]
-			local name = ""
+			local ptr     = buf + i
+			local nextOff = ffi.cast("uint32_t*", ptr)[0]
+			local action  = ffi.cast("uint32_t*", ptr + 4)[0]
+			local nameLen = ffi.cast("uint32_t*", ptr + 8)[0]
+			local name    = ""
 			for j = 0, nameLen / 2 - 1 do
 				local ch = ffi.cast("uint16_t*", ptr + 12)[j]
 				name = name .. string.char(ch < 128 and ch or 63)
 			end
 
 			local ev ---@type fs.WatchEvent
-			if action == FILE_ACTION_ADDED then ev = "create"
-			elseif action == FILE_ACTION_REMOVED then ev = "delete"
-			elseif action == FILE_ACTION_MODIFIED then ev = "modify"
-			elseif action == FILE_ACTION_RENAMED_OLD or action == FILE_ACTION_RENAMED_NEW then ev = "rename"
+			if action == FILE_ACTION_ADDED then
+				ev = "create"
+			elseif action == FILE_ACTION_REMOVED then
+				ev = "delete"
+			elseif action == FILE_ACTION_MODIFIED then
+				ev = "modify"
+			elseif action == FILE_ACTION_RENAMED_OLD or action == FILE_ACTION_RENAMED_NEW then
+				ev = "rename"
 			end
 
 			if ev then callback(ev, name) end
