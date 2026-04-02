@@ -22,7 +22,7 @@ test.skipIf(process.platform ~= "win32" or jit.arch ~= "x64")(
 		local fakeProfile = path.join(tmpBase, "userprofile")
 		fs.mkdir(fakeProfile)
 
-		local ok, err = process.exec("pwsh", {
+		local ok, err = process.exec("powershell", {
 			"-NoProfile", "-ExecutionPolicy", "Bypass", "-File", installScript
 		}, {
 			env = { USERPROFILE = fakeProfile }
@@ -37,7 +37,7 @@ test.skipIf(process.platform ~= "win32" or jit.arch ~= "x64")("installed lde.exe
 	local fakeProfile = path.join(tmpBase, "userprofile2")
 	fs.mkdir(fakeProfile)
 
-	local ok, err = process.exec("pwsh", {
+	local ok, err = process.exec("powershell", {
 		"-NoProfile", "-ExecutionPolicy", "Bypass", "-File", installScript
 	}, {
 		env = { USERPROFILE = fakeProfile }
