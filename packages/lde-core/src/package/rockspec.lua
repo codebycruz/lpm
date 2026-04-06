@@ -246,12 +246,13 @@ local function openRockspec(dir, rockspecPath)
 					srcFiles[#srcFiles + 1] = path.join(dir, s)
 				end
 
+				lde.global.ensureMingw()
 				local gccArgs = { "-shared", "-fPIC", "-I" .. path.join(sea.getLuajitPath(), "include") }
 				for _, s in ipairs(srcFiles) do gccArgs[#gccArgs + 1] = s end
 				gccArgs[#gccArgs + 1] = "-o"
 				gccArgs[#gccArgs + 1] = destAbs
 
-				local code, _, stderr = process.exec("gcc", gccArgs)
+				local code, _, stderr = process.exec(lde.global.getGCCBin(), gccArgs)
 				if code ~= 0 then
 					return nil, "Failed to compile native module '" .. modname .. "': " .. (stderr or "")
 				end

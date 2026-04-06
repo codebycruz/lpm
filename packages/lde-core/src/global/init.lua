@@ -416,8 +416,6 @@ function global.init()
 	if not fs.exists(toolsDir) then
 		fs.mkdir(toolsDir)
 	end
-
-	global.ensureMingw()
 end
 
 return global
