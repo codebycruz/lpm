@@ -236,7 +236,7 @@ local function openRockspec(dir, rockspecPath)
 			end
 
 			for modname, src in pairs(nativeModules) do
-				local ext = jit.os == "OSX" and "dylib" or "so"
+				local ext = jit.os == "Windows" and "dll" or jit.os == "OSX" and "dylib" or "so"
 				local destAbs = path.join(modulesDir, modname:gsub("%.", path.separator) .. "." .. ext)
 				local destDir = path.dirname(destAbs)
 				if not fs.isdir(destDir) then mkdirp(destDir) end
@@ -249,11 +249,13 @@ local function openRockspec(dir, rockspecPath)
 				lde.global.ensureMingw()
 				local ljPath = sea.getLuajitPath()
 				local gccArgs = { "-shared", "-fPIC", "-I" .. path.join(ljPath, "include") }
+				for _, d in ipairs(src.defines or {}) do gccArgs[#gccArgs + 1] = "-D" .. d end
 				for _, s in ipairs(srcFiles) do gccArgs[#gccArgs + 1] = s end
 				gccArgs[#gccArgs + 1] = "-o"
 				gccArgs[#gccArgs + 1] = destAbs
 				gccArgs[#gccArgs + 1] = "-L" .. path.join(ljPath, "lib")
-				gccArgs[#gccArgs + 1] = "-lluajit"
+				for _, d in ipairs(src.libdirs or {}) do gccArgs[#gccArgs + 1] = "-L" .. d end
+				for _, l in ipairs(src.libraries or {}) do gccArgs[#gccArgs + 1] = "-l" .. l end
 
 				local gccEnv
 				if jit.os == "Windows" then
