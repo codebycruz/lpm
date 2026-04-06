@@ -122,30 +122,36 @@ function sea.compile(main, source, sharedLibs, compiler)
 	-- For each shared library, emit a uint8_t array and the write+preload logic.
 	-- The path is deterministic: /tmp/lde-lib-<name>-<hash>.so so that
 	-- the file is only written once across runs with identical content.
-	local libDecls = {} -- top-level C declarations (arrays + path strings)
-	local libStartup = {} -- code that runs before lua_State is created
+	local libDecls = {}    -- top-level C declarations (arrays + path strings)
+	local libStartup = {}  -- code that runs before lua_State is created
 	local libPreloads = {} -- package.preload registrations
 	local ffiShimEntries = {} -- name -> extracted path, for ffi.load shim
 
 	for _, lib in ipairs(sharedLibs) do
-		local id                      = safeIdent(lib.name)
-		local hash                    = util.fnv1a(lib.content)
-		local ext                     = jit.os == "Windows" and "dll"
+		local id                            = safeIdent(lib.name)
+		local hash                          = util.fnv1a(lib.content)
+		local ext                           = jit.os == "Windows" and "dll"
 			or jit.os == "OSX" and "dylib"
 			or "so"
-		local libPath                 = string.format("/tmp/lde-lib-%s-%s.%s", lib.name, hash, ext)
+		local libPath                       = string.format("/tmp/lde-lib-%s-%s.%s", lib.name, hash, ext)
 		ffiShimEntries[#ffiShimEntries + 1] = string.format('["%s"]="%s"', lib.name, libPath)
+		-- alias as libcurl, libcurl.so, and curl
+		local leaf                          = lib.name:match("[^.]+$")        -- e.g. "libcurl"
+		local bare                          = leaf:match("^lib(.+)$") or leaf -- e.g. "curl"
+		ffiShimEntries[#ffiShimEntries + 1] = string.format('["%s"]="%s"', leaf, libPath)
+		ffiShimEntries[#ffiShimEntries + 1] = string.format('["%s.%s"]="%s"', leaf, ext, libPath)
+		ffiShimEntries[#ffiShimEntries + 1] = string.format('["%s"]="%s"', bare, libPath)
 
-		libDecls[#libDecls + 1]       = string.format(
+		libDecls[#libDecls + 1]             = string.format(
 			"static const uint8_t %sLibrary[] = {%s};",
 			id, toByteLiteral(lib.content)
 		)
-		libDecls[#libDecls + 1]       = string.format(
+		libDecls[#libDecls + 1]             = string.format(
 			'static const char* %sLibraryPath = "%s";',
 			id, libPath
 		)
 
-		libStartup[#libStartup + 1]   = string.format([[
+		libStartup[#libStartup + 1]         = string.format([[
 	{
 		FILE* f = fopen(%sLibraryPath, "rb");
 		if (f == NULL) {
@@ -158,7 +164,7 @@ function sea.compile(main, source, sharedLibs, compiler)
 		}
 	}]], id, id, lib.name, id, id)
 
-		libPreloads[#libPreloads + 1] = string.format([[
+		libPreloads[#libPreloads + 1]       = string.format([[
 	lua_pushstring(L, %sLibraryPath);
 	lua_pushcclosure(L, lde_loadlib_loader, 1);
 	lua_setfield(L, -2, "%s");]], id, string.gsub(lib.name, ".", CEscapes))
@@ -169,13 +175,20 @@ function sea.compile(main, source, sharedLibs, compiler)
 	local libPreloadsStr = table.concat(libPreloads, "\n")
 
 	if #ffiShimEntries > 0 then
-		source = string.format(
-			'do local _m={%s};local _f=require("ffi");local _o=_f.load;_f.load=function(n,...)return _o(_m[n] or n,...)end end\n',
-			table.concat(ffiShimEntries, ",")
-		) .. source
+		source = util.dedent(string.format([[
+			do
+				local _map = {%s}
+				local _ffi = require("ffi")
+				local _orig = _ffi.load
+				_ffi.load = function(name, ...)
+					local remap = _map[name] or _map[name:match("[^/\\]+$")]
+					return _orig(remap or name, ...)
+				end
+			end
+		]], table.concat(ffiShimEntries, ", "))) .. "\n" .. source
 	end
 
-	filePreloads = {
+	filePreloads        = {
 		('luaL_loadbuffer(L, "%s", %d, "%s"); lua_setfield(L, -2, "%s");')
 			:format(
 				source:gsub(".", CEscapes),
@@ -185,12 +198,12 @@ function sea.compile(main, source, sharedLibs, compiler)
 			)
 	}
 
-	local hasLibs        = #sharedLibs > 0
-	local stdintInclude  = hasLibs and "#include <stdint.h>" or ""
+	local hasLibs       = #sharedLibs > 0
+	local stdintInclude = hasLibs and "#include <stdint.h>" or ""
 
 	-- lde_loadlib_loader: a C closure that calls package.loadlib(upvalue1, "*").
 	-- Only emitted when there are shared libs to avoid dead-code warnings.
-	local loadlibHelper  = ""
+	local loadlibHelper = ""
 	if hasLibs then
 		loadlibHelper = [[
 static int lde_loadlib_loader(lua_State* L) {
