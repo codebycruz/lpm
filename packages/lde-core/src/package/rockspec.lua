@@ -248,13 +248,14 @@ local function openRockspec(dir, rockspecPath)
 
 				lde.global.ensureMingw()
 				local ljPath = sea.getLuajitPath()
-				local gccArgs = { "-shared", "-fPIC", "-I" .. path.join(ljPath, "include") }
+				local gccArgs = { "-shared", "-fPIC", "-DLUAJIT_VERSION=LuaJIT 2.1.0-beta3", "-DLUA_VERSION_NUM=501", "-I" .. path.join(ljPath, "include") }
 				for _, d in ipairs(src.defines or {}) do gccArgs[#gccArgs + 1] = "-D" .. d end
 				for _, s in ipairs(srcFiles) do gccArgs[#gccArgs + 1] = s end
 				gccArgs[#gccArgs + 1] = "-o"
 				gccArgs[#gccArgs + 1] = destAbs
 				gccArgs[#gccArgs + 1] = "-L" .. path.join(ljPath, "lib")
 				for _, d in ipairs(src.libdirs or {}) do gccArgs[#gccArgs + 1] = "-L" .. d end
+				if jit.os == "Windows" then gccArgs[#gccArgs + 1] = "-lluajit" end
 				for _, l in ipairs(src.libraries or {}) do gccArgs[#gccArgs + 1] = "-l" .. l end
 
 				local gccEnv
