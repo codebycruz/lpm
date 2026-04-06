@@ -346,6 +346,10 @@ function global.ensureMingw()
 	local mingwDir = global.getMingwDir()
 	if fs.exists(path.join(mingwDir, "bin", "gcc.exe")) then return end
 
+	-- If gcc is already available on PATH, no need to download
+	local code = process.exec("gcc", { "--version" })
+	if code == 0 then return end
+
 	local p = lde.verbose and ansi.progress("Downloading MinGW toolchain") or nil
 
 	local tmpDir = path.join(global.getDir(), "mingw-tmp")
