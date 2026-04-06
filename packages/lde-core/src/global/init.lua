@@ -354,7 +354,7 @@ function global.ensureMingw()
 	local code = process.exec("gcc", { "--version" })
 	if code == 0 then return end
 
-	local p = lde.verbose and ansi.progress("Downloading MinGW toolchain") or nil
+	local p1 = lde.verbose and ansi.progress("Downloading 7zr.exe") or nil
 
 	local tmpDir = path.join(global.getDir(), "mingw-tmp")
 	fs.mkdir(tmpDir)
@@ -365,23 +365,27 @@ function global.ensureMingw()
 	local code, _, stderr = process.exec("curl", { "-sL", "-o", sevenzPath, SEVENZ_URL })
 	if code ~= 0 then
 		fs.rmdir(tmpDir)
-		if p then p:fail("Downloading MinGW toolchain") end
+		if p1 then p1:fail() end
 		error("Failed to download 7zr.exe: " .. (stderr or ""))
 	end
+	if p1 then p1:done() end
 
+	local p2 = lde.verbose and ansi.progress("Downloading MinGW toolchain") or nil
 	code, _, stderr = process.exec("curl", { "-sL", "-o", archivePath, MINGW_URL })
 	if code ~= 0 then
 		fs.rmdir(tmpDir)
-		if p then p:fail("Downloading MinGW toolchain") end
+		if p2 then p2:fail() end
 		error("Failed to download MinGW archive: " .. (stderr or ""))
 	end
+	if p2 then p2:done() end
 
+	local p3 = lde.verbose and ansi.progress("Extracting MinGW toolchain") or nil
 	fs.mkdir(mingwDir)
 	code, _, stderr = process.exec(sevenzPath, { "x", archivePath, "-o" .. mingwDir, "-y" })
 	fs.rmdir(tmpDir)
 	if code ~= 0 then
 		fs.rmdir(mingwDir)
-		if p then p:fail("Downloading MinGW toolchain") end
+		if p3 then p3:fail() end
 		error("Failed to extract MinGW archive: " .. (stderr or ""))
 	end
 
@@ -396,7 +400,7 @@ function global.ensureMingw()
 		fs.move(finalDir, mingwDir)
 	end
 
-	if p then p:done("Downloaded MinGW toolchain") end
+	if p3 then p3:done("Extracted MinGW toolchain") end
 end
 
 function global.init()
