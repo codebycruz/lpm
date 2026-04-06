@@ -16,6 +16,7 @@
 		"lde-test": { "path": "../lde-test" },
 		"git": { "path": "../git" },
 		"rocked": { "path": "../rocked" },
-		"luarocks": { "path": "../luarocks" }
+		"luarocks": { "path": "../luarocks" },
+		"archive": { "path": "../archive" }
 	}
 }

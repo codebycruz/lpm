@@ -1,0 +1,17 @@
+{
+	"name": "archive",
+	"description": "Archive extraction library. Reads magic bytes to detect zip vs tar.",
+	"version": "0.1.0",
+	"dependencies": {
+		"process2": { "path": "../process2" },
+		"fs": { "path": "../fs" },
+		"path": { "path": "../path" }
+	},
+	"devDependencies": {
+		"lde-test": { "path": "../lde-test" },
+		"archive": { "path": "../archive" },
+		"fs": { "path": "../fs" },
+		"env": { "path": "../env" },
+		"path": { "path": "../path" }
+	}
+}
