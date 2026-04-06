@@ -62,6 +62,21 @@ function global.getToolsDir()
 	return path.join(global.getDir(), "tools")
 end
 
+function global.getMingwDir()
+	return path.join(global.getDir(), "mingw")
+end
+
+function global.getGCCBin()
+	if jit.os == "Windows" then
+		local mingwGcc = path.join(global.getMingwDir(), "bin", "gcc.exe")
+		if fs.exists(mingwGcc) then
+			return mingwGcc
+		end
+	end
+
+	return "gcc"
+end
+
 function global.getRegistryDir()
 	return path.join(global.getDir(), "registry")
 end
@@ -321,6 +336,71 @@ function global.writeWrapper(toolName, packageDir, packageName)
 
 		ansi.printf("{green}Installed tool '%s' -> %s", toolName, wrapperPath)
 	end
+end
+
+local MINGW_URL = "https://github.com/lde-org/mingw-dist/releases/download/latest/mingw-windows-x86-64.7z"
+local SEVENZ_URL = "https://github.com/lde-org/mingw-dist/releases/download/latest/7zr.exe"
+
+--- Ensures a MinGW toolchain exists at ~/.lde/mingw (Windows only).
+--- Downloads 7zr.exe temporarily to extract the .7z archive.
+function global.ensureMingw()
+	if jit.os ~= "Windows" then return end
+	if jit.arch ~= "x64" then return end
+
+	local mingwDir = global.getMingwDir()
+	if fs.exists(path.join(mingwDir, "bin", "gcc.exe")) then return end
+
+	-- If gcc is already available on PATH, no need to download
+	local code = process.exec("gcc", { "--version" })
+	if code == 0 then return end
+
+	local p1 = lde.verbose and ansi.progress("Downloading 7zr.exe") or nil
+
+	local tmpDir = path.join(global.getDir(), "mingw-tmp")
+	fs.mkdir(tmpDir)
+
+	local sevenzPath = path.join(tmpDir, "7zr.exe")
+	local archivePath = path.join(tmpDir, "mingw.7z")
+
+	local code, _, stderr = process.exec("curl", { "-sL", "-o", sevenzPath, SEVENZ_URL })
+	if code ~= 0 then
+		fs.rmdir(tmpDir)
+		if p1 then p1:fail() end
+		error("Failed to download 7zr.exe: " .. (stderr or ""))
+	end
+	if p1 then p1:done() end
+
+	local p2 = lde.verbose and ansi.progress("Downloading MinGW toolchain") or nil
+	code, _, stderr = process.exec("curl", { "-sL", "-o", archivePath, MINGW_URL })
+	if code ~= 0 then
+		fs.rmdir(tmpDir)
+		if p2 then p2:fail() end
+		error("Failed to download MinGW archive: " .. (stderr or ""))
+	end
+	if p2 then p2:done() end
+
+	local p3 = lde.verbose and ansi.progress("Extracting MinGW toolchain") or nil
+	fs.mkdir(mingwDir)
+	code, _, stderr = process.exec(sevenzPath, { "x", archivePath, "-o" .. mingwDir, "-y" })
+	fs.rmdir(tmpDir)
+	if code ~= 0 then
+		fs.rmdir(mingwDir)
+		if p3 then p3:fail() end
+		error("Failed to extract MinGW archive: " .. (stderr or ""))
+	end
+
+	-- The 7z contains a single top-level folder (mingw64); flatten it
+	local entries = fs.readdir(mingwDir)
+	local first = entries and entries()
+	if first and first.type == "dir" then
+		local inner = path.join(mingwDir, first.name)
+		local finalDir = mingwDir .. "_swap"
+		fs.move(inner, finalDir)
+		fs.rmdir(mingwDir)
+		fs.move(finalDir, mingwDir)
+	end
+
+	if p3 then p3:done("Extracted MinGW toolchain") end
 end
 
 function global.init()

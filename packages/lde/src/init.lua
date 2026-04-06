@@ -120,6 +120,11 @@ if args:flag("update-path") or args:flag("setup") then
 	return
 end
 
+if args:flag("ensure-mingw") then
+	lde.global.ensureMingw()
+	return
+end
+
 local commands = {}
 commands.help = require("lde.commands.help")
 commands.init = require("lde.commands.initialize")
