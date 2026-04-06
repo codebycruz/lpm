@@ -342,6 +342,7 @@ local SEVENZ_URL = "https://github.com/lde-org/mingw-dist/releases/download/late
 --- Downloads 7zr.exe temporarily to extract the .7z archive.
 function global.ensureMingw()
 	if jit.os ~= "Windows" then return end
+	if jit.arch ~= "x64" then return end
 
 	local mingwDir = global.getMingwDir()
 	if fs.exists(path.join(mingwDir, "bin", "gcc.exe")) then return end
