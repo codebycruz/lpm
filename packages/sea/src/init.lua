@@ -117,15 +117,7 @@ function sea.compile(main, source, sharedLibs, compiler)
 	local outPath = path.join(env.tmpdir(), "sea.out")
 	sharedLibs = sharedLibs or {}
 
-	local filePreloads = {
-		('luaL_loadbuffer(L, "%s", %d, "%s"); lua_setfield(L, -2, "%s");')
-			:format(
-				source:gsub(".", CEscapes),
-				#source,
-				"@" .. main:gsub(".", CEscapes),
-				main:gsub(".", CEscapes)
-			)
-	}
+	local filePreloads
 
 	-- For each shared library, emit a uint8_t array and the write+preload logic.
 	-- The path is deterministic: /tmp/lde-lib-<name>-<hash>.so so that
@@ -133,6 +125,7 @@ function sea.compile(main, source, sharedLibs, compiler)
 	local libDecls = {} -- top-level C declarations (arrays + path strings)
 	local libStartup = {} -- code that runs before lua_State is created
 	local libPreloads = {} -- package.preload registrations
+	local ffiShimEntries = {} -- name -> extracted path, for ffi.load shim
 
 	for _, lib in ipairs(sharedLibs) do
 		local id                      = safeIdent(lib.name)
@@ -141,6 +134,7 @@ function sea.compile(main, source, sharedLibs, compiler)
 			or jit.os == "OSX" and "dylib"
 			or "so"
 		local libPath                 = string.format("/tmp/lde-lib-%s-%s.%s", lib.name, hash, ext)
+		ffiShimEntries[#ffiShimEntries + 1] = string.format('["%s"]="%s"', lib.name, libPath)
 
 		libDecls[#libDecls + 1]       = string.format(
 			"static const uint8_t %sLibrary[] = {%s};",
@@ -173,6 +167,23 @@ function sea.compile(main, source, sharedLibs, compiler)
 	local libDeclsStr    = table.concat(libDecls, "\n")
 	local libStartupStr  = table.concat(libStartup, "\n")
 	local libPreloadsStr = table.concat(libPreloads, "\n")
+
+	if #ffiShimEntries > 0 then
+		source = string.format(
+			'do local _m={%s};local _f=require("ffi");local _o=_f.load;_f.load=function(n,...)return _o(_m[n] or n,...)end end\n',
+			table.concat(ffiShimEntries, ",")
+		) .. source
+	end
+
+	filePreloads = {
+		('luaL_loadbuffer(L, "%s", %d, "%s"); lua_setfield(L, -2, "%s");')
+			:format(
+				source:gsub(".", CEscapes),
+				#source,
+				"@" .. main:gsub(".", CEscapes),
+				main:gsub(".", CEscapes)
+			)
+	}
 
 	local hasLibs        = #sharedLibs > 0
 	local stdintInclude  = hasLibs and "#include <stdint.h>" or ""
