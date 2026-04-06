@@ -70,13 +70,13 @@ test.it("save encodes to .zip and files are extractable", function()
 	fs.mkdir(outDir)
 
 	local a = Archive.new({ ["hello.txt"] = "zip content" })
-	local ok, err = a:save(zipPath)
-	test.truthy(ok, err)
+	local ok = a:save(zipPath)
+	test.truthy(ok)
 	test.truthy(fs.exists(zipPath))
 
 	local b = Archive.new(zipPath)
-	local ok2, err2 = b:extract(outDir)
-	test.truthy(ok2, err2)
+	local ok2 = b:extract(outDir)
+	test.truthy(ok2)
 	test.equal(fs.read(path.join(outDir, "hello.txt")), "zip content")
 end)
 
@@ -86,13 +86,13 @@ test.it("save encodes to .tar.gz and files are extractable", function()
 	fs.mkdir(outDir)
 
 	local a = Archive.new({ ["hello.txt"] = "tar content" })
-	local ok, err = a:save(tarPath)
-	test.truthy(ok, err)
+	local ok = a:save(tarPath)
+	test.truthy(ok)
 	test.truthy(fs.exists(tarPath))
 
 	local b = Archive.new(tarPath)
-	local ok2, err2 = b:extract(outDir)
-	test.truthy(ok2, err2)
+	local ok2 = b:extract(outDir)
+	test.truthy(ok2)
 	test.equal(fs.read(path.join(outDir, "hello.txt")), "tar content")
 end)
 
@@ -109,8 +109,8 @@ test.it("extracts a .tar archive", function()
 	if not made then return end -- skip if tar not available
 
 	local a = Archive.new(tarPath)
-	local ok, err = a:extract(outDir)
-	test.truthy(ok, err)
+	local ok = a:extract(outDir)
+	test.truthy(ok)
 	test.truthy(fs.exists(path.join(outDir, "hello.txt")))
 end)
 
@@ -128,8 +128,8 @@ if jit.os == "Linux" then
 		if not made then return end -- skip if zip not available
 
 		local a = Archive.new(zipPath)
-		local ok, err = a:extract(outDir)
-		test.truthy(ok, err)
+		local ok = a:extract(outDir)
+		test.truthy(ok)
 		test.truthy(fs.exists(path.join(outDir, "hello.txt")))
 	end)
 
@@ -144,7 +144,7 @@ if jit.os == "Linux" then
 		fs.mkdir(outDir)
 
 		local a = Archive.new(binPath)
-		local ok, err = a:extract(outDir)
-		test.truthy(ok, err)
+		local ok = a:extract(outDir)
+		test.truthy(ok)
 	end)
 end

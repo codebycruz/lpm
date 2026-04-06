@@ -103,8 +103,10 @@ function Archive:save(toPath)
 	end
 
 	local code, _, stderr
-	if isZipOut then
+	if isZipOut and jit.os ~= "Windows" then
 		code, _, stderr = process.exec("zip", { "-qr", toPath, "." }, { cwd = tmpDir })
+	elseif isZipOut then
+		code, _, stderr = process.exec("tar", { "-cf", toPath, "-C", tmpDir, "." })
 	else
 		code, _, stderr = process.exec("tar", { "-czf", toPath, "-C", tmpDir, "." })
 	end
