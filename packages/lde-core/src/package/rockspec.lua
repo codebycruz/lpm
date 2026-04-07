@@ -153,29 +153,32 @@ local function openRockspec(dir, rockspecPath)
 		if buildType == "make" then
 			local makeBin = lde.global.getMakeBin()
 			if not process.exec(makeBin, { "--version" }) then
-				return nil, "Package '" .. (spec.package or "?") .. "' requires 'make' to build, but it was not found." ..
+				return nil,
+					"Package '" .. (spec.package or "?") .. "' requires 'make' to build, but it was not found." ..
 					" Install make (e.g. build-essential on Debian/Ubuntu, Xcode Command Line Tools on macOS)."
 			end
 
 			local shellBin = lde.global.getShellBin()
 			if jit.os == "Windows" and not shellBin then
-				ansi.printf("{yellow}Warning: sh.exe not found. Make builds may fail. Install Git for Windows to fix this.\n")
+				ansi.printf(
+					"{yellow}Warning: sh.exe not found. Make builds may fail. Install Git for Windows to fix this.\n")
 			end
 
 			local luajitPath = sea.getLuajitPath()
 			local luajitInclude = path.join(luajitPath, "include")
+			local function toShPath(p) return p:gsub("\\", "/") end
 			local stdVars = {
-				LUA_INCDIR  = luajitInclude,
-				LUA_LIBDIR  = path.join(luajitPath, "lib"),
+				LUA_INCDIR  = toShPath(luajitInclude),
+				LUA_LIBDIR  = toShPath(path.join(luajitPath, "lib")),
 				LUALIB      = "libluajit.a",
 				CFLAGS      = "-fPIC",
 				LIBFLAG     = "-shared",
-				INST_LIBDIR = modulesDir,
-				INST_LUADIR = modulesDir,
-				LUADIR      = modulesDir,
-				LIBDIR      = modulesDir,
-				PREFIX      = modulesDir,
-				LUA         = env.execPath()
+				INST_LIBDIR = toShPath(modulesDir),
+				INST_LUADIR = toShPath(modulesDir),
+				LUADIR      = toShPath(modulesDir),
+				LIBDIR      = toShPath(modulesDir),
+				PREFIX      = toShPath(modulesDir),
+				LUA         = toShPath(env.execPath())
 			}
 
 			local function subst(s)
@@ -453,8 +456,12 @@ local function openRockspec(dir, rockspecPath)
 			end
 		end
 
-		return lde.Package.Config.new({ name = spec.package, version = spec.version, bin = resolvedBin, dependencies =
-		deps })
+		return lde.Package.Config.new({
+			name = spec.package,
+			version = spec.version,
+			bin = resolvedBin,
+			dependencies = deps
+		})
 	end
 
 	return pkg, nil
