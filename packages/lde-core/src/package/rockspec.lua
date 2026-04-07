@@ -267,9 +267,10 @@ local function openRockspec(dir, rockspecPath)
 					gccEnv = { PATH = mingwBin .. ";" .. (env.var("PATH") or "") }
 				end
 
-				local code, _, stderr = process.exec(lde.global.getGCCBin(), gccArgs, { env = gccEnv })
+				local code, stdout, stderr = process.exec(lde.global.getGCCBin(), gccArgs, { env = gccEnv })
 				if code ~= 0 then
-					return nil, "Failed to compile native module '" .. modname .. "': " .. (stderr or "")
+					local msg = (stderr ~= "" and stderr) or (stdout ~= "" and stdout) or ("exited with code " .. code)
+					return nil, "Failed to compile native module '" .. modname .. "': " .. msg
 				end
 			end
 
@@ -337,7 +338,10 @@ local function openRockspec(dir, rockspecPath)
 					table.insert(argv, 1, "--lua")
 				end
 				local code, stdout, stderr = process.exec(bin, argv, { cwd = dir })
-				if code ~= 0 then return nil, stderr or stdout end
+				if code ~= 0 then
+					local msg = (stderr ~= "" and stderr) or (stdout ~= "" and stdout) or ("exited with code " .. code)
+					return nil, msg
+				end
 				return true
 			end
 
