@@ -184,3 +184,17 @@ test.it("json.str handles escaped strings", function()
 	local doc = json.decodeDocument('"hello\\nworld"')
 	test.equal(json.str(doc, doc.root), "hello\nworld")
 end)
+
+-- regression: keys from a decoded object must survive a subsequent json.decode call
+-- (the shared key_arena was being reset, corrupting keyStore slices from prior decodes)
+test.it("encode preserves keys after a subsequent decode clobbers the key arena", function()
+	local config = json.decode('{"name":"myproject","version":"1.0.0","dependencies":{}}')
+	-- A second decode resets key_arena_top to 0, overwriting the arena with new keys
+	json.decode('{"arch":null,"url":null,"luarocks":null}')
+	-- Encoding config must still produce the original keys, not the clobbered ones
+	local out = json.encode(config)
+	local roundtrip = json.decode(out)
+	test.equal(roundtrip.name, "myproject")
+	test.equal(roundtrip.version, "1.0.0")
+	test.truthy(roundtrip.dependencies)
+end)

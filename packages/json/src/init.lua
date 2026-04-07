@@ -784,16 +784,16 @@ local function materialise(doc, idx)
 		end
 		return arr
 	elseif ty == TY_OBJECT then
-		local obj     = {}
-		local slice   = newKeySlice()
-		keyStore[obj] = slice
+		local obj  = {}
+		local keys = {}
+		keyStore[obj] = keys
 		local ki      = tok.child
 		while ki ~= 0 do
 			src_s    = doc.src; src_ptr = cast(u8p, src_s); src_len = #src_s
 			local k  = tokToString(doc.toks[ki])
 			local vi = doc.toks[ki].next
 			obj[k]   = materialise(doc, vi)
-			pushKey(slice, k)
+			keys[#keys + 1] = k
 			ki = doc.toks[vi].next
 		end
 		return obj
