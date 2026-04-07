@@ -22,6 +22,7 @@ local function run(args)
 		scriptArgs = args:drain(dashPos)
 	else
 		name = args:pop()
+		scriptArgs = args:drain()
 	end
 
 	local function execute()
