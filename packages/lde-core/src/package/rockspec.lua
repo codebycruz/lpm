@@ -253,7 +253,7 @@ local function openRockspec(dir, rockspecPath)
 
 			fs.write(stampFile, buildStamp)
 			return true
-		elseif buildType == "builtin" or buildType == "module" then
+		elseif buildType == "builtin" or buildType == "module" or buildType == "none" then
 			for modname, src in pairs(modules) do
 				local modPath = modname:gsub("%.", path.separator)
 				local srcBase = path.basename(src)
