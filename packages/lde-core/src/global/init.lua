@@ -89,6 +89,15 @@ function global.getMakeBin()
 	return "make"
 end
 
+function global.getShellBin()
+	if jit.os == "Windows" then
+		local gitSh = "C:\\Program Files\\Git\\usr\\bin\\sh.exe"
+		if fs.exists(gitSh) then
+			return gitSh
+		end
+	end
+end
+
 function global.getRegistryDir()
 	return path.join(global.getDir(), "registry")
 end

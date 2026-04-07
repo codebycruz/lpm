@@ -8,6 +8,7 @@ local http = require("http")
 local path = require("path")
 local process = require("process2")
 local util = require("util")
+local ansi = require("ansi")
 
 ---@param dir string?
 ---@param rockspecPath string? # Path to the rockspec file; if nil, scanned from dir
@@ -156,6 +157,11 @@ local function openRockspec(dir, rockspecPath)
 					" Install make (e.g. build-essential on Debian/Ubuntu, Xcode Command Line Tools on macOS)."
 			end
 
+			local shellBin = lde.global.getShellBin()
+			if jit.os == "Windows" and not shellBin then
+				ansi.printf("{yellow}Warning: sh.exe not found. Make builds may fail. Install Git for Windows to fix this.\n")
+			end
+
 			local luajitPath = sea.getLuajitPath()
 			local luajitInclude = path.join(luajitPath, "include")
 			local stdVars = {
@@ -189,6 +195,7 @@ local function openRockspec(dir, rockspecPath)
 			local installTarget = spec.build.install_target or "install"
 
 			local buildArgs = buildVarList(spec.build.variables)
+			if shellBin then buildArgs[#buildArgs + 1] = "SHELL=" .. shellBin end
 			if buildTarget ~= "" then buildArgs[#buildArgs + 1] = buildTarget end
 
 			local code, stdout, stderr = process.exec(makeBin, buildArgs, { cwd = dir })
@@ -198,6 +205,7 @@ local function openRockspec(dir, rockspecPath)
 			end
 
 			local installArgs = buildVarList(spec.build.install_variables)
+			if shellBin then installArgs[#installArgs + 1] = "SHELL=" .. shellBin end
 			installArgs[#installArgs + 1] = installTarget
 
 			code, stdout, stderr = process.exec(makeBin, installArgs, { cwd = dir })
