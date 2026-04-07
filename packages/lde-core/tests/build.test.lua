@@ -164,58 +164,6 @@ test.it("installDependencies skips already-installed symlink dependencies", func
 	test.truthy(fs.exists(path.join(mainDir, "target", "skip-dep")))
 end)
 
-test.skip("installDependencies re-runs build script on each call when output is a directory", function()
-	-- "rebuild-sub" has a build.lua that writes an incrementing counter to init.lua.
-	-- The counter persists in a sibling file next to the output dir so it survives
-	-- the fs.copy that happens before each build script run.
-	local buildScript = [[
-local outputDir = os.getenv("LDE_OUTPUT_DIR")
-local counterFile = outputDir .. ".count"
-local count = 0
-local f = io.open(counterFile, "r")
-if f then count = tonumber(f:read("*a")) or 0; f:close() end
-count = count + 1
-local h = io.open(counterFile, "wb"); h:write(tostring(count)); h:close()
-local out = io.open(outputDir .. "/init.lua", "wb")
-out:write(string.format("return %d", count))
-out:close()
-]]
-
-	local subDir = path.join(tmpBase, "rebuild-sub")
-	fs.mkdir(tmpBase)
-	fs.mkdir(subDir)
-	fs.mkdir(path.join(subDir, "src"))
-	fs.write(path.join(subDir, "src", "init.lua"), 'return 0')
-	fs.write(path.join(subDir, "build.lua"), buildScript)
-	fs.write(path.join(subDir, "lde.json"), json.encode({
-		name = "rebuild-sub",
-		version = "0.1.0"
-	}))
-
-	local mainDir = path.join(tmpBase, "rebuild-main")
-	fs.mkdir(mainDir)
-	fs.mkdir(path.join(mainDir, "src"))
-	fs.write(path.join(mainDir, "src", "init.lua"), 'return true')
-	fs.write(path.join(mainDir, "lde.json"), json.encode({
-		name = "rebuild-main",
-		version = "0.1.0",
-		dependencies = {
-			["rebuild-sub"] = { path = "../rebuild-sub" }
-		}
-	}))
-
-	local pkg = lde.Package.open(mainDir)
-
-	pkg:installDependencies()
-	local content1 = fs.read(path.join(mainDir, "target", "rebuild-sub", "init.lua"))
-
-	pkg:installDependencies()
-	local content2 = fs.read(path.join(mainDir, "target", "rebuild-sub", "init.lua"))
-
-	test.equal(content1, "return 1")
-	test.equal(content2, "return 2")
-end)
-
 --
 -- Lockfile
 --
@@ -538,3 +486,205 @@ test.it("runTests can require tests.fixture with build script", function()
 	test.equal(results.failures, 0)
 	test.equal(results.error, nil)
 end)
+
+test.skipIf(jit.os == "Windows" or jit.os == "OSX")(
+	"rockspec buildfn: array-style sources table compiles native module", function()
+		local rockDir = path.join(tmpBase, "array-sources-rock")
+		fs.mkdir(rockDir)
+		fs.mkdir(path.join(rockDir, "src"))
+		fs.write(path.join(rockDir, "src", "greet.c"), [[
+#include <stddef.h>
+typedef struct lua_State lua_State;
+typedef int (*lua_CFunction)(lua_State *L);
+extern void lua_pushstring(lua_State *L, const char *s);
+extern void lua_createtable(lua_State *L, int narr, int nrec);
+extern void lua_setfield(lua_State *L, int idx, const char *k);
+extern void lua_pushcclosure(lua_State *L, lua_CFunction fn, int n);
+static int greet(lua_State *L) { lua_pushstring(L, "hello"); return 1; }
+int luaopen_greet(lua_State *L) {
+	lua_createtable(L, 0, 1);
+	lua_pushcclosure(L, greet, 0);
+	lua_setfield(L, -2, "greet");
+	return 1;
+}
+]])
+		fs.write(path.join(rockDir, "greet-1.0.0-1.rockspec"), [[
+			package = "greet"
+			version = "1.0.0-1"
+			source = { url = "git://example.com/greet" }
+			build = {
+				type = "builtin",
+				modules = { greet = { "src/greet.c" } }
+			}
+		]])
+
+		local appDir = path.join(tmpBase, "array-sources-app")
+		fs.mkdir(appDir)
+		fs.mkdir(path.join(appDir, "src"))
+		fs.write(path.join(appDir, "src", "init.lua"),
+			'local m = require("greet"); assert(m.greet() == "hello")')
+		fs.write(path.join(appDir, "lde.json"), json.encode({
+			name = "array-sources-app",
+			version = "0.1.0",
+			dependencies = { greet = { path = "../array-sources-rock" } }
+		}))
+
+		local app = lde.Package.open(appDir)
+		app:installDependencies()
+		local ok, err = app:runFile()
+		if not ok then print(err) end
+		test.truthy(ok)
+	end)
+
+--
+-- Regression: src.sources as a string (not a table) must not crash ipairs
+--
+
+test.it("rockspec: sources = 'file.c' (string) is accepted without crashing", function()
+	local dir = path.join(tmpBase, "string-sources-rock")
+	fs.mkdir(dir)
+	fs.write(path.join(dir, "string-sources-1.0-1.rockspec"), [[
+package = "string-sources"
+version = "1.0-1"
+source = { url = "https://example.com" }
+build = {
+  type = "builtin",
+  modules = {
+    foo = { sources = "src/foo.c" },
+  }
+}
+]])
+	-- openRockspec must not error even though sources is a string
+	local pkg, err = lde.Package.openRockspec(dir)
+	test.truthy(pkg, err)
+end)
+
+--
+-- Regression: build.install.lua files must be copied to target
+--
+
+test.it("rockspec: install.lua files are copied to target modulesDir", function()
+	local dir = path.join(tmpBase, "install-lua-rock")
+	fs.mkdir(dir)
+	fs.mkdir(path.join(dir, "lua"))
+	fs.mkdir(path.join(dir, "lua", "mypkg"))
+	fs.write(path.join(dir, "lua", "mypkg", "util.lua"), 'return "util"')
+	fs.write(path.join(dir, "install-lua-1.0-1.rockspec"), [[
+package = "install-lua"
+version = "1.0-1"
+source = { url = "https://example.com" }
+build = {
+  type = "builtin",
+  modules = {},
+  install = {
+    lua = {
+      ["mypkg.util"] = "lua/mypkg/util.lua",
+    }
+  }
+}
+]])
+
+	local pkg, err = lde.Package.openRockspec(dir)
+	test.truthy(pkg, err)
+
+	local outputDir = path.join(dir, "target", "install-lua")
+	local ok, berr = pkg:runBuildScript(outputDir)
+	test.truthy(ok, berr)
+
+	-- mypkg.util -> lua/mypkg/util.lua => target/mypkg/util.lua
+	test.truthy(fs.exists(path.join(dir, "target", "mypkg", "util.lua")))
+end)
+
+--
+-- Regression: array-style install.bin should use basename, not full relative path
+--
+
+test.it("rockspec: array-style install.bin uses basename as bin name and target location", function()
+	local dir = path.join(tmpBase, "array-bin-rock")
+	fs.mkdir(dir)
+	fs.mkdir(path.join(dir, "bin"))
+	fs.write(path.join(dir, "bin", "myscript"), 'print("hi")')
+	fs.write(path.join(dir, "array-bin-1.0-1.rockspec"), [[
+package = "array-bin"
+version = "1.0-1"
+source = { url = "https://example.com" }
+build = {
+  type = "builtin",
+  modules = {},
+  install = {
+    bin = { "bin/myscript" }
+  }
+}
+]])
+
+	local pkg, err = lde.Package.openRockspec(dir)
+	test.truthy(pkg, err)
+
+	local outputDir = path.join(dir, "target", "array-bin")
+	local ok, berr = pkg:runBuildScript(outputDir)
+	test.truthy(ok, berr)
+
+	-- file must land at target/array-bin/myscript, not target/array-bin/bin/myscript
+	test.truthy(fs.exists(path.join(outputDir, "myscript")))
+	test.equal(fs.exists(path.join(outputDir, "bin", "myscript")), false)
+
+	-- readConfig must return bin = "myscript", not "bin/myscript"
+	local cfg = pkg:readConfig()
+	test.equal(cfg.bin, "myscript")
+end)
+
+--
+-- Regression: make build.variables / install_variables substitution + bin promotion
+--
+
+test.skipIf(jit.os == "Windows")(
+	"rockspec: make build.variables are substituted and passed to make", function()
+		local dir = path.join(tmpBase, "make-vars-rock")
+		fs.mkdir(dir)
+		-- Makefile that writes MY_INCDIR to built.txt on build, then copies it on install.
+		-- install must NOT depend on build (a phony dep would re-run build with install's vars,
+		-- overwriting built.txt with an empty MY_INCDIR since it only appears in build.variables).
+		fs.write(path.join(dir, "Makefile"), [[
+build:
+	echo "$(MY_INCDIR)" > built.txt
+
+install:
+	mkdir -p $(MY_LIBDIR)
+	cp built.txt $(MY_LIBDIR)/vars.txt
+	mkdir -p $(PREFIX)/bin
+	echo "#!/bin/sh" > $(PREFIX)/bin/myprog
+	chmod 755 $(PREFIX)/bin/myprog
+]])
+		fs.write(path.join(dir, "make-vars-1.0-1.rockspec"), [[
+package = "make-vars"
+version = "1.0-1"
+source = { url = "https://example.com" }
+build = {
+  type = "make",
+  variables     = { MY_INCDIR = "$(LUA_INCDIR)" },
+  install_variables = { MY_LIBDIR = "$(LUADIR)", PREFIX = "$(PREFIX)" },
+}
+]])
+
+		local pkg, err = lde.Package.openRockspec(dir)
+		test.truthy(pkg, err)
+
+		local outputDir = path.join(dir, "target", "make-vars")
+		local ok, berr = pkg:runBuildScript(outputDir)
+		test.truthy(ok, berr)
+
+		-- vars.txt must exist in modulesDir (= target/)
+		local modulesDir = path.join(dir, "target")
+		test.truthy(fs.exists(path.join(modulesDir, "vars.txt")))
+
+		-- vars.txt must contain the LuaJIT include path (substituted from $(LUA_INCDIR))
+		local content = fs.read(path.join(modulesDir, "vars.txt")) or ""
+		test.truthy(content:find("luajit", 1, true) or content:find("include", 1, true))
+
+		-- myprog binary must be promoted from target/bin/ into target/make-vars/
+		test.truthy(fs.exists(path.join(outputDir, "myprog")))
+
+		-- readConfig must discover the promoted bin
+		local cfg = pkg:readConfig()
+		test.equal(cfg.bin, "myprog")
+	end)

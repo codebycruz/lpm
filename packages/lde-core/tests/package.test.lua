@@ -313,3 +313,21 @@ int luaopen_answer(lua_State *L) {
 		if not ok then print(err) end
 		test.truthy(ok)
 	end)
+
+test.it("bundle includes top-level lua files in target/ (not just subdir modules)", function()
+	local dir = makePackageDir("bundle-toplevel", { name = "bundle-toplevel", version = "0.1.0", dependencies = {} })
+	local targetDir = path.join(dir, "target")
+	fs.mkdir(targetDir)
+
+	-- top-level module (e.g. socket.lua installed by luasocket)
+	fs.write(path.join(targetDir, "mymod.lua"), "return 42")
+	-- subdir module
+	fs.mkdir(path.join(targetDir, "mymod"))
+	fs.write(path.join(targetDir, "mymod", "sub.lua"), "return 99")
+
+	local pkg = lde.Package.open(dir)
+	local bundle = pkg:bundle()
+
+	test.truthy(bundle:find('"mymod"'), "top-level mymod.lua should be bundled as 'mymod'")
+	test.truthy(bundle:find('"mymod.sub"'), "subdir mymod/sub.lua should be bundled as 'mymod.sub'")
+end)

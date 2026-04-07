@@ -81,7 +81,10 @@ local function openRockspec(dir, rockspecPath)
 						": unrecognised source type for module '" .. modname .. "': " .. src .. "\n")
 				end
 			elseif type(src) == "table" and src.sources then
+				if type(src.sources) == "string" then src = { sources = { src.sources } } end
 				nativeModules[modname] = src
+			elseif type(src) == "table" and src[1] then
+				nativeModules[modname] = { sources = src }
 			elseif type(src) == "table" then
 				io.stderr:write("warning: " ..
 					(spec.package or "?") .. ": module '" .. modname .. "' has no sources field, skipping\n")
@@ -114,17 +117,17 @@ local function openRockspec(dir, rockspecPath)
 					nativeModules[modname] = { sources = { src } }
 				end
 			elseif type(src) == "table" and src.sources then
+				if type(src.sources) == "string" then src = { sources = { src.sources } } end
 				nativeModules[modname] = src
 			end
 		end
 	end
 
 	local binScripts = (spec.build and spec.build.install and spec.build.install.bin) or {}
+	local installLuaFiles = (spec.build and spec.build.install and spec.build.install.lua) or {}
 	local binEntry
-	for k, v in pairs(binScripts) do
-		binEntry = type(k) == "number" and v or k
-		break
-	end
+	local bk, bv = next(binScripts)
+	if bk then binEntry = type(bk) == "number" and path.basename(bv) or bk end
 
 	local buildType = spec.build and spec.build.type or "builtin"
 
@@ -137,7 +140,7 @@ local function openRockspec(dir, rockspecPath)
 	end
 
 	pkg.buildfn = function(_, outputDir)
-		if not fs.isdir(outputDir) then fs.mkdir(outputDir) end
+		if not fs.isdir(outputDir) then mkdirp(outputDir) end
 
 		local stampFile = path.join(outputDir, ".lde-built")
 		if fs.exists(stampFile) and fs.read(stampFile) == buildStamp then
@@ -147,33 +150,73 @@ local function openRockspec(dir, rockspecPath)
 		local modulesDir = path.dirname(outputDir)
 
 		if buildType == "make" then
+			if not process.exec("make", { "--version" }) then
+				return nil, "Package '" .. (spec.package or "?") .. "' requires 'make' to build, but it was not found." ..
+					" Install make (e.g. build-essential on Debian/Ubuntu, Xcode Command Line Tools on macOS)."
+			end
+
 			local luajitPath = sea.getLuajitPath()
 			local luajitInclude = path.join(luajitPath, "include")
-			local makeVars = {
-				"LUA_INCDIR=" .. luajitInclude,
-				"LUA_LIBDIR=" .. path.join(luajitPath, "lib"),
-				"LUALIB=libluajit.a",
-				"CFLAGS=-fPIC",
-				"LIBFLAG=-shared",
-				"INST_LIBDIR=" .. modulesDir,
-				"INST_LUADIR=" .. modulesDir
+			local stdVars = {
+				LUA_INCDIR  = luajitInclude,
+				LUA_LIBDIR  = path.join(luajitPath, "lib"),
+				LUALIB      = "libluajit.a",
+				CFLAGS      = "-fPIC",
+				LIBFLAG     = "-shared",
+				INST_LIBDIR = modulesDir,
+				INST_LUADIR = modulesDir,
+				LUADIR      = modulesDir,
+				LIBDIR      = modulesDir,
+				PREFIX      = modulesDir,
+				LUA         = env.execPath()
 			}
+
+			local function subst(s)
+				return (s:gsub("%$%(([%w_]+)%)", function(k) return stdVars[k] or "" end))
+			end
+
+			local function buildVarList(extraVars)
+				local args = {}
+				for k, v in pairs(stdVars) do args[#args + 1] = k .. "=" .. v end
+				for k, v in pairs(extraVars or {}) do
+					args[#args + 1] = k .. "=" .. subst(v)
+				end
+				return args
+			end
+
 			local buildTarget = spec.build.build_target or ""
 			local installTarget = spec.build.install_target or "install"
 
-			local buildArgs = {}
-			for _, v in ipairs(makeVars) do buildArgs[#buildArgs + 1] = v end
+			local buildArgs = buildVarList(spec.build.variables)
 			if buildTarget ~= "" then buildArgs[#buildArgs + 1] = buildTarget end
 
-			local code, _, stderr = process.exec("make", buildArgs, { cwd = dir })
-			if code ~= 0 then return nil, "make failed: " .. (stderr or "") end
+			local code, stdout, stderr = process.exec("make", buildArgs, { cwd = dir })
+			if code ~= 0 then
+				local msg = (stderr ~= "" and stderr) or (stdout ~= "" and stdout) or ("exited with code " .. code)
+				return nil, "make failed: " .. msg
+			end
 
-			local installArgs = {}
-			for _, v in ipairs(makeVars) do installArgs[#installArgs + 1] = v end
+			local installArgs = buildVarList(spec.build.install_variables)
 			installArgs[#installArgs + 1] = installTarget
 
-			code, _, stderr = process.exec("make", installArgs, { cwd = dir })
-			if code ~= 0 then return nil, "make install failed: " .. (stderr or "") end
+			code, stdout, stderr = process.exec("make", installArgs, { cwd = dir })
+			if code ~= 0 then
+				local msg = (stderr ~= "" and stderr) or (stdout ~= "" and stdout) or ("exited with code " .. code)
+				return nil, "make install failed: " .. msg
+			end
+
+			-- Promote any binaries installed to modulesDir/bin/ into outputDir
+			local binDir = path.join(modulesDir, "bin")
+			if fs.isdir(binDir) then
+				local iter = fs.readdir(binDir)
+				if iter then
+					for entry in iter do
+						if entry.type == "file" then
+							fs.copy(path.join(binDir, entry.name), path.join(outputDir, entry.name))
+						end
+					end
+				end
+			end
 
 			fs.write(stampFile, buildStamp)
 			return true
@@ -213,7 +256,7 @@ local function openRockspec(dir, rockspecPath)
 
 			fs.write(stampFile, buildStamp)
 			return true
-		elseif buildType == "builtin" then
+		elseif buildType == "builtin" or buildType == "module" or buildType == "none" then
 			for modname, src in pairs(modules) do
 				local modPath = modname:gsub("%.", path.separator)
 				local srcBase = path.basename(src)
@@ -248,7 +291,8 @@ local function openRockspec(dir, rockspecPath)
 
 				lde.global.ensureMingw()
 				local ljPath = sea.getLuajitPath()
-				local gccArgs = { "-shared", "-fPIC", "-DLUAJIT_VERSION=LuaJIT 2.1.0-beta3", "-DLUA_VERSION_NUM=501", "-I" .. path.join(ljPath, "include") }
+				local gccArgs = { "-shared", "-fPIC", "-DLUAJIT_VERSION=LuaJIT 2.1.0-beta3", "-DLUA_VERSION_NUM=501",
+					"-I" .. path.join(ljPath, "include") }
 				for _, d in ipairs(src.defines or {}) do gccArgs[#gccArgs + 1] = "-D" .. d end
 				for _, s in ipairs(srcFiles) do gccArgs[#gccArgs + 1] = s end
 				gccArgs[#gccArgs + 1] = "-o"
@@ -256,6 +300,9 @@ local function openRockspec(dir, rockspecPath)
 				gccArgs[#gccArgs + 1] = "-L" .. path.join(ljPath, "lib")
 				for _, d in ipairs(src.libdirs or {}) do gccArgs[#gccArgs + 1] = "-L" .. d end
 				if jit.os == "Windows" then gccArgs[#gccArgs + 1] = "-lluajit" end
+				if jit.os == "OSX" then
+					gccArgs[#gccArgs + 1] = "-undefined"; gccArgs[#gccArgs + 1] = "dynamic_lookup"
+				end
 				for _, l in ipairs(src.libraries or {}) do gccArgs[#gccArgs + 1] = "-l" .. l end
 
 				local gccEnv
@@ -264,16 +311,105 @@ local function openRockspec(dir, rockspecPath)
 					gccEnv = { PATH = mingwBin .. ";" .. (env.var("PATH") or "") }
 				end
 
-				local code, _, stderr = process.exec(lde.global.getGCCBin(), gccArgs, { env = gccEnv })
+				local code, stdout, stderr = process.exec(lde.global.getGCCBin(), gccArgs, { env = gccEnv })
 				if code ~= 0 then
-					return nil, "Failed to compile native module '" .. modname .. "': " .. (stderr or "")
+					local msg = (stderr ~= "" and stderr) or (stdout ~= "" and stdout) or ("exited with code " .. code)
+					return nil, "Failed to compile native module '" .. modname .. "': " .. msg
 				end
 			end
 
 			for k, v in pairs(binScripts) do
-				local binName, binRelSrc = type(k) == "number" and v or k, v
-				fs.copy(path.join(dir, binRelSrc), path.join(outputDir, binName))
+				local binName = type(k) == "number" and path.basename(v) or k
+				local binDest = path.join(outputDir, binName)
+				local binDestDir = path.dirname(binDest)
+				if not fs.isdir(binDestDir) then mkdirp(binDestDir) end
+				fs.copy(path.join(dir, v), binDest)
 			end
+
+			for modname, src in pairs(installLuaFiles) do
+				if not src:match("%.lua$") then goto continue_install_lua end
+				if type(modname) == "number" then
+					modname = src:gsub("%.lua$", ""):gsub("[/\\]", ".")
+				end
+				local modPath = modname:gsub("%.", path.separator)
+				local destAbs = path.join(modulesDir, modPath .. ".lua")
+				local destDir = path.dirname(destAbs)
+				if not fs.isdir(destDir) then mkdirp(destDir) end
+				fs.copy(path.join(dir, src), destAbs)
+				::continue_install_lua::
+			end
+
+			fs.write(stampFile, buildStamp)
+			return true
+		elseif buildType == "command" then
+			local luajitPath = sea.getLuajitPath()
+			local ldeBin = env.execPath()
+			local vars = {
+				LUA           = ldeBin,
+				LUA_INCDIR    = path.join(luajitPath, "include"),
+				LUA_LIBDIR    = path.join(luajitPath, "lib"),
+				LIBDIR        = modulesDir,
+				LUADIR        = modulesDir,
+				PREFIX        = modulesDir,
+				CC            = lde.global.getGCCBin(),
+				LD            = lde.global.getGCCBin(),
+				CFLAGS        = "-fPIC",
+				LIBFLAG       = "-shared",
+				LIB_EXTENSION = jit.os == "Windows" and "dll" or jit.os == "OSX" and "dylib" or "so",
+				OBJ_EXTENSION = "o"
+			}
+
+			local function subst(cmd)
+				return (cmd:gsub("%$%(([%w_]+)%)", function(k) return vars[k] or "" end))
+			end
+
+			local function shellSplit(cmd)
+				local args = {}
+				local i = 1
+				while i <= #cmd do
+					while i <= #cmd and cmd:sub(i, i) == " " do i = i + 1 end
+					if i > #cmd then break end
+					local token = ""
+					while i <= #cmd and cmd:sub(i, i) ~= " " do
+						local c = cmd:sub(i, i)
+						if c == '"' then
+							i = i + 1
+							while i <= #cmd and cmd:sub(i, i) ~= '"' do
+								token = token .. cmd:sub(i, i)
+								i = i + 1
+							end
+							if i <= #cmd then i = i + 1 end -- skip closing quote
+						else
+							token = token .. c
+							i = i + 1
+						end
+					end
+					args[#args + 1] = token
+				end
+				return args
+			end
+
+			local function execCmd(cmdStr)
+				if not cmdStr or cmdStr == "" then return true end
+				local argv = shellSplit(subst(cmdStr))
+				local bin = table.remove(argv, 1)
+				-- If bin is the lde binary, inject --lua so it runs the next arg as a plain script
+				if bin == ldeBin then
+					table.insert(argv, 1, "--lua")
+				end
+				local code, stdout, stderr = process.exec(bin, argv, { cwd = dir })
+				if code ~= 0 then
+					local msg = (stderr ~= "" and stderr) or (stdout ~= "" and stdout) or ("exited with code " .. code)
+					return nil, msg
+				end
+				return true
+			end
+
+			local cmdOk, cmdErr = execCmd(spec.build.build_command)
+			if not cmdOk then return nil, "build_command failed: " .. (cmdErr or "(no output)") end
+
+			cmdOk, cmdErr = execCmd(spec.build.install_command)
+			if not cmdOk then return nil, "install_command failed: " .. (cmdErr or "(no output)") end
 
 			fs.write(stampFile, buildStamp)
 			return true
@@ -286,12 +422,30 @@ local function openRockspec(dir, rockspecPath)
 		local deps = {}
 		for _, depStr in ipairs(spec.dependencies or {}) do
 			local name, rest = depStr:match("^([%w%-_]+)%s*(.*)")
-			if name and name ~= "lua" then
+			if name and name ~= "lua" and name ~= "luajit" then
 				deps[name] = { luarocks = name, version = rest ~= "" and rest or nil }
 			end
 		end
 
-		return lde.Package.Config.new({ name = spec.package, version = spec.version, bin = binEntry, dependencies = deps })
+		local resolvedBin = binEntry
+		if not resolvedBin and (buildType == "make" or buildType == "cmake") then
+			-- Binaries from make/cmake installs are promoted into the package target dir
+			local targetDir = path.join(dir, "target", spec.package or "")
+			if fs.isdir(targetDir) then
+				local iter = fs.readdir(targetDir)
+				if iter then
+					for entry in iter do
+						if entry.type == "file" and entry.name ~= ".lde-built" then
+							resolvedBin = entry.name
+							break
+						end
+					end
+				end
+			end
+		end
+
+		return lde.Package.Config.new({ name = spec.package, version = spec.version, bin = resolvedBin, dependencies =
+		deps })
 	end
 
 	return pkg, nil

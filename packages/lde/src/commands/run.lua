@@ -9,7 +9,7 @@ local lde = require("lde-core")
 local function run(args)
 	local pkg, pkgErr = lde.Package.open()
 
-	local scriptArgs = {}
+	local scriptArgs ---@type string[]
 	local name = nil ---@type string?
 	local watch = args:flag("watch")
 
@@ -22,6 +22,7 @@ local function run(args)
 		scriptArgs = args:drain(dashPos)
 	else
 		name = args:pop()
+		scriptArgs = args:drain()
 	end
 
 	local function execute()

@@ -22,7 +22,15 @@ local function compilePackage(package)
 
 	for entry in fs.readdir(modulesDir) do
 		local p = path.join(modulesDir, entry.name)
-		if not fs.isdir(p) then goto continue end
+		if not fs.isdir(p) then
+			if entry.name:match("%." .. nativeExt .. "$") then
+				local content = fs.read(p)
+				if not content then error("Could not read file: " .. p) end
+				local moduleName = entry.name:gsub("%." .. nativeExt .. "$", "")
+				table.insert(sharedLibs, { name = moduleName, content = content })
+			end
+			goto continue
+		end
 
 		for _, relativePath in ipairs(fs.scan(p, "**" .. path.separator .. "*." .. nativeExt)) do
 			local absPath = path.join(p, relativePath)

@@ -78,6 +78,12 @@ local function bundlePackage(package, opts)
 		local p = path.join(modulesDir, entry.name)
 		if fs.isdir(p) then
 			bundleDir(entry.name, p, files)
+		elseif entry.name:match("%.lua$") then
+			local content = fs.read(p)
+			if content then
+				local moduleName = entry.name:gsub("%.lua$", "")
+				files[moduleName] = content
+			end
 		end
 	end
 

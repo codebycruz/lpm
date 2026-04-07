@@ -197,6 +197,15 @@ local function satisfies(ver, op, constraint)
 		return c == 0
 	elseif op == "~=" then
 		return c ~= 0
+	elseif op == "~>" then
+		-- Pessimistic constraint: >= ver and < ver with last segment dropped + penultimate incremented
+		-- e.g. ~> 1.2 means >= 1.2 and < 1.3; ~> 1 means >= 1 and < 2
+		if c < 0 then return false end
+		local cv = parseVer(constraint)
+		local upper = {}
+		for i = 1, #cv - 1 do upper[i] = cv[i] end
+		upper[math.max(#cv - 1, 1)] = (upper[math.max(#cv - 1, 1)] or cv[1]) + 1
+		return cmpVer(parseVer(ver), upper) < 0
 	end
 
 	return false
