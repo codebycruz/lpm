@@ -190,14 +190,20 @@ local function openRockspec(dir, rockspecPath)
 			local buildArgs = buildVarList(spec.build.variables)
 			if buildTarget ~= "" then buildArgs[#buildArgs + 1] = buildTarget end
 
-			local code, _, stderr = process.exec("make", buildArgs, { cwd = dir })
-			if code ~= 0 then return nil, "make failed: " .. (stderr or "") end
+			local code, stdout, stderr = process.exec("make", buildArgs, { cwd = dir })
+			if code ~= 0 then
+				local msg = (stderr ~= "" and stderr) or (stdout ~= "" and stdout) or ("exited with code " .. code)
+				return nil, "make failed: " .. msg
+			end
 
 			local installArgs = buildVarList(spec.build.install_variables)
 			installArgs[#installArgs + 1] = installTarget
 
-			code, _, stderr = process.exec("make", installArgs, { cwd = dir })
-			if code ~= 0 then return nil, "make install failed: " .. (stderr or "") end
+			code, stdout, stderr = process.exec("make", installArgs, { cwd = dir })
+			if code ~= 0 then
+				local msg = (stderr ~= "" and stderr) or (stdout ~= "" and stdout) or ("exited with code " .. code)
+				return nil, "make install failed: " .. msg
+			end
 
 			-- Promote any binaries installed to modulesDir/bin/ into outputDir
 			local binDir = path.join(modulesDir, "bin")
