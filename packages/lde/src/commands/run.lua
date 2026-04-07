@@ -9,7 +9,7 @@ local lde = require("lde-core")
 local function run(args)
 	local pkg, pkgErr = lde.Package.open()
 
-	local scriptArgs = {}
+	local scriptArgs ---@type string[]
 	local name = nil ---@type string?
 	local watch = args:flag("watch")
 

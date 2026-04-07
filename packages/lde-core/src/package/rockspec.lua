@@ -324,11 +324,16 @@ local function openRockspec(dir, rockspecPath)
 			end
 
 			for modname, src in pairs(installLuaFiles) do
+				if not src:match("%.lua$") then goto continue_install_lua end
+				if type(modname) == "number" then
+					modname = src:gsub("%.lua$", ""):gsub("[/\\]", ".")
+				end
 				local modPath = modname:gsub("%.", path.separator)
 				local destAbs = path.join(modulesDir, modPath .. ".lua")
 				local destDir = path.dirname(destAbs)
 				if not fs.isdir(destDir) then mkdirp(destDir) end
 				fs.copy(path.join(dir, src), destAbs)
+				::continue_install_lua::
 			end
 
 			fs.write(stampFile, buildStamp)
