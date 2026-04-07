@@ -259,6 +259,7 @@ local function openRockspec(dir, rockspecPath)
 				gccArgs[#gccArgs + 1] = "-L" .. path.join(ljPath, "lib")
 				for _, d in ipairs(src.libdirs or {}) do gccArgs[#gccArgs + 1] = "-L" .. d end
 				if jit.os == "Windows" then gccArgs[#gccArgs + 1] = "-lluajit" end
+				if jit.os == "OSX" then gccArgs[#gccArgs + 1] = "-undefined"; gccArgs[#gccArgs + 1] = "dynamic_lookup" end
 				for _, l in ipairs(src.libraries or {}) do gccArgs[#gccArgs + 1] = "-l" .. l end
 
 				local gccEnv
