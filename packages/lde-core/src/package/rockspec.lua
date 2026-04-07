@@ -81,6 +81,7 @@ local function openRockspec(dir, rockspecPath)
 						": unrecognised source type for module '" .. modname .. "': " .. src .. "\n")
 				end
 			elseif type(src) == "table" and src.sources then
+				if type(src.sources) == "string" then src = { sources = { src.sources } } end
 				nativeModules[modname] = src
 			elseif type(src) == "table" and src[1] then
 				nativeModules[modname] = { sources = src }
@@ -116,15 +117,18 @@ local function openRockspec(dir, rockspecPath)
 					nativeModules[modname] = { sources = { src } }
 				end
 			elseif type(src) == "table" and src.sources then
+				if type(src.sources) == "string" then src = { sources = { src.sources } } end
 				nativeModules[modname] = src
 			end
 		end
 	end
 
 	local binScripts = (spec.build and spec.build.install and spec.build.install.bin) or {}
+	local installLuaFiles = (spec.build and spec.build.install and spec.build.install.lua) or {}
 	local binEntry
 	for k, v in pairs(binScripts) do
-		binEntry = type(k) == "number" and v or k
+		local name = type(k) == "number" and path.basename(v) or k
+		binEntry = name
 		break
 	end
 
@@ -151,27 +155,43 @@ local function openRockspec(dir, rockspecPath)
 		if buildType == "make" then
 			local luajitPath = sea.getLuajitPath()
 			local luajitInclude = path.join(luajitPath, "include")
-			local makeVars = {
-				"LUA_INCDIR=" .. luajitInclude,
-				"LUA_LIBDIR=" .. path.join(luajitPath, "lib"),
-				"LUALIB=libluajit.a",
-				"CFLAGS=-fPIC",
-				"LIBFLAG=-shared",
-				"INST_LIBDIR=" .. modulesDir,
-				"INST_LUADIR=" .. modulesDir
+			local stdVars = {
+				LUA_INCDIR = luajitInclude,
+				LUA_LIBDIR = path.join(luajitPath, "lib"),
+				LUALIB     = "libluajit.a",
+				CFLAGS     = "-fPIC",
+				LIBFLAG    = "-shared",
+				INST_LIBDIR = modulesDir,
+				INST_LUADIR = modulesDir,
+				LUADIR      = modulesDir,
+				LIBDIR      = modulesDir,
+				PREFIX      = modulesDir,
+				LUA         = env.execPath(),
 			}
+
+			local function subst(s)
+				return (s:gsub("%$%(([%w_]+)%)", function(k) return stdVars[k] or "" end))
+			end
+
+			local function buildVarList(extraVars)
+				local args = {}
+				for k, v in pairs(stdVars) do args[#args + 1] = k .. "=" .. v end
+				for k, v in pairs(extraVars or {}) do
+					args[#args + 1] = k .. "=" .. subst(v)
+				end
+				return args
+			end
+
 			local buildTarget = spec.build.build_target or ""
 			local installTarget = spec.build.install_target or "install"
 
-			local buildArgs = {}
-			for _, v in ipairs(makeVars) do buildArgs[#buildArgs + 1] = v end
+			local buildArgs = buildVarList(spec.build.variables)
 			if buildTarget ~= "" then buildArgs[#buildArgs + 1] = buildTarget end
 
 			local code, _, stderr = process.exec("make", buildArgs, { cwd = dir })
 			if code ~= 0 then return nil, "make failed: " .. (stderr or "") end
 
-			local installArgs = {}
-			for _, v in ipairs(makeVars) do installArgs[#installArgs + 1] = v end
+			local installArgs = buildVarList(spec.build.install_variables)
 			installArgs[#installArgs + 1] = installTarget
 
 			code, _, stderr = process.exec("make", installArgs, { cwd = dir })
@@ -215,7 +235,7 @@ local function openRockspec(dir, rockspecPath)
 
 			fs.write(stampFile, buildStamp)
 			return true
-		elseif buildType == "builtin" then
+		elseif buildType == "builtin" or buildType == "module" then
 			for modname, src in pairs(modules) do
 				local modPath = modname:gsub("%.", path.separator)
 				local srcBase = path.basename(src)
@@ -276,8 +296,19 @@ local function openRockspec(dir, rockspecPath)
 			end
 
 			for k, v in pairs(binScripts) do
-				local binName, binRelSrc = type(k) == "number" and v or k, v
-				fs.copy(path.join(dir, binRelSrc), path.join(outputDir, binName))
+				local binName = type(k) == "number" and path.basename(v) or k
+				local binDest = path.join(outputDir, binName)
+				local binDestDir = path.dirname(binDest)
+				if not fs.isdir(binDestDir) then mkdirp(binDestDir) end
+				fs.copy(path.join(dir, v), binDest)
+			end
+
+			for modname, src in pairs(installLuaFiles) do
+				local modPath = modname:gsub("%.", path.separator)
+				local destAbs = path.join(modulesDir, modPath .. ".lua")
+				local destDir = path.dirname(destAbs)
+				if not fs.isdir(destDir) then mkdirp(destDir) end
+				fs.copy(path.join(dir, src), destAbs)
 			end
 
 			fs.write(stampFile, buildStamp)
