@@ -4,6 +4,7 @@
 	"dependencies": {
 		"json": { "path": "../" },
 		"ansi": { "path": "../../ansi" },
-		"process2": { "path": "../../process2" }
+		"process2": { "path": "../../process2" },
+		"lua-cjson": { "luarocks": "lua-cjson" }
 	}
 }

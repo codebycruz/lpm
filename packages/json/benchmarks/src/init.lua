@@ -1,6 +1,7 @@
 local ffi = require("ffi")
 local ansi = require("ansi")
 local json = require("json")
+local cjson = require("cjson")
 
 -- ── timer ─────────────────────────────────────────────────────────────────────
 
@@ -104,3 +105,13 @@ ansi.printf("\n{bold}json decodeDocument only (zero-alloc){reset}")
 bench("small",  function() json.decodeDocument(SMALL)  end, 5000)
 bench("medium", function() json.decodeDocument(MEDIUM) end, 500)
 bench("large",  function() json.decode(LARGE)  end, 20)
+
+ansi.printf("\n{bold}cjson decode{reset}")
+bench("small object (~40 B)",    function() cjson.decode(SMALL)  end, 5000)
+bench("medium array (~20 objs)", function() cjson.decode(MEDIUM) end, 500)
+bench("large array (~500 objs)", function() cjson.decode(LARGE)  end, 20)
+
+ansi.printf("\n{bold}cjson encode{reset}")
+bench("small object",  function() cjson.encode(cjson.decode(SMALL))  end, 5000)
+bench("medium array",  function() cjson.encode(cjson.decode(MEDIUM)) end, 500)
+bench("large array",   function() cjson.encode(cjson.decode(LARGE))  end, 20)
