@@ -13,6 +13,9 @@ local function add(args)
 	local name, versionFromName = rawName:match("^([^@]+)@(.+)$")
 	if not name then name = rawName end
 
+	-- Strip registry prefix (e.g. rocks:foo -> foo)
+	name = name:match("^[^:]+:(.+)$") or name
+
 	---@type ("git" | "path")?, string?
 	local depType, depValue
 
@@ -73,18 +76,15 @@ local function add(args)
 		local commit = args:option("commit")
 
 		dep = { git = depValue, branch = branch, commit = commit }
-	elseif name:match("^rocks:") then
-		local rocksName = name:match("^rocks:(.+)$")
-		name = rocksName
-
-		local _, _, err = lde.util.openLuarocksPackage(rocksName, registryVersion)
+	elseif rawName:match("^rocks:") then
+		local _, _, err = lde.util.openLuarocksPackage(name, registryVersion)
 		if err then
 			ansi.printf("{red}%s", err)
 			return
 		end
 
-		dep = { luarocks = rocksName, version = registryVersion or nil }
-		ansi.printf("{green}Added luarocks dependency: %s{reset}", rocksName)
+		dep = { luarocks = name, version = registryVersion or nil }
+		ansi.printf("{green}Added luarocks dependency: %s{reset}", name)
 	else
 		-- Registry dependency
 		lde.global.syncRegistry()
