@@ -57,43 +57,16 @@ local function sysinfo()
 		row("CPU Model", read("sh -c \"grep -m1 'model name' /proc/cpuinfo | cut -d: -f2 | xargs\"") or read("sysctl -n machdep.cpu.brand_string"))
 		row("CPU Cores", read("sh -c \"nproc 2>/dev/null || sysctl -n hw.logicalcpu\""))
 
-		---@format disable-next
-		row("Total Memory", ("%d GB"):format(tonumber(read("grep MemTotal /proc/meminfo"):match("(%d+)")) / 1024 / 1024))
+		local meminfo = read("grep MemTotal /proc/meminfo")
+		local memGB = meminfo and meminfo:match("(%d+)") and
+			("%d GB"):format(tonumber(meminfo:match("(%d+)")) / 1024 / 1024) or
+			read("sh -c \"sysctl -n hw.memsize | awk '{print int($1/1073741824) \\\" GB\\\"}' \"")
+		row("Total Memory", memGB)
 		row("Platform", read("uname -m"))
 	end
 end
 
 sysinfo()
-
----@type fun(): number
-local now
-if ffi.os == "Windows" then
-	ffi.cdef [[
-		typedef union { struct { uint32_t lo, hi; }; uint64_t val; } LARGE_INTEGER;
-		int QueryPerformanceCounter(LARGE_INTEGER *lpPerformanceCount);
-		int QueryPerformanceFrequency(LARGE_INTEGER *lpFrequency);
-	]]
-	local freq = ffi.new("LARGE_INTEGER")
-	ffi.C.QueryPerformanceFrequency(freq)
-	local f = tonumber(freq.val)
-
-	now = function()
-		local t = ffi.new("LARGE_INTEGER")
-		ffi.C.QueryPerformanceCounter(t)
-		return tonumber(t.val) * 1e9 / f
-	end
-else
-	ffi.cdef [[
-		typedef struct { long tv_sec; long tv_nsec; } timespec;
-		int clock_gettime(int clk_id, timespec *tp);
-	]]
-
-	now = function()
-		local t = ffi.new("timespec")
-		ffi.C.clock_gettime(1, t) -- CLOCK_MONOTONIC = 1
-		return tonumber(t.tv_sec) * 1e9 + tonumber(t.tv_nsec)
-	end
-end
 
 ---@param label string
 ---@param fn fun(): boolean?, string?
