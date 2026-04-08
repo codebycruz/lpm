@@ -28,7 +28,8 @@ end
 ---@param compiler string
 ---@return "musl" | "gnu" | "android" | nil
 local function getPlatformLibc(compiler)
-	if jit.os ~= "Linux" then return nil end
+	if jit.os == "OSX" then return nil end
+	if jit.os == "Windows" then return "gnu" end
 
 	-- Use the compiler's -dumpmachine to get the target triplet.
 	local code, out = process.exec(compiler, { "-dumpmachine" })
@@ -38,6 +39,8 @@ local function getPlatformLibc(compiler)
 			return "android"
 		elseif out:find("musl", 1, true) then
 			return "musl"
+		elseif out:find("gnu", 1, true) then
+			return "gnu"
 		end
 	end
 
@@ -51,9 +54,11 @@ local function getPlatformLibc(compiler)
 	return "gnu"
 end
 
----@param compiler string
+---@param compiler? string
 ---@return string
 local function getLuajitPath(compiler)
+	compiler = compiler or env.var("SEA_CC") or "gcc"
+
 	local cacheDir = path.join(env.tmpdir(), "luajit-cache")
 	local platform, arch = getPlatformArch()
 	local libc = getPlatformLibc(compiler)
@@ -327,8 +332,7 @@ int main(int argc, char** argv) {
 }
 ]]
 
-	local compiler = compiler or env.var("SEA_CC") or "gcc"
-	local ljPath = getLuajitPath(compiler)
+	local ljPath = getLuajitPath()
 	local includePath = path.join(ljPath, "include")
 	local libPath = path.join(ljPath, "lib")
 
