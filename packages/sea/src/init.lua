@@ -25,25 +25,38 @@ local function getPlatformArch()
 	return platform, arch
 end
 
----@return "musl" | "gnu" | nil
-local function getPlatformLibc()
-	if jit.os == "OSX" then return nil end
-	if jit.os == "Windows" then return "gnu" end
+---@param compiler string
+---@return "musl" | "gnu" | "android" | nil
+local function getPlatformLibc(compiler)
+	if jit.os ~= "Linux" then return nil end
 
-	-- note: for some reason 'ok' is nil here.
-	local _code, out = process.exec("ldd", { "--version" })
+	-- Use the compiler's -dumpmachine to get the target triplet.
+	local code, out = process.exec(compiler, { "-dumpmachine" })
+	if code == 0 and out and out ~= "" then
+		out = out:match("^%s*(.-)%s*$")
+		if out:find("android", 1, true) then
+			return "android"
+		elseif out:find("musl", 1, true) then
+			return "musl"
+		end
+	end
 
-	if string.find(out, "musl", 1, true) then
+	-- Fallback: check ldd --version for musl signature.
+	local _, lddout = process.exec("ldd", { "--version" })
+	if string.find(lddout or "", "musl", 1, true) then
 		return "musl"
 	end
 
+	io.stderr:write("[sea] warning: could not detect libc from compiler '" .. compiler .. "', defaulting to gnu\n")
 	return "gnu"
 end
 
-local function getLuajitPath()
+---@param compiler string
+---@return string
+local function getLuajitPath(compiler)
 	local cacheDir = path.join(env.tmpdir(), "luajit-cache")
 	local platform, arch = getPlatformArch()
-	local libc = getPlatformLibc()
+	local libc = getPlatformLibc(compiler)
 
 	local target = table.concat({ "libluajit", platform, arch, libc }, "-")
 	local targetDir = path.join(cacheDir, target)
@@ -136,7 +149,7 @@ function sea.compile(main, source, sharedLibs, compiler)
 		local libFileName                   = string.format("lde-lib-%s-%s.%s", lib.name, hash, ext)
 		ffiShimEntries[#ffiShimEntries + 1] = string.format('["%s"]="%s"', lib.name, libFileName)
 		-- alias as libcurl, libcurl.so, and curl
-		local leaf                          = lib.name:match("[^.]+$")        -- e.g. "libcurl"
+		local leaf                          = lib.name:match("[^.]+$")  -- e.g. "libcurl"
 		local bare                          = leaf:match("^lib(.+)$") or leaf -- e.g. "curl"
 		ffiShimEntries[#ffiShimEntries + 1] = string.format('["%s"]="%s"', leaf, libFileName)
 		ffiShimEntries[#ffiShimEntries + 1] = string.format('["%s.%s"]="%s"', leaf, ext, libFileName)
@@ -169,7 +182,7 @@ function sea.compile(main, source, sharedLibs, compiler)
 		}
 	}]], id, id, id, id, id, lib.name, id, id)
 
-		local luaopenSym = "luaopen_" .. lib.name:gsub("%.", "_")
+		local luaopenSym                    = "luaopen_" .. lib.name:gsub("%.", "_")
 		libPreloads[#libPreloads + 1]       = string.format([[
 	lua_pushstring(L, %sLibraryPath);
 	lua_pushstring(L, "%s");
@@ -314,7 +327,8 @@ int main(int argc, char** argv) {
 }
 ]]
 
-	local ljPath = getLuajitPath()
+	local compiler = compiler or env.var("SEA_CC") or "gcc"
+	local ljPath = getLuajitPath(compiler)
 	local includePath = path.join(ljPath, "include")
 	local libPath = path.join(ljPath, "lib")
 
@@ -332,8 +346,6 @@ int main(int argc, char** argv) {
 	elseif jit.os == "OSX" then
 		args[#args + 1] = "-Wl,-export_dynamic" -- expose lua symbols for lua dependencies
 	end
-
-	local compiler = compiler or env.var("SEA_CC") or "gcc"
 	local execEnv
 	if jit.os == "Windows" and compiler ~= "gcc" then
 		-- compiler is a full path into mingw/bin; ensure subtools (as.exe etc) are found
