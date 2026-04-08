@@ -88,6 +88,7 @@ local function getLuajitPath(compiler)
 
 	local ok, err = Archive.new(tarballPath):extract(cacheDir)
 	if not ok then
+		print("?", tarballPath)
 		error("Failed to extract LuaJIT: " .. (err or ""))
 	end
 
