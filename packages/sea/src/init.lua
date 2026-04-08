@@ -25,33 +25,50 @@ local function getPlatformArch()
 	return platform, arch
 end
 
+--- Parse arch and libc from a compiler's -dumpmachine output.
+--- Returns nil for both if the platform doesn't use a libc triplet component (OSX, Windows).
+--- On Linux, derives arch from the triplet so cross-compilers (e.g. Android NDK) work correctly.
 ---@param compiler string
----@return "musl" | "gnu" | "android" | nil
-local function getPlatformLibc(compiler)
-	if jit.os == "OSX" then return nil end
-	if jit.os == "Windows" then return "gnu" end
+---@return string|nil arch  -- e.g. "x86-64" or "aarch64"
+---@return "musl" | "gnu" | "android" | nil libc
+local function getTargetFromCompiler(compiler)
+	if jit.os == "OSX" then return nil, nil end
+	if jit.os == "Windows" then return nil, "gnu" end
 
 	-- Use the compiler's -dumpmachine to get the target triplet.
 	local code, out = process.exec(compiler, { "-dumpmachine" })
 	if code == 0 and out and out ~= "" then
 		out = out:match("^%s*(.-)%s*$")
+
+		local arch
+		if out:find("^x86_64", 1, true) or out:find("^x86-64", 1, true) then
+			arch = "x86-64"
+		elseif out:find("^aarch64", 1, true) then
+			arch = "aarch64"
+		end
+
+		local libc
 		if out:find("android", 1, true) then
-			return "android"
+			libc = "android"
 		elseif out:find("musl", 1, true) then
-			return "musl"
+			libc = "musl"
 		elseif out:find("gnu", 1, true) then
-			return "gnu"
+			libc = "gnu"
+		end
+
+		if arch or libc then
+			return arch, libc
 		end
 	end
 
 	-- Fallback: check ldd --version for musl signature.
 	local _, lddout = process.exec("ldd", { "--version" })
 	if string.find(lddout or "", "musl", 1, true) then
-		return "musl"
+		return nil, "musl"
 	end
 
-	io.stderr:write("[sea] warning: could not detect libc from compiler '" .. compiler .. "', defaulting to gnu\n")
-	return "gnu"
+	io.stderr:write("[sea] warning: could not detect target from compiler '" .. compiler .. "', defaulting to gnu\n")
+	return nil, "gnu"
 end
 
 ---@param compiler? string
@@ -60,8 +77,9 @@ local function getLuajitPath(compiler)
 	compiler = compiler or env.var("SEA_CC") or "gcc"
 
 	local cacheDir = path.join(env.tmpdir(), "luajit-cache")
-	local platform, arch = getPlatformArch()
-	local libc = getPlatformLibc(compiler)
+	local platform, hostArch = getPlatformArch()
+	local compilerArch, libc = getTargetFromCompiler(compiler)
+	local arch = compilerArch or hostArch
 
 	local target = table.concat({ "libluajit", platform, arch, libc }, "-")
 	local targetDir = path.join(cacheDir, target)
