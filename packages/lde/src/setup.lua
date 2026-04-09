@@ -48,6 +48,9 @@ local function updatePath(ldeDir, toolsDir)
 		-- Unix: patch the first shell rc file that already mentions .lde, or
 		-- the first that exists among the standard candidates.
 		local home = os.getenv("HOME") or ""
+
+		local defaultRc = jit.os == "OSX" and (home .. "/.zshrc") or (home .. "/.profile")
+
 		local rcFiles = {
 			home .. "/.zshrc",
 			home .. "/.zprofile",
@@ -84,15 +87,12 @@ local function updatePath(ldeDir, toolsDir)
 			end
 		end
 
-		-- No file had an lde entry yet, append to the first existing rc
-		if target then
-			local content = fs.read(target) or ""
-			fs.write(target, content .. "\n# Added by lde\n" .. pathLine .. "\n")
-			ansi.printf("{green}Added PATH entry to %s", target)
-		else
-			ansi.printf("{yellow}Could not find a shell rc file to update.")
-			ansi.printf("{white}Add this line manually:  %s", pathLine)
-		end
+		-- No file had an lde entry yet, append to the first existing rc (or create the default)
+		target = target or defaultRc
+		local content = fs.read(target) or ""
+		fs.write(target, content .. "\n# Added by lde\n" .. pathLine .. "\n")
+		ansi.printf("{green}Added PATH entry to %s", target)
+
 		ansi.printf("{yellow}Restart your shell or run: source <rc-file>")
 	end
 end
