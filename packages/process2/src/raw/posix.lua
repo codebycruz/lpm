@@ -1,4 +1,5 @@
 local ffi = require("ffi")
+local sb  = require("string.buffer")
 
 ffi.cdef([[
 	typedef int pid_t;
@@ -40,12 +41,6 @@ local IntBox = ffi.typeof("int[1]")
 
 ---@type fun(): process2.ffi.PipeFds
 local PipeFds = ffi.typeof("int[2]")
-
----@class process2.ffi.CharBuf: ffi.cdata*
----@field [0] number
-
----@type fun(size: number): process2.ffi.CharBuf
-local CharBuf = ffi.typeof("char[?]")
 
 ---@type fun(size: number): ffi.cdata*
 local PollFds = ffi.typeof("struct pollfd[?]")
@@ -140,14 +135,16 @@ end
 ---@param fd number
 ---@return string
 function M.readFd(fd)
-	local buf, chunks = CharBuf(4096), {}
+	local out = sb.new()
 	while true do
-		local n = ffi.C.read(fd, buf, 4096)
-		if n <= 0 then break end
-		chunks[#chunks + 1] = ffi.string(buf, n)
+		local ptr, len = out:reserve(4096)
+		local n = ffi.C.read(fd, ptr, len)
+		if n > 0 then out:commit(n)
+		else out:commit(0); break
+		end
 	end
 	ffi.C.close(fd)
-	return table.concat(chunks)
+	return out:tostring()
 end
 
 --- Drain two fds concurrently using poll() to avoid deadlock.
@@ -155,8 +152,7 @@ end
 ---@param errFd number
 ---@return string, string
 function M.readFds(outFd, errFd)
-	local buf = CharBuf(4096)
-	local outChunks, errChunks = {}, {}
+	local outBuf, errBuf = sb.new(), sb.new()
 	local fds = PollFds(2)
 	local outDone, errDone = false, false
 	while not outDone or not errDone do
@@ -167,9 +163,10 @@ function M.readFds(outFd, errFd)
 		ffi.C.poll(fds, 2, -1)
 		if not outDone then
 			if bit.band(fds[0].revents, POLLIN) ~= 0 then
-				local n = ffi.C.read(outFd, buf, 4096)
-				if n > 0 then outChunks[#outChunks + 1] = ffi.string(buf, n)
-				else outDone = true
+				local ptr, len = outBuf:reserve(4096)
+				local n = ffi.C.read(outFd, ptr, len)
+				if n > 0 then outBuf:commit(n)
+				else outBuf:commit(0); outDone = true
 				end
 			elseif fds[0].revents ~= 0 then
 				outDone = true
@@ -177,9 +174,10 @@ function M.readFds(outFd, errFd)
 		end
 		if not errDone then
 			if bit.band(fds[1].revents, POLLIN) ~= 0 then
-				local n = ffi.C.read(errFd, buf, 4096)
-				if n > 0 then errChunks[#errChunks + 1] = ffi.string(buf, n)
-				else errDone = true
+				local ptr, len = errBuf:reserve(4096)
+				local n = ffi.C.read(errFd, ptr, len)
+				if n > 0 then errBuf:commit(n)
+				else errBuf:commit(0); errDone = true
 				end
 			elseif fds[1].revents ~= 0 then
 				errDone = true
@@ -188,7 +186,7 @@ function M.readFds(outFd, errFd)
 	end
 	ffi.C.close(outFd)
 	ffi.C.close(errFd)
-	return table.concat(outChunks), table.concat(errChunks)
+	return outBuf:tostring(), errBuf:tostring()
 end
 
 ---@param pid number
