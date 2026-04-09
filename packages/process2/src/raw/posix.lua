@@ -15,15 +15,16 @@ ffi.cdef([[
 	int   setenv(const char* name, const char* value, int overwrite);
 	int   chdir(const char* path);
 	void  _exit(int status);
-	int   fcntl(int fd, int cmd, ...);
+	struct pollfd { int fd; short events; short revents; };
+	int   poll(struct pollfd* fds, unsigned long nfds, int timeout);
 ]])
 
-local WNOHANG    = 1
-local SIGTERM    = 15
-local SIGKILL    = 9
-local O_WRONLY   = 1
-local F_SETFL    = 4
-local O_NONBLOCK = 2048
+local WNOHANG = 1
+local SIGTERM = 15
+local SIGKILL = 9
+local O_WRONLY = 1
+local POLLIN   = 1
+local POLLHUP  = 16
 
 ---@diagnostic disable: assign-type-mismatch # Ignore incessant ffi type cast annoyance
 
@@ -45,6 +46,9 @@ local PipeFds = ffi.typeof("int[2]")
 
 ---@type fun(size: number): process2.ffi.CharBuf
 local CharBuf = ffi.typeof("char[?]")
+
+---@type fun(size: number): ffi.cdata*
+local PollFds = ffi.typeof("struct pollfd[?]")
 
 ---@class process2.ffi.Argv: ffi.cdata*
 ---@field [0] string?
@@ -146,27 +150,39 @@ function M.readFd(fd)
 	return table.concat(chunks)
 end
 
---- Drain two fds concurrently using non-blocking reads to avoid deadlock.
+--- Drain two fds concurrently using poll() to avoid deadlock.
 ---@param outFd number
 ---@param errFd number
 ---@return string, string
 function M.readFds(outFd, errFd)
 	local buf = CharBuf(4096)
 	local outChunks, errChunks = {}, {}
-	ffi.C.fcntl(outFd, F_SETFL, O_NONBLOCK)
-	ffi.C.fcntl(errFd, F_SETFL, O_NONBLOCK)
+	local fds = PollFds(2)
 	local outDone, errDone = false, false
 	while not outDone or not errDone do
+		fds[0].fd = outDone and -1 or outFd
+		fds[0].events = POLLIN
+		fds[1].fd = errDone and -1 or errFd
+		fds[1].events = POLLIN
+		ffi.C.poll(fds, 2, -1)
 		if not outDone then
-			local n = ffi.C.read(outFd, buf, 4096)
-			if n > 0 then outChunks[#outChunks + 1] = ffi.string(buf, n)
-			elseif n == 0 then outDone = true
+			if bit.band(fds[0].revents, POLLIN) ~= 0 then
+				local n = ffi.C.read(outFd, buf, 4096)
+				if n > 0 then outChunks[#outChunks + 1] = ffi.string(buf, n)
+				else outDone = true
+				end
+			elseif fds[0].revents ~= 0 then
+				outDone = true
 			end
 		end
 		if not errDone then
-			local n = ffi.C.read(errFd, buf, 4096)
-			if n > 0 then errChunks[#errChunks + 1] = ffi.string(buf, n)
-			elseif n == 0 then errDone = true
+			if bit.band(fds[1].revents, POLLIN) ~= 0 then
+				local n = ffi.C.read(errFd, buf, 4096)
+				if n > 0 then errChunks[#errChunks + 1] = ffi.string(buf, n)
+				else errDone = true
+				end
+			elseif fds[1].revents ~= 0 then
+				errDone = true
 			end
 		end
 	end
