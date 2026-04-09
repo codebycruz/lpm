@@ -61,13 +61,15 @@ local function getTargetFromCompiler(compiler)
 		end
 	end
 
-	-- Fallback: check ldd --version for musl signature.
+	local lddPatterns = { ["musl"] = "musl", ["gnu"] = "GNU libc" }
+
 	local _, lddout = process.exec("ldd", { "--version" })
-	if string.find(lddout or "", "musl", 1, true) then
-		return nil, "musl"
+	for libc, pattern in pairs(lddPatterns) do
+		if string.find(lddout or "", pattern, 1, true) then return nil, libc end
 	end
 
 	io.stderr:write("[sea] warning: could not detect target from compiler '" .. compiler .. "', defaulting to gnu\n")
+
 	return nil, "gnu"
 end
 
