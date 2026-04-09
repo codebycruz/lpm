@@ -8,6 +8,7 @@ local http = require("http")
 local path = require("path")
 local process = require("process2")
 local util = require("util")
+local ansi = require("ansi")
 
 ---@param dir string?
 ---@param rockspecPath string? # Path to the rockspec file; if nil, scanned from dir
@@ -150,25 +151,34 @@ local function openRockspec(dir, rockspecPath)
 		local modulesDir = path.dirname(outputDir)
 
 		if buildType == "make" then
-			if not process.exec("make", { "--version" }) then
-				return nil, "Package '" .. (spec.package or "?") .. "' requires 'make' to build, but it was not found." ..
+			local makeBin = lde.global.getMakeBin()
+			if not process.exec(makeBin, { "--version" }) then
+				return nil,
+					"Package '" .. (spec.package or "?") .. "' requires 'make' to build, but it was not found." ..
 					" Install make (e.g. build-essential on Debian/Ubuntu, Xcode Command Line Tools on macOS)."
+			end
+
+			local shellBin = lde.global.getShellBin()
+			if jit.os == "Windows" and not shellBin then
+				ansi.printf(
+					"{yellow}Warning: sh.exe not found. Make builds may fail. Install Git for Windows to fix this.\n")
 			end
 
 			local luajitPath = sea.getLuajitPath()
 			local luajitInclude = path.join(luajitPath, "include")
+			local function toShPath(p) return p:gsub("\\", "/") end
 			local stdVars = {
-				LUA_INCDIR  = luajitInclude,
-				LUA_LIBDIR  = path.join(luajitPath, "lib"),
+				LUA_INCDIR  = toShPath(luajitInclude),
+				LUA_LIBDIR  = toShPath(path.join(luajitPath, "lib")),
 				LUALIB      = "libluajit.a",
 				CFLAGS      = "-fPIC",
 				LIBFLAG     = "-shared",
-				INST_LIBDIR = modulesDir,
-				INST_LUADIR = modulesDir,
-				LUADIR      = modulesDir,
-				LIBDIR      = modulesDir,
-				PREFIX      = modulesDir,
-				LUA         = env.execPath()
+				INST_LIBDIR = toShPath(modulesDir),
+				INST_LUADIR = toShPath(modulesDir),
+				LUADIR      = toShPath(modulesDir),
+				LIBDIR      = toShPath(modulesDir),
+				PREFIX      = toShPath(modulesDir),
+				LUA         = toShPath(env.execPath())
 			}
 
 			local function subst(s)
@@ -186,20 +196,27 @@ local function openRockspec(dir, rockspecPath)
 
 			local buildTarget = spec.build.build_target or ""
 			local installTarget = spec.build.install_target or "install"
+			local makeEnv = nil
+			if shellBin then
+				local shellDir = path.dirname(shellBin)
+				makeEnv = { PATH = shellDir .. ";" .. (os.getenv("PATH") or "") }
+			end
 
 			local buildArgs = buildVarList(spec.build.variables)
+			if shellBin then buildArgs[#buildArgs + 1] = "SHELL=" .. shellBin end
 			if buildTarget ~= "" then buildArgs[#buildArgs + 1] = buildTarget end
 
-			local code, stdout, stderr = process.exec("make", buildArgs, { cwd = dir })
+			local code, stdout, stderr = process.exec(makeBin, buildArgs, { cwd = dir, env = makeEnv })
 			if code ~= 0 then
 				local msg = (stderr ~= "" and stderr) or (stdout ~= "" and stdout) or ("exited with code " .. code)
 				return nil, "make failed: " .. msg
 			end
 
 			local installArgs = buildVarList(spec.build.install_variables)
+			if shellBin then installArgs[#installArgs + 1] = "SHELL=" .. shellBin end
 			installArgs[#installArgs + 1] = installTarget
 
-			code, stdout, stderr = process.exec("make", installArgs, { cwd = dir })
+			code, stdout, stderr = process.exec(makeBin, installArgs, { cwd = dir, env = makeEnv })
 			if code ~= 0 then
 				local msg = (stderr ~= "" and stderr) or (stdout ~= "" and stdout) or ("exited with code " .. code)
 				return nil, "make install failed: " .. msg
@@ -444,8 +461,12 @@ local function openRockspec(dir, rockspecPath)
 			end
 		end
 
-		return lde.Package.Config.new({ name = spec.package, version = spec.version, bin = resolvedBin, dependencies =
-		deps })
+		return lde.Package.Config.new({
+			name = spec.package,
+			version = spec.version,
+			bin = resolvedBin,
+			dependencies = deps
+		})
 	end
 
 	return pkg, nil
