@@ -12,37 +12,42 @@
 
 `lde` is a modern package manager and toolkit for Lua, written in Lua.
 
-It includes a LuaJIT runtime for any operating system, a test runner, and the ability to compile your Lua programs into single executables users can run in **<1mB**. All of this alongside a package manager and package registry to easily share and reuse lua code, properly version locked and isolated to your individual projects.
+It bundles a LuaJIT runtime, a test runner, and a compiler that turns your Lua programs into single executables under **1mB** — alongside a package registry with proper version locking and project-local isolation.
 
 To get started, [read the docs](https://lde.sh/docs/getting-started/introduction).
 
 ## Features
 
-- Easy project creation with `lde new` and `lde init`
-- Automatic local package management, avoid conflicting global installs
-- `lde add --path <package>` - Install local dependencies (good for monorepos)
-- `lde add --git <repo>` - Install git dependencies (supports monorepos)
-- `lde run` - Runs your project's init file and installs dependencies
-- `lde compile` - Turn your project into a single executable, easily distributable
-- `lde test` - Run project tests with the built-in test framework, [`lde-test`](./packages/lde-test)
-- `lde bundle` - Bundle your project into a single lua file
-- `lde x` - Execute a project in another location, perfect for CLIs (alias: `ldx`)
-- `lde tree` - View your dependencies at a glance
-- `lde update` - Update your dependencies to their latest versions
-- `lde publish` - Create a PR to add your package to [the registry](https://github.com/lde-org/registry)
+- `lde new` / `lde init` — scaffold a new project
+- `lde run` — Run your project, installing dependencies automatically
+- `lde test` — Run tests with the built-in [`lde-test`](./packages/lde-test) framework
+- `lde compile` — Compile your project into a single distributable executable
+- `lde bundle` — Bundle your project into a single Lua file
+- `lde add` — Add dependencies from a path, git repo, or the registry
+- `lde x` / `ldx` — Execute a remote project directly, great for CLIs
+- `lde tree` — Visualize your dependency graph
+- `lde update` — Update dependencies to their latest versions
+- `lde publish` — Submit your package to [the registry](https://github.com/lde-org/registry)
+
+## Platform Support
+
+| OS      | Architecture  |
+| ------- | ------------- |
+| Linux   | x86-64, ARM64 |
+| macOS   | x86-64, ARM64 |
+| Windows | x86-64, ARM64 |
+| Android | ARM64         |
 
 ## Installation
 
-| OS      | Command                                   |
-| ------- | ----------------------------------------- |
-| Linux   | `curl -fsSL https://lde.sh/install \| sh` |
-| Windows | `irm https://lde.sh/install.ps1 \| iex`   |
+| OS            | Command                                   |
+| ------------- | ----------------------------------------- |
+| Linux & macOS | `curl -fsSL https://lde.sh/install \| sh` |
+| Windows       | `irm https://lde.sh/install.ps1 \| iex`   |
 
-_To upgrade your `lde` version, simply run `lde upgrade`!_
+_Already installed? Run `lde upgrade` to update._
 
 ## Quickstart
-
-Create a project with dependencies..
 
 ```bash
 lde new myproject && cd myproject
@@ -52,7 +57,7 @@ lde run
 # Output: table: 0x7f53326fd030
 ```
 
-Or run a repository's code in a single command!
+Or run a remote project in one command:
 
 ```bash
 ldx triangle --git https://github.com/codebycruz/hood
@@ -60,4 +65,4 @@ ldx triangle --git https://github.com/codebycruz/hood
 
 ## How does lde compare to other tools?
 
-See [this table](https://lde.sh#compare) for a comparison between some of the most common tools.
+See [this table](https://lde.sh#compare) for a comparison with other common tools.
