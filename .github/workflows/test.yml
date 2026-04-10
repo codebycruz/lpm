@@ -23,7 +23,7 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     env:
-      OUTFILE: ${{ runner.os == 'Windows' && 'lde-dev.exe' || 'lde-dev' }}
+      OUTFILE: ${{ contains(matrix.os, 'windows') && 'lde-dev.exe' || 'lde-dev' }}
 
     steps:
       - uses: actions/checkout@v6
