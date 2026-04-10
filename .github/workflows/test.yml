@@ -92,10 +92,6 @@ jobs:
         if: "!matrix.android"
         run: ./packages/lde/${{ matrix.outfile }} test
 
-      - name: Clean targets (Android)
-        if: matrix.android
-        run: find packages -maxdepth 2 -name target -type d | xargs rm -rf
-
       - name: Setup QEMU (Android)
         if: matrix.android
         uses: docker/setup-qemu-action@v4
