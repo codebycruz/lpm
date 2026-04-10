@@ -12,26 +12,21 @@ jobs:
       matrix:
         include:
           - os: ubuntu-22.04
-            outfile: lde-dev
           - os: ubuntu-22.04-arm
-            outfile: lde-dev
           - os: windows-latest
-            outfile: lde-dev.exe
           - os: windows-11-arm
-            outfile: lde-dev.exe
           - os: macos-15-intel
-            outfile: lde-dev
           - os: macos-15
-            outfile: lde-dev
           - os: ubuntu-22.04
-            outfile: lde-dev
             android: true
 
     runs-on: ${{ matrix.os }}
 
+    env:
+      OUTFILE: ${{ runner.os == 'Windows' && 'lde-dev.exe' || 'lde-dev' }}
+
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v6
 
       - name: Cache llvm-mingw (Windows ARM64)
         if: matrix.os == 'windows-11-arm'
@@ -41,17 +36,15 @@ jobs:
           path: llvm-mingw-20260311-ucrt-aarch64
           key: llvm-mingw-20260311-ucrt-aarch64
 
-      - name: Install llvm-mingw (Windows ARM64)
-        if: matrix.os == 'windows-11-arm' && steps.cache-llvm-mingw.outputs.cache-hit != 'true'
-        shell: pwsh
-        run: |
-          curl -L -o llvm-mingw.zip https://github.com/mstorsjo/llvm-mingw/releases/download/20260311/llvm-mingw-20260311-ucrt-aarch64.zip
-          Expand-Archive -Path llvm-mingw.zip -DestinationPath .
-
-      - name: Add llvm-mingw to PATH (Windows ARM64)
+      - name: Setup llvm-mingw (Windows ARM64)
         if: matrix.os == 'windows-11-arm'
         shell: pwsh
-        run: echo "$env:GITHUB_WORKSPACE\llvm-mingw-20260311-ucrt-aarch64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+        run: |
+          if ("${{ steps.cache-llvm-mingw.outputs.cache-hit }}" -ne "true") {
+            curl -L -o llvm-mingw.zip https://github.com/mstorsjo/llvm-mingw/releases/download/20260311/llvm-mingw-20260311-ucrt-aarch64.zip
+            Expand-Archive -Path llvm-mingw.zip -DestinationPath .
+          }
+          echo "$env:GITHUB_WORKSPACE\llvm-mingw-20260311-ucrt-aarch64\bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
       - name: Cache Android NDK
         if: matrix.android && !env.ANDROID_NDK_ROOT
@@ -61,22 +54,20 @@ jobs:
           path: android-ndk-r27c
           key: android-ndk-r27c
 
-      - name: Install Android NDK
-        if: matrix.android && !env.ANDROID_NDK_ROOT && steps.cache-android-ndk.outputs.cache-hit != 'true'
-        run: |
-          wget -q https://dl.google.com/android/repository/android-ndk-r27c-linux.zip
-          unzip -q android-ndk-r27c-linux.zip
-
-      - name: Set ANDROID_NDK_ROOT
+      - name: Setup Android NDK
         if: matrix.android && !env.ANDROID_NDK_ROOT
-        run: echo "ANDROID_NDK_ROOT=$PWD/android-ndk-r27c" >> $GITHUB_ENV
+        run: |
+          if [[ "${{ steps.cache-android-ndk.outputs.cache-hit }}" != "true" ]]; then
+            wget -q https://dl.google.com/android/repository/android-ndk-r27c-linux.zip
+            unzip -q android-ndk-r27c-linux.zip
+          fi
+          echo "ANDROID_NDK_ROOT=$PWD/android-ndk-r27c" >> $GITHUB_ENV
 
       - name: Set SEA_CC (Android)
         if: matrix.android
         run: echo "SEA_CC=$ANDROID_NDK_ROOT/toolchains/llvm/prebuilt/linux-x86_64/bin/aarch64-linux-android21-clang" >> $GITHUB_ENV
 
-      - name: Setup lde
-        uses: lde-org/setup-lde@master
+      - uses: lde-org/setup-lde@master
         with:
           version: nightly
 
@@ -86,19 +77,18 @@ jobs:
         # Using the pre-installed nightly binary would miss any CLI changes in this PR.
         run: |
           cd packages/lde
-          lde compile --outfile ${{ matrix.outfile }}
+          lde compile --outfile ${{ env.OUTFILE }}
 
       - name: Run tests
         if: "!matrix.android"
-        run: ./packages/lde/${{ matrix.outfile }} test
+        run: ./packages/lde/${{ env.OUTFILE }} test
 
       - name: Fix workspace permissions (Android)
         if: matrix.android
         run: chmod -R a+rw ${{ github.workspace }}
 
-      - name: Setup QEMU (Android)
+      - uses: docker/setup-qemu-action@v4
         if: matrix.android
-        uses: docker/setup-qemu-action@v4
         with:
           platforms: arm64
 
@@ -110,21 +100,21 @@ jobs:
           path: /tmp/termux-android.tar
           key: termux-android-v1
 
-      - name: Build Android test image
-        if: matrix.android && steps.cache-android-image.outputs.cache-hit != 'true'
+      - name: Setup Android test image
+        if: matrix.android
         run: |
-          docker rm -f termux-build 2>/dev/null || true
-          docker run --privileged --platform linux/arm64 --name termux-build \
-            -e DEBIAN_FRONTEND=noninteractive \
-            termux/termux-docker:aarch64 \
-            bash -c "apt update && apt upgrade -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold && apt install -y git clang curl zip make"
-          docker commit termux-build termux-android:latest
-          docker rm termux-build
-          docker save termux-android:latest -o /tmp/termux-android.tar
-
-      - name: Load Android test image
-        if: matrix.android && steps.cache-android-image.outputs.cache-hit == 'true'
-        run: docker load -i /tmp/termux-android.tar
+          if [[ "${{ steps.cache-android-image.outputs.cache-hit }}" == "true" ]]; then
+            docker load -i /tmp/termux-android.tar
+          else
+            docker rm -f termux-build 2>/dev/null || true
+            docker run --privileged --platform linux/arm64 --name termux-build \
+              -e DEBIAN_FRONTEND=noninteractive \
+              termux/termux-docker:aarch64 \
+              bash -c "apt update && apt upgrade -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold && apt install -y git clang curl zip make"
+            docker commit termux-build termux-android:latest
+            docker rm termux-build
+            docker save termux-android:latest -o /tmp/termux-android.tar
+          fi
 
       - name: Run tests (Android)
         if: matrix.android
@@ -134,4 +124,4 @@ jobs:
             -v ${{ github.workspace }}:/workspace \
             -w /workspace \
             termux-android:latest \
-            bash -c "/workspace/packages/lde/${{ matrix.outfile }} test"
+            bash -c "/workspace/packages/lde/${{ env.OUTFILE }} test"
