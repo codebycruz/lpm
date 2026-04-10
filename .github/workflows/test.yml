@@ -108,7 +108,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: /tmp/termux-android.tar
-          key: termux-android-${{ hashFiles('docker/Dockerfile.android') }}
+          key: termux-android-v1
 
       - name: Build Android test image
         if: matrix.android && steps.cache-android-image.outputs.cache-hit != 'true'
