@@ -35,12 +35,14 @@ local function getTargetFromCompiler(compiler)
 	if jit.os == "OSX" then return nil, nil end
 	if jit.os == "Windows" then return nil, "gnu" end
 
+	---@type string?
+	local arch
+
 	-- Use the compiler's -dumpmachine to get the target triplet.
 	local code, out = process.exec(compiler, { "-dumpmachine" })
 	if code == 0 and out and out ~= "" then
 		out = out:match("^%s*(.-)%s*$")
 
-		local arch
 		if out:find("^x86_64") or out:find("^x86%-64") then
 			arch = "x86-64"
 		elseif out:find("^aarch64") then
@@ -56,7 +58,7 @@ local function getTargetFromCompiler(compiler)
 			libc = "gnu"
 		end
 
-		if arch or libc then
+		if arch and libc then
 			return arch, libc
 		end
 	end
@@ -65,12 +67,12 @@ local function getTargetFromCompiler(compiler)
 
 	local _, lddout = process.exec("ldd", { "--version" })
 	for libc, pattern in pairs(lddPatterns) do
-		if string.find(lddout or "", pattern, 1, true) then return nil, libc end
+		if string.find(lddout or "", pattern, 1, true) then return arch, libc end
 	end
 
 	io.stderr:write("[sea] warning: could not detect target from compiler '" .. compiler .. "', defaulting to gnu\n")
 
-	return nil, "gnu"
+	return arch, "gnu"
 end
 
 ---@param compiler? string
@@ -108,6 +110,7 @@ local function getLuajitPath(compiler)
 
 	local ok, err = Archive.new(tarballPath):extract(cacheDir)
 	if not ok then
+		print("??", downloadUrl, tarballPath)
 		error("Failed to extract LuaJIT: " .. (err or ""))
 	end
 
