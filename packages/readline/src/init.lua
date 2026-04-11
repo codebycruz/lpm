@@ -35,8 +35,7 @@ function readline.edit(opts)
 
 		if ch == nil or ch == "\x04" then
 			if #line == 0 then return nil end
-
-		elseif ch == "\x03" then  -- Ctrl-C
+		elseif ch == "\x03" then -- Ctrl-C
 			write("\r\n")
 			return nil
 		elseif ch == "\r" or ch == "\n" then
@@ -101,14 +100,13 @@ function readline.edit(opts)
 			if pos < #line then
 				write("\x1b[" .. (#line - pos) .. "C"); pos = #line
 			end
-		elseif ch == "\x17" then  -- Ctrl-W: delete word before cursor
+		elseif ch == "\x17" then -- Ctrl-W: delete word before cursor
 			local i = pos
 			while i > 0 and line:sub(i, i) == " " do i = i - 1 end
 			while i > 0 and line:sub(i, i) ~= " " do i = i - 1 end
 			line = line:sub(1, i) .. line:sub(pos + 1)
 			pos  = i
 			redraw(line, pos)
-
 		elseif ch == "\x0b" then
 			line = line:sub(1, pos); redraw(line, pos)
 		elseif ch == "\x15" then
@@ -128,9 +126,11 @@ function readline.read(prompt, highlight)
 	local out = readline.edit({
 		prompt    = prompt,
 		readByte  = raw.readByte,
-		write     = function(s) io.write(s); io.flush() end,
+		write     = function(s)
+			io.write(s); io.flush()
+		end,
 		history   = history,
-		highlight = highlight,
+		highlight = highlight
 	})
 	raw.exitRaw()
 	return out

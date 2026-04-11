@@ -64,9 +64,9 @@ function readline.enterRaw()
 	saved = Termios()
 	ffi.copy(saved, t, ffi.sizeof(t))
 
-	t.c_iflag = bit.band(t.c_iflag, bit.bnot(bit.bor(IXON, ICRNL)))
-	t.c_oflag = bit.band(t.c_oflag, bit.bnot(OPOST))
-	t.c_lflag = bit.band(t.c_lflag, bit.bnot(bit.bor(ECHO, ICANON, ISIG, IEXTEN)))
+	t.c_iflag     = bit.band(t.c_iflag, bit.bnot(bit.bor(IXON, ICRNL)))
+	t.c_oflag     = bit.band(t.c_oflag, bit.bnot(OPOST))
+	t.c_lflag     = bit.band(t.c_lflag, bit.bnot(bit.bor(ECHO, ICANON, ISIG, IEXTEN)))
 	t.c_cc[VMIN]  = 1
 	t.c_cc[VTIME] = 0
 	ffi.C.tcsetattr(0, TCSANOW, t)

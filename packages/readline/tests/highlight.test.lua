@@ -1,13 +1,13 @@
 local test      = require("lde-test")
 local highlight = require("readline.highlight")
 
-local reset   = "\27[0m"
-local yellow  = "\27[38;2;203;166;247m"  -- keyword (Mauve)
-local green   = "\27[38;2;166;227;161m"  -- string  (Green)
-local cyan    = "\27[38;2;250;179;135m"  -- number  (Peach)
-local gray    = "\27[38;2;88;91;112m"    -- comment (Overlay0)
-local magenta = "\27[38;2;137;180;250m"  -- op      (Blue)
-local white   = "\27[38;2;205;214;244m"  -- ident   (Text)
+local reset     = "\27[0m"
+local yellow    = "\27[38;2;203;166;247m" -- keyword (Mauve)
+local green     = "\27[38;2;166;227;161m" -- string  (Green)
+local cyan      = "\27[38;2;250;179;135m" -- number  (Peach)
+local gray      = "\27[38;2;88;91;112m" -- comment (Overlay0)
+local magenta   = "\27[38;2;137;180;250m" -- op      (Blue)
+local white     = "\27[38;2;205;214;244m" -- ident   (Text)
 
 local function strip(s)
 	return s:gsub("\27%[[%d;]*m", "")
@@ -69,9 +69,9 @@ test.it("highlight is passed through edit and does not corrupt result", function
 		highlight = highlight,
 		readByte  = function()
 			i = i + 1
-			return ({"l","o","c","a","l"," ","x","\r"})[i]
+			return ({ "l", "o", "c", "a", "l", " ", "x", "\r" })[i]
 		end,
-		write = function(s) out[#out+1] = s end,
+		write     = function(s) out[#out + 1] = s end
 	})
 	test.equal(result, "local x")
 end)

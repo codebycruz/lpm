@@ -12,19 +12,19 @@ if jit.os ~= "Windows" then
 		ffi.cdef("int isatty(int fd);")
 		if ffi.C.isatty(0) == 0 then return end
 
-		local VMIN  = jit.os == "OSX" and 16 or 6
-		local VTIME = jit.os == "OSX" and 17 or 5
+		local VMIN    = jit.os == "OSX" and 16 or 6
+		local VTIME   = jit.os == "OSX" and 17 or 5
 
 		-- capture termios after enterRaw
 		local Termios = ffi.typeof("struct termios")
-		local t = Termios()
+		local t       = Termios()
 		raw.enterRaw()
 		ffi.C.tcgetattr(0, t)
 		local vmin  = tonumber(t.c_cc[VMIN])
 		local vtime = tonumber(t.c_cc[VTIME])
 		raw.exitRaw()
 
-		test.equal(vmin,  1)
+		test.equal(vmin, 1)
 		test.equal(vtime, 0)
 	end)
 end
