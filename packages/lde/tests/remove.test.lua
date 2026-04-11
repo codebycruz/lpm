@@ -7,11 +7,11 @@ local json = require("json")
 
 local ldecli = require("tests.lib.ldecli")
 
-local tmpBase = path.join(env.tmpdir(), "lde-add-tests")
+local tmpBase = path.join(env.tmpdir(), "lde-remove-tests")
 fs.rmdir(tmpBase)
 fs.mkdir(tmpBase)
 
-local function makeProject(name)
+local function makeProject(name, deps)
 	local dir = path.join(tmpBase, name)
 	fs.mkdir(dir)
 	fs.mkdir(path.join(dir, "src"))
@@ -19,36 +19,38 @@ local function makeProject(name)
 	fs.write(path.join(dir, "lde.json"), json.encode({
 		name = name,
 		version = "0.1.0",
-		dependencies = {}
+		dependencies = deps or {}
 	}))
 	return dir
 end
 
-test.it("lde add rocks:<name> stores dependency without registry prefix", function()
-	local dir = makeProject("rocks-prefix-test")
-	ldecli({ "add", "rocks:lpeg" }, dir)
+test.it("lde remove removes the dep from lde.json", function()
+	local dir = makeProject("remove-json-test", { mypkg = { path = "../mypkg" } })
+
+	ldecli({ "remove", "mypkg" }, dir)
 
 	local config = json.decode(fs.read(path.join(dir, "lde.json")))
-	test.falsy(config.dependencies["rocks:lpeg"], "dependency key should not contain 'rocks:' prefix")
-	test.truthy(config.dependencies["lpeg"], "dependency should be stored as 'lpeg'")
+	test.falsy(config.dependencies["mypkg"], "dependency should be removed from lde.json")
 end)
 
-test.it("lde add removes the dep entry from lde.lock if present", function()
-	local dir = makeProject("add-lockfile-test")
+test.it("lde remove removes the dep entry from lde.lock if present", function()
+	local dir = makeProject("remove-lockfile-test", { mypkg = { path = "../mypkg" } })
 	fs.write(path.join(dir, "lde.lock"), json.encode({
 		version = "1",
 		dependencies = {
-			mypkg = { path = "../mypkg" }
+			mypkg = { path = "../mypkg" },
+			other = { path = "../other" }
 		}
 	}))
 	fs.mkdir(path.join(dir, "target"))
 	fs.write(path.join(dir, "target", ".installed"), "stale")
 
-	ldecli({ "add", "mypkg", "--path", "../mypkg" }, dir)
+	ldecli({ "remove", "mypkg" }, dir)
 
 	local lockRaw = fs.read(path.join(dir, "lde.lock"))
 	test.truthy(lockRaw, "lde.lock should still exist")
 	local lock = json.decode(lockRaw)
-	test.falsy(lock.dependencies["mypkg"], "stale lockfile entry should be removed after lde add")
+	test.falsy(lock.dependencies["mypkg"], "removed dep should be gone from lde.lock")
+	test.truthy(lock.dependencies["other"], "unrelated lockfile entries should be preserved")
 	test.falsy(fs.exists(path.join(dir, "target", ".installed")), ".installed should be deleted")
 end)

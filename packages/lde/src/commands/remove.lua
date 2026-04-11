@@ -1,6 +1,7 @@
 local json = require("json")
 local ansi = require("ansi")
 local fs = require("fs")
+local path = require("path")
 
 local lde = require("lde-core")
 
@@ -35,6 +36,14 @@ local function remove(args)
 	json.removeField(config.dependencies, name)
 
 	fs.write(configPath, json.encode(config))
+
+	local lockfile = pkg:readLockfile()
+	if lockfile then
+		json.removeField(lockfile.raw.dependencies, name)
+		lockfile:save()
+	end
+
+	fs.delete(path.join(pkg:getModulesDir(), ".installed"))
 
 	ansi.printf("{green}Removed dependency: %s", name)
 end
