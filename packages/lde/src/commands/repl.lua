@@ -1,6 +1,7 @@
 local ansi      = require("ansi")
 local readline  = require("readline")
 local highlight = require("readline.highlight")
+local env       = require("env")
 
 local lde = require("lde-core")
 local run = require("lde-core.package.run")
@@ -26,6 +27,9 @@ local function repl(_args)
 	end
 
 	local buffer = ""
+
+	local originalTmpname = os.tmpname
+	os.tmpname = env.tmpfile
 
 	local G = setmetatable({}, { __index = _G })
 	G._ENV = G
@@ -93,6 +97,7 @@ local function repl(_args)
 
 	package.path = savedPath
 	package.cpath = savedCPath
+	os.tmpname = originalTmpname
 end
 
 return repl
