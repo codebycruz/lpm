@@ -58,9 +58,7 @@ test.skipIf(jit.os == "Windows" or jit.os == "OSX")("luarocks: lua-cjson encodes
 		test.truthy(ok)
 	end)
 
-local isAndroid = jit.os == "Linux" and env.var("ANDROID_ROOT") ~= nil
-
-test.skipIf(isAndroid or jit.os == "Windows" or jit.os == "OSX")("luarocks: luaposix gets pid", function()
+test.skipIf(jit.os == "Windows" or jit.os == "OSX")("luarocks: luaposix gets pid", function()
 	local app = makeApp("rocks-luaposix", { posix = { luarocks = "luaposix" } })
 	app:installDependencies()
 	local ok, err = app:runString([[
