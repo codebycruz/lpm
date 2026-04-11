@@ -131,9 +131,9 @@ export default function Search() {
 					<div class="absolute inset-0 bg-black/40 dark:bg-black/60 backdrop-blur-sm" onClick={() => setOpen(false)} />
 
 					{/* Modal */}
-					<div class="relative w-full max-w-lg bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-black/10 dark:border-white/10 overflow-hidden">
-						<div class="flex items-center gap-3 px-4 border-b border-black/10 dark:border-white/10">
-							<svg xmlns="http://www.w3.org/2000/svg" class="size-4 shrink-0 text-black/40 dark:text-white/40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<div class="relative w-full max-w-lg bg-gray-950 rounded-2xl shadow-2xl border border-white/10 overflow-hidden">
+						<div class="flex items-center gap-3 px-4 border-b border-white/8">
+							<svg xmlns="http://www.w3.org/2000/svg" class="size-4 shrink-0 text-white/30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
 								<circle cx="11" cy="11" r="8" /><line x1="21" y1="21" x2="16.65" y2="16.65" />
 							</svg>
 							<input
@@ -143,10 +143,10 @@ export default function Search() {
 								value={query}
 								onInput={(e) => setQuery((e.target as HTMLInputElement).value)}
 								onKeyDown={handleKeyDown}
-								class="w-full py-4 bg-transparent outline-none text-sm placeholder:text-black/30 dark:placeholder:text-white/30"
+								class="w-full py-4 bg-transparent outline-none text-sm text-white placeholder:text-white/25"
 							/>
 							<kbd
-								class="shrink-0 px-1.5 py-0.5 rounded border border-black/20 dark:border-white/20 text-xs font-mono text-black/40 dark:text-white/40 cursor-pointer"
+								class="shrink-0 px-1.5 py-0.5 rounded border border-white/15 text-xs font-mono text-white/30 cursor-pointer"
 								onClick={() => setOpen(false)}
 							>
 								Esc
@@ -156,7 +156,7 @@ export default function Search() {
 						{query && (
 							<ul ref={listRef} class="max-h-80 overflow-y-auto py-2">
 								{results.length === 0 ? (
-									<li class="px-4 py-8 text-center text-sm text-black/40 dark:text-white/40">
+									<li class="px-4 py-8 text-center text-sm text-white/30">
 										No results for "{query}"
 									</li>
 								) : (
@@ -165,23 +165,23 @@ export default function Search() {
 											<button
 												class={`w-full text-left px-4 py-3 transition ${
 													i === activeIdx
-														? "bg-blue-500/10 dark:bg-blue-400/10"
-														: "hover:bg-black/5 dark:hover:bg-white/5"
+														? "bg-blue-500/10"
+														: "hover:bg-white/5"
 												}`}
 												onClick={() => navigate(doc.url)}
 												onMouseEnter={() => setActiveIdx(i)}
 											>
 												<div class="flex items-center gap-2">
 													<span
-														class="text-sm font-medium"
+														class="text-sm font-medium text-white/85"
 														dangerouslySetInnerHTML={{ __html: highlight(doc.title, query) }}
 													/>
-													<span class={`text-[10px] font-medium px-1.5 py-0.5 rounded uppercase tracking-wide ${doc.type === "blog" ? "bg-purple-500/10 text-purple-500" : "bg-blue-500/10 text-blue-500"}`}>
+													<span class={`text-[10px] font-medium px-1.5 py-0.5 rounded uppercase tracking-wide ${doc.type === "blog" ? "bg-purple-500/10 text-purple-400" : "bg-blue-500/10 text-blue-400"}`}>
 														{doc.type}
 													</span>
 												</div>
 												<div
-													class="text-xs text-black/50 dark:text-white/50 mt-0.5 line-clamp-2"
+													class="text-xs text-white/35 mt-0.5 line-clamp-2"
 													dangerouslySetInnerHTML={{
 														__html: highlight(getSnippet(doc.body, query), query),
 													}}
@@ -194,7 +194,7 @@ export default function Search() {
 						)}
 
 						{!query && (
-							<p class="px-4 py-8 text-center text-sm text-black/30 dark:text-white/30">
+							<p class="px-4 py-8 text-center text-sm text-white/25">
 								Type to search…
 							</p>
 						)}

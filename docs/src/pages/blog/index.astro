@@ -9,7 +9,10 @@ const posts = (await getCollection("blog")).sort(
 
 <Layout title="Blog">
     <div class="w-full max-w-3xl mx-auto px-4 py-12">
-        <h1 class="text-4xl font-bold mb-8">Blog</h1>
+        <div class="mb-8">
+            <p class="text-blue-400 text-sm font-semibold uppercase tracking-widest mb-2">Updates</p>
+            <h1 class="text-4xl font-bold">Blog</h1>
+        </div>
         <ul
             class="flex flex-col gap-4 divide-y divide-gray-200 dark:divide-gray-800"
         >
@@ -35,9 +38,8 @@ const posts = (await getCollection("blog")).sort(
                                 )}
                             </span>
                             {post.data.description && (
-                                <div class="relative mt-1 text-sm text-gray-500 dark:text-gray-400 leading-relaxed max-h-[3.75rem] overflow-hidden">
+                                <div class="mt-1 text-sm text-gray-500 dark:text-gray-400 leading-relaxed line-clamp-2">
                                     {post.data.description}
-                                    <div class="absolute bottom-0 left-0 right-0 h-6 bg-gradient-to-t from-white dark:from-gray-950 to-transparent" />
                                 </div>
                             )}
                         </a>
