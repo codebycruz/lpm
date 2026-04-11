@@ -7,7 +7,7 @@ local git = {}
 ---@param branch string?
 ---@param commit string?
 function git.clone(url, dir, branch, commit)
-	local args = { "clone", url, dir }
+	local args = { "clone", "--recurse-submodules", url, dir }
 
 	if branch then
 		args[#args + 1] = "-b"
