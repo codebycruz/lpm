@@ -308,6 +308,25 @@ This outputs `packages/lde/lde` (or `lde.exe` on Windows). To install it globall
 
 **Important:** Tests in `packages/lde/tests/` run the actual `lde` CLI binary via `env.execPath()`. If those tests fail after source changes, recompile and replace the binary first.
 
+## Managing Dependencies
+
+Always use `lde add` / `lde remove` instead of manually editing `lde.json`. Manual edits leave `lde.lock` out of sync and can break installs.
+
+```sh
+# Add a local path dep
+lde add json --path ../json
+
+# Add a git dep (commit is resolved and pinned automatically)
+lde add hood --git https://github.com/codebycruz/hood
+lde add hood --git https://github.com/codebycruz/hood --branch main
+
+# Add a registry dep
+lde add semver@1.0.0
+
+# Remove a dep
+lde remove hood
+```
+
 ## Monorepo Conventions
 
 - All packages live in `packages/` and depend on each other via `{ "path": "../<pkg>" }`.
