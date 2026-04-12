@@ -107,7 +107,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: packages/*/target/curl-sys
-          key: curl-sys-${{ matrix.os }}-${{ hashFiles('lde.lock') }}
+          key: curl-sys-${{ matrix.os }}${{ matrix.android && '-android' || '' }}
 
       - name: Build lde
         # lde's own tests invoke the lde binary directly (e.g. to test CLI flags),
@@ -148,12 +148,6 @@ jobs:
             docker rm termux-build
             docker save termux-android:latest -o /tmp/termux-android.tar
           fi
-
-      - name: Debug libssl (Android)
-        if: matrix.android
-        run: |
-          docker run --rm --platform linux/arm64 termux-android:latest \
-            bash -c "find /data/data/com.termux/files/usr/lib -name 'libssl*'"
 
       - name: Run tests (Android)
         if: matrix.android
