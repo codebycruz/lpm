@@ -358,3 +358,16 @@ The project was previously named `lpm`. You may see `lpm.json` or `lpm-test` ref
   mingw/        # MinGW toolchain (Windows only, for compiling C extensions)
   config.json   # global lde config
 ```
+
+## CI Build Architecture
+
+`lde compile` links against `libluajit` from [lj-dist](https://github.com/lde-org/lj-dist) using a C compiler controlled by `SEA_CC`. Linux and macOS use the system compiler. Windows and Android need special toolchains.
+
+**Windows:** The system GCC on `windows-latest` targets msvcrt, but lj-dist's `libluajit` is built against UCRT. This causes linker errors (`undefined reference to __imp_fseeko64` etc). CI downloads [llvm-mingw](https://github.com/mstorsjo/llvm-mingw) (a Clang/LLD MinGW-w64 toolchain targeting UCRT) and sets `SEA_CC`:
+
+| Runner | `SEA_CC` |
+|---|---|
+| `windows-latest` | `x86_64-w64-mingw32-clang` |
+| `windows-11-arm` | `aarch64-w64-mingw32-clang` |
+
+**Android:** Android uses Bionic rather than glibc. The binary is compiled on the host using the Android NDK's clang (`aarch64-linux-android21-clang`), which links against Bionic. Tests run inside a Termux Docker container (`termux/termux-docker:aarch64` under QEMU on the ARM64 runner), which provides a matching Bionic environment.
