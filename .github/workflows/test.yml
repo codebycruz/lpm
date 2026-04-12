@@ -100,8 +100,17 @@ jobs:
         run: brew install autoconf automake libtool
 
       - uses: lde-org/setup-lde@master
+        if: "!matrix.android"
         with:
           version: nightly
+
+      - name: Setup lde (Android)
+        if: matrix.android
+        uses: lde-org/setup-lde@master
+        with:
+          version: nightly
+          platform: Android
+          arch: aarch64
 
       - name: Cache curl-sys build
         uses: actions/cache@v5
@@ -113,6 +122,7 @@ jobs:
         # lde's own tests invoke the lde binary directly (e.g. to test CLI flags),
         # so we must compile a fresh binary from source before running tests.
         # Using the pre-installed nightly binary would miss any CLI changes in this PR.
+        if: "!matrix.android"
         run: |
           cd packages/lde
           lde compile --outfile ${{ env.OUTFILE }}
@@ -155,8 +165,9 @@ jobs:
           docker run --rm --privileged \
             --platform linux/arm64 \
             -v ${{ github.workspace }}:/workspace \
+            -v $HOME/.lde/lde:/workspace/lde \
             -w /workspace \
             -e ANDROID_NDK_ROOT=/workspace/android-ndk-r29 \
             -e LD_LIBRARY_PATH=/data/data/com.termux/files/usr/lib \
             termux-android:latest \
-            bash -c "/workspace/packages/lde/${{ env.OUTFILE }} test"
+            bash -c "/workspace/lde compile --outfile packages/lde/${{ env.OUTFILE }} && /workspace/packages/lde/${{ env.OUTFILE }} test"
