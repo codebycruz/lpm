@@ -122,6 +122,23 @@ test.it("stripComponents strips top-level dir from zip", function()
 	test.equal(fs.read(path.join(outDir, "hello.txt")), "stripped")
 end)
 
+-- regression: zips with no explicit directory entries (e.g. .src.rock files)
+-- must still extract deeply nested files by creating parent dirs recursively
+test.it("extracts zip with deeply nested files and no explicit dir entries", function()
+	local zipPath = tmp("nested.zip")
+	local outDir  = tmp("out-nested")
+	fs.mkdir(outDir)
+
+	-- save creates file entries only, no dir entries — matches .src.rock behavior
+	local a = Archive.new({ ["a/b/c/deep.lua"] = "deep content" })
+	a:save(zipPath)
+
+	local b = Archive.new(zipPath)
+	local ok = b:extract(outDir)
+	test.truthy(ok)
+	test.equal(fs.read(path.join(outDir, "a/b/c/deep.lua")), "deep content")
+end)
+
 test.it("stripComponents strips top-level dir from tar.gz", function()
 	local tarPath = tmp("strip.tar.gz")
 	local outDir = tmp("out-strip-tar")
