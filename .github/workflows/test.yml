@@ -181,5 +181,6 @@ jobs:
             -w /workspace \
             -e ANDROID_NDK_ROOT=/workspace/android-ndk-r29 \
             -e LD_LIBRARY_PATH=/data/data/com.termux/files/usr/lib \
+            -e TMPDIR=/data/data/com.termux/files/usr/tmp \
             termux-android:latest \
             bash -c "/workspace/lde --setup && cd /workspace/packages/lde && /workspace/lde compile --outfile /workspace/packages/lde/${{ env.OUTFILE }} && cd /workspace && /workspace/packages/lde/${{ env.OUTFILE }} test"
