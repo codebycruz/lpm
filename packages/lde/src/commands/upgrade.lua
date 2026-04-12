@@ -1,4 +1,3 @@
-local http = require("http")
 local process = require("process2")
 local semver = require("semver")
 local json = require("json")
@@ -6,6 +5,7 @@ local ansi = require("ansi")
 local path = require("path")
 local fs = require("fs")
 local env = require("env")
+local curl = require("curl-sys")
 
 local lde = require("lde-core")
 
@@ -40,13 +40,13 @@ local function upgrade(args)
 		releaseUrl = releasesUrl .. "/tags/v" .. desiredVersion
 	end
 
-	local out, err = http.get(releaseUrl)
-	if not out then
+	local res, err = curl.get(releaseUrl)
+	if not res then
 		ansi.printf("{red}Failed to fetch latest release: %s", err)
 		return
 	end
 
-	local releaseInfo = json.decode(out)
+	local releaseInfo = json.decode(res.body)
 	if not releaseInfo or not releaseInfo.tag_name or not releaseInfo.assets then
 		ansi.printf("{red}Invalid release information received")
 		return
