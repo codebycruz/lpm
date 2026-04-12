@@ -160,7 +160,7 @@ jobs:
             docker run --privileged --platform linux/arm64 --name termux-build \
               -e DEBIAN_FRONTEND=noninteractive \
               termux/termux-docker:aarch64 \
-              bash -c "apt update && apt upgrade -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold && apt install -y git clang curl zip make openssl"
+              bash -c "apt update && apt upgrade -y -o Dpkg::Options::=--force-confdef -o Dpkg::Options::=--force-confold && apt install -y git clang curl zip make cmake autoconf automake libtool openssl perl"
             docker commit termux-build termux-android:latest
             docker rm termux-build
             docker save termux-android:latest -o /tmp/termux-android.tar
@@ -177,7 +177,7 @@ jobs:
             -e ANDROID_NDK_ROOT=/workspace/android-ndk-r29 \
             -e LD_LIBRARY_PATH=/data/data/com.termux/files/usr/lib \
             termux-android:latest \
-            bash -c "/workspace/lde --setup && cd /workspace/packages/lde && /workspace/lde compile --outfile /workspace/packages/lde/${{ matrix.outfile }} && /workspace/packages/lde/${{ matrix.outfile }} test"
+            bash -c "/workspace/lde --setup && cd /workspace/packages/lde && /workspace/lde compile --outfile /workspace/packages/lde/${{ matrix.outfile }} && cd /workspace && /workspace/packages/lde/${{ matrix.outfile }} test"
 
       - name: Upload nightly release asset
         uses: softprops/action-gh-release@v2
