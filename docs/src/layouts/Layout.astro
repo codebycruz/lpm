@@ -10,6 +10,7 @@ interface Props {
 	description?: string;
 	hideFooter?: boolean;
 	hideGlow?: boolean;
+	hasTabs?: boolean;
 }
 
 const DEFAULT_DESCRIPTION =
@@ -20,6 +21,7 @@ const {
 	description = DEFAULT_DESCRIPTION,
 	hideFooter = false,
 	hideGlow = false,
+	hasTabs = false,
 } = Astro.props;
 const pageTitle = title ? `${title} - lde` : "lde";
 const ogSlug = Astro.url.pathname.replace(/^\/|\/$/g, "") || "index";
@@ -76,7 +78,7 @@ const ogImage = `${SITE_URL}/og/${ogSlug}.png`;
 				<div class="absolute top-[-400px] left-1/2 -translate-x-1/2 w-[800px] h-[800px] rounded-full bg-blue-500/[0.07] dark:bg-blue-500/[0.09] blur-[80px]"></div>
 			</div>
 		)}
-		<Navbar><slot name="tabs" slot="default" /></Navbar>
+		<Navbar hasTabs={hasTabs}><slot name="tabs" slot="default" /></Navbar>
 		<slot />
 		{!hideFooter && <Footer />}
 		<CodeBlocks client:only="preact" />

@@ -3,6 +3,11 @@ import { Icon } from "astro-icon/components";
 import { GITHUB_URL, GITHUB_RELEASES_URL } from "../data/info";
 import Search from "./Search.tsx";
 
+interface Props {
+	hasTabs?: boolean;
+}
+const { hasTabs = false } = Astro.props;
+
 const entries = [
 	{ display: "Docs", href: "/docs/general/getting-started/introduction" },
 	{ display: "Blog", href: "/blog/" },
@@ -18,7 +23,7 @@ function isActive(href: string) {
 ---
 
 <nav
-	class="sticky top-0 z-50 bg-white dark:bg-gray-950 px-4 md:px-6 flex flex-col items-center justify-center border-b border-black/10 dark:border-white/10"
+	class={`sticky top-0 z-50 bg-white dark:bg-gray-950 px-4 md:px-6 flex flex-col items-center justify-start border-b border-black/10 dark:border-white/10${hasTabs ? " min-h-[6rem]" : ""}`}
 >
 	<div class="flex flex-row items-center h-14 w-full max-w-[90em]">
 		<a
@@ -245,6 +250,10 @@ function isActive(href: string) {
 		</div>
 	</div>
 
+	<div class={hasTabs ? "min-h-[2.5rem] w-full" : ""}>
+		<slot />
+	</div>
+
 	<script>
 		// Theme toggle
 		const btn = document.getElementById("theme-toggle")!;
@@ -286,5 +295,4 @@ function isActive(href: string) {
 			closeIcon.classList.toggle("hidden", open);
 		});
 	</script>
-	<slot />
 </nav>
