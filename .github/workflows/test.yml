@@ -143,6 +143,12 @@ jobs:
             docker save termux-android:latest -o /tmp/termux-android.tar
           fi
 
+      - name: Debug libssl (Android)
+        if: matrix.android
+        run: |
+          docker run --rm --platform linux/arm64 termux-android:latest \
+            bash -c "find /data/data/com.termux/files/usr/lib -name 'libssl*'"
+
       - name: Run tests (Android)
         if: matrix.android
         run: |
