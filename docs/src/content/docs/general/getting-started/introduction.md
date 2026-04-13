@@ -46,7 +46,7 @@ Run any remote tool easily with `ldx`!
 ldx cowsay hi
 ```
 
-```
+```text
  ----
 < hi >
  ----

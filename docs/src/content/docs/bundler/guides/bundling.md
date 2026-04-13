@@ -27,7 +27,7 @@ lde bundle --outfile dist/myapp.lua
 
 ## Bytecode bundle
 
-Pass `--bytecode` to compile each module to LuaJIT bytecode before embedding. The output is smaller and faster to load, but is only compatible with the LuaJIT version bundled in LDE — it will not run on Lua 5.x or a different LuaJIT build.
+Pass `--bytecode` to compile each module to LuaJIT bytecode before embedding. The output is smaller and faster to load, but is only compatible with the LuaJIT version bundled in LDE. It will not run on Lua 5.x or a different LuaJIT build.
 
 ```sh
 lde bundle --bytecode

@@ -66,6 +66,6 @@ If a teardown function throws, it's treated as a test failure. `afterEach` error
 
 Simply add the types to your package and use the built-in LuaCATs types for lde-test!
 
-```
+```sh
 lde add lde-test --dev --git https://github.com/lde-org/lde
 ```

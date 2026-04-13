@@ -45,4 +45,4 @@ lde automatically activates one of the following feature flags based on the curr
 | `linux`      | Linux          |
 | `macos`      | macOS          |
 
-This means you can gate dependencies by OS without any extra configuration — just name your feature `"windows"`, `"linux"`, or `"macos"` and lde will activate the right one automatically.
+This means you can gate dependencies by OS without any extra configuration: just name your feature `"windows"`, `"linux"`, or `"macos"` and lde will activate the right one automatically.

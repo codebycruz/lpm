@@ -11,11 +11,11 @@ This is needed for Termux/Android, where the default `os.tmpname()` returns path
 
 The replacement generates paths under the system temp directory (`TMPDIR` / `TEMP` / `TMP`) in the form:
 
-```
+```text
 <tmpdir>/lde_<timestamp>_<counter>.tmp
 ```
 
 The override is active in:
 
-- `lde run` / `lde test` — applied for the duration of script execution, then restored.
-- `lde compile` — patched into the compiled binary so it is always in effect.
+- `lde run` / `lde test`: applied for the duration of script execution, then restored.
+- `lde compile`: patched into the compiled binary so it is always in effect.

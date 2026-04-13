@@ -21,7 +21,7 @@ You can pass it options like `--bytecode` to bundle them into a bytecode file fo
 
 This option is very interesting if you want to give users access to an executable without needing lua on their system.
 
-You will need a compiler like `gcc` on your machine to use this functionality.
+On Linux and macOS you will need `gcc` available on your machine. On Windows, lde downloads and sets up MinGW automatically.
 
 ```sh
 lde compile

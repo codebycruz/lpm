@@ -11,7 +11,7 @@ Your entrypoint _must_ be `/src/init.lua`, and dependencies resolve purely in a 
 
 This is very important so that packages can be easily resolved via package.path and so simple cases can resolve to lightweight symlinking.
 
-```
+```text
 myproject/
 ├── lde.json # Configuration
 ├── .luarc.json # This is what gives your editor types

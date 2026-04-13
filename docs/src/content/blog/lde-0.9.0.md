@@ -15,9 +15,7 @@ Now lde handles that automatically. If no compiler is found on Windows, lde will
 
 ![windows](/blog-assets/0.9.0/windows.avif)
 
-*MinGW setup takes about a minute on the very first LuaRocks build, but it's a one-time cost — lde reuses it for every build after that.*
-
-*This is on a first build — MinGW setup takes about a minute, but it only happens once and will get faster over time.*
+*MinGW setup takes about a minute on the very first build, but it's a one-time cost. lde reuses it for every build after that.*
 
 ## Vastly improved LuaRocks support
 
@@ -31,7 +29,7 @@ That said, LuaRocks support is still not perfect. Some packages require addition
 
 `lde run --watch` re-runs your project whenever a file in `src/` changes:
 
-```
+```sh
 lde run --watch
 ```
 
@@ -41,7 +39,7 @@ Errors during a re-run are printed and the watcher keeps running, so a broken ed
 
 You can also pass a script name or file path:
 
-```
+```sh
 lde run --watch myscript
 lde run --watch -- script args here
 ```
@@ -70,7 +68,7 @@ On top of that, the JSON parser has been heavily rewritten and optimized using F
 
 Most of the time you won't need to run this manually since `lde run` does it for you. But it's useful in environments where an external runtime runs your code and lde is acting purely as a package manager, like [LOVE](https://love2d.org/), where you'd run `lde sync` to populate `./target/` before it picks up the dependencies.
 
-```
+```sh
 lde sync
 ```
 
@@ -80,7 +78,7 @@ lde sync
 
 Intel Mac support is now officially included. Previously only Apple Silicon (aarch64) was supported. The standard install script handles it automatically:
 
-```
+```sh
 curl -fsSL https://lde.sh/install | sh
 ```
 
@@ -89,17 +87,6 @@ curl -fsSL https://lde.sh/install | sh
 When you compile your project with `lde compile`, native libraries are bundled into the binary and extracted to a temp directory at runtime. However, `ffi.load()` calls with bare library names would previously fail to find them.
 
 There's now a shim that intercepts `ffi.load` and resolves `.so` files (and variants like `libfoo.so` or just `foo`) from the compiled binary's bundled libraries. This makes a broader set of FFI-based LuaRocks packages work correctly in compiled apps.
-
-The pattern that works across both `lde run` and `lde compile` is:
-
-```lua
-local here = debug.getinfo(1, "S").source:sub(2):match("(.*[/\\])") or ""
-local sep = string.sub(package.config, 1, 1)
-local libname = sep == "\\" and "curl.dll" or (jit.os == "OSX" and "libcurl.dylib" or "libcurl.so")
-local lib = ffi.load(here .. libname)
-```
-
-During `lde run`, `here` is the source directory where the `.so` lives alongside the Lua file. In a compiled binary, `debug.getinfo` returns no useful path so `here` is `""`, and the shim resolves the bare library name from the bundled libs.
 
 The pattern that works across both `lde run` and `lde compile` is to load the library relative to the current source file:
 
@@ -150,7 +137,7 @@ local fixture = require("tests.fixture")
 
 A Nix flake is now available for developing with lde in a Nix environment. It fetches the latest lde release into your dev shell:
 
-```
+```sh
 nix develop
 ```
 

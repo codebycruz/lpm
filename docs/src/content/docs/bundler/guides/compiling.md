@@ -9,7 +9,7 @@ order: 2
 
 ## How it works
 
-lde builds and installs your dependencies, then walks `./target/` collecting every `.lua` file and every native shared library (`.so` / `.dll` / `.dylib`). Lua files are embedded as preloaded modules. Native libraries are packed into the binary and extracted to a temporary directory at runtime, then resolved via `package.preload`. The binary includes the LDE runtime (LuaJIT) — it is not compatible with standard Lua. See [Requirements](/docs/bundler/getting-started/requirements) for compiler prerequisites.
+lde builds and installs your dependencies, then walks `./target/` collecting every `.lua` file and every native shared library (`.so` / `.dll` / `.dylib`). Lua files are embedded as preloaded modules. Native libraries are packed into the binary and extracted to a temporary directory at runtime, then resolved via `package.preload`. The binary includes the LDE runtime (LuaJIT) and is not compatible with standard Lua. See [Requirements](/docs/bundler/getting-started/requirements) for compiler prerequisites.
 
 ## Basic usage
 
