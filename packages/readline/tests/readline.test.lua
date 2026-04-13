@@ -223,3 +223,64 @@ test.it("empty line is not appended to history", function()
 	run(keys("\r"), hist)
 	test.equal(#hist, 0)
 end)
+
+-- completion / ghost text
+
+local dim = "\27[2m"
+
+---@param bytes string[]
+---@param complete_fn fun(line: string, pos: integer): string?
+---@return string?, string
+local function runComplete(bytes, complete_fn)
+	local i, out = 0, {}
+	local result = readline.edit({
+		prompt   = "> ",
+		history  = {},
+		complete = complete_fn,
+		readByte = function()
+			i = i + 1
+			return bytes[i]
+		end,
+		write    = function(s) out[#out + 1] = s end
+	})
+	return result, table.concat(out)
+end
+
+test.it("complete callback receives the current line and cursor pos", function()
+	local got_line, got_pos
+	runComplete(keys("h", "i", "\r"), function(line, pos)
+		got_line, got_pos = line, pos
+		return nil
+	end)
+	test.equal(got_line, "hi")
+	test.equal(got_pos, 2)
+end)
+
+test.it("ghost text is rendered dim after the cursor when complete returns a suffix", function()
+	local _, out = runComplete(keys("i", "n", "\r"), function()
+		return "sert"
+	end)
+	test.includes(out, dim .. "sert")
+end)
+
+test.it("Tab accepts the ghost completion and extends the line", function()
+	local result = runComplete(keys("i", "n", "\x09", "\r"), function(line, pos)
+		return line:sub(1, pos) == "in" and "sert" or nil
+	end)
+	test.equal(result, "insert")
+end)
+
+test.it("Tab does nothing when complete returns nil", function()
+	local result = runComplete(keys("x", "y", "z", "\x09", "\r"), function()
+		return nil
+	end)
+	test.equal(result, "xyz")
+end)
+
+test.it("Tab does nothing when cursor is not at end of line", function()
+	-- type "ab", move left (cursor between a and b) then Tab
+	local result = runComplete(keys("a", "b", LEFT, "\x09", "\r"), function(line, pos)
+		return pos == #line and "GHOST" or nil
+	end)
+	test.equal(result, "ab")
+end)

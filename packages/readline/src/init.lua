@@ -117,10 +117,13 @@ function readline.edit(opts)
 		elseif ch == "\x15" then
 			line = line:sub(pos + 1); pos = 0; redraw(line, pos)
 		elseif ch == "\x09" then -- Tab: accept ghost completion
-			if ghost and #ghost > 0 then
-				line = line:sub(1, pos) .. ghost .. line:sub(pos + 1)
-				pos  = pos + #ghost
-				redraw(line, pos)
+			if complete and pos == #line then
+				local suggestion = complete(line, pos)
+				if suggestion and #suggestion > 0 then
+					line = line:sub(1, pos) .. suggestion .. line:sub(pos + 1)
+					pos  = pos + #suggestion
+					redraw(line, pos)
+				end
 			end
 		elseif ch >= " " then
 			line = line:sub(1, pos) .. ch .. line:sub(pos + 1)
