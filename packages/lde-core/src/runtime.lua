@@ -17,6 +17,8 @@ local builtinModules = {
 	ffi = true,
 	["jit.opt"] = true,
 	["jit.util"] = true,
+	["jit.p"] = true,
+	["jit.profile"] = true,
 	["string.buffer"] = true
 }
 
