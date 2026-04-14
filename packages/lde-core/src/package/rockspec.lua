@@ -75,7 +75,7 @@ local function openRockspec(dir, rockspecPath)
 					modules[modname] = src
 				elseif path.extension(src) == "c" then
 					nativeModules[modname] = { sources = { src } }
-				else
+				elseif lde.verbose then
 					io.stderr:write("warning: " ..
 						(spec.package or "?") ..
 						": unrecognised source type for module '" .. modname .. "': " .. src .. "\n")
@@ -85,7 +85,7 @@ local function openRockspec(dir, rockspecPath)
 				nativeModules[modname] = src
 			elseif type(src) == "table" and src[1] then
 				nativeModules[modname] = { sources = src }
-			elseif type(src) == "table" then
+			elseif type(src) == "table" and lde.verbose then
 				io.stderr:write("warning: " ..
 					(spec.package or "?") .. ": module '" .. modname .. "' has no sources field, skipping\n")
 			end
@@ -104,7 +104,8 @@ local function openRockspec(dir, rockspecPath)
 			platBuild = spec.build.platforms and spec.build.platforms[key]
 			if platBuild then break end
 		end
-		if spec.build.platforms and not platBuild then
+
+		if spec.build.platforms and not platBuild and lde.verbose then
 			io.stderr:write("warning: " ..
 				(spec.package or "?") .. ": no platform config for '" .. jitPlatform .. "'\n")
 		end
