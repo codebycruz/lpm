@@ -33,6 +33,81 @@ test.it("lde add rocks:<name> stores dependency without registry prefix", functi
 	test.truthy(config.dependencies["lpeg"], "dependency should be stored as 'lpeg'")
 end)
 
+test.it("lde add --dev --path adds to devDependencies not dependencies", function()
+	local dir = makeProject("dev-path-test")
+	ldecli({ "add", "mylib", "--dev", "--path", "../mylib" }, dir)
+
+	local config = json.decode(fs.read(path.join(dir, "lde.json")))
+	test.truthy(config.devDependencies, "devDependencies should exist")
+	test.truthy(config.devDependencies["mylib"], "mylib should be in devDependencies")
+	test.equal(config.devDependencies["mylib"].path, "../mylib")
+	test.falsy(config.dependencies and config.dependencies["mylib"], "mylib should not be in dependencies")
+end)
+
+test.it("lde add --dev creates devDependencies if not present in config", function()
+	local dir = makeProject("dev-create-test")
+	-- makeProject writes a config with no devDependencies key
+	local config = json.decode(fs.read(path.join(dir, "lde.json")))
+	test.falsy(config.devDependencies, "devDependencies should not exist initially")
+
+	ldecli({ "add", "mylib", "--dev", "--path", "../mylib" }, dir)
+
+	local updated = json.decode(fs.read(path.join(dir, "lde.json")))
+	test.truthy(updated.devDependencies, "devDependencies should be created")
+	test.truthy(updated.devDependencies["mylib"], "mylib should be in devDependencies")
+end)
+
+test.it("lde add --dev --git adds git dep to devDependencies", function()
+	local dir = makeProject("dev-git-test")
+	ldecli({ "add", "mypkg", "--dev", "--git", "https://example.com/mypkg.git" }, dir)
+
+	local config = json.decode(fs.read(path.join(dir, "lde.json")))
+	test.truthy(config.devDependencies, "devDependencies should exist")
+	test.truthy(config.devDependencies["mypkg"], "mypkg should be in devDependencies")
+	test.equal(config.devDependencies["mypkg"].git, "https://example.com/mypkg.git")
+	test.falsy(config.dependencies and config.dependencies["mypkg"], "mypkg should not be in dependencies")
+end)
+
+test.it("lde add --dev --git --branch stores branch in devDependencies", function()
+	local dir = makeProject("dev-git-branch-test")
+	ldecli({ "add", "mypkg", "--dev", "--git", "https://example.com/mypkg.git", "--branch", "main" }, dir)
+
+	local config = json.decode(fs.read(path.join(dir, "lde.json")))
+	test.truthy(config.devDependencies, "devDependencies should exist")
+	local dep = config.devDependencies["mypkg"]
+	test.truthy(dep, "mypkg should be in devDependencies")
+	test.equal(dep.git, "https://example.com/mypkg.git")
+	test.equal(dep.branch, "main")
+end)
+
+test.it("lde add --dev does not affect existing dependencies", function()
+	local dir = makeProject("dev-isolation-test")
+	-- Pre-populate a regular dependency
+	ldecli({ "add", "existing", "--path", "../existing" }, dir)
+
+	ldecli({ "add", "devonly", "--dev", "--path", "../devonly" }, dir)
+
+	local config = json.decode(fs.read(path.join(dir, "lde.json")))
+	test.truthy(config.dependencies["existing"], "existing dep should still be in dependencies")
+	test.falsy(config.dependencies["devonly"], "devonly should not be in dependencies")
+	test.truthy(config.devDependencies["devonly"], "devonly should be in devDependencies")
+end)
+
+test.it("lde add --dev removes stale lockfile entry", function()
+	local dir = makeProject("dev-lockfile-test")
+	fs.write(path.join(dir, "lde.lock"), json.encode({
+		version = "1",
+		dependencies = {
+			mydevpkg = { path = "../mydevpkg" }
+		}
+	}))
+
+	ldecli({ "add", "mydevpkg", "--dev", "--path", "../mydevpkg" }, dir)
+
+	local lock = json.decode(fs.read(path.join(dir, "lde.lock")))
+	test.falsy(lock.dependencies["mydevpkg"], "stale lockfile entry should be removed after lde add --dev")
+end)
+
 test.it("lde add removes the dep entry from lde.lock if present", function()
 	local dir = makeProject("add-lockfile-test")
 	fs.write(path.join(dir, "lde.lock"), json.encode({

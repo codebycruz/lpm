@@ -53,7 +53,7 @@ local function add(args)
 	local dependencyTable ---@type lde.Package.Config.Dependencies
 	if isDevelopment then
 		if not config.devDependencies then
-			config.devDependencies = {}
+			json.addField(config, "devDependencies", {})
 		end
 
 		dependencyTable = config.devDependencies
@@ -85,7 +85,7 @@ local function add(args)
 		end
 
 		dep = { luarocks = name, version = registryVersion or nil }
-		ansi.printf("{green}Added luarocks dependency: %s{reset}", name)
+		ansi.printf("{green}Added luarocks %s: %s{reset}", isDevelopment and "dev dependency" or "dependency", name)
 	else
 		-- Registry dependency
 		lde.global.syncRegistry()
@@ -98,11 +98,11 @@ local function add(args)
 
 		local resolvedVersion = lde.global.resolveRegistryVersion(portfile, registryVersion or nil)
 		dep = { version = resolvedVersion }
-		ansi.printf("{green}Added dependency: %s{reset} ({cyan}version: %s{reset})", name, resolvedVersion)
+		ansi.printf("{green}Added %s: %s{reset} ({cyan}version: %s{reset})", isDevelopment and "dev dependency" or "dependency", name, resolvedVersion)
 	end
 
 	if depType then
-		ansi.printf("{green}Added dependency: %s{reset} ({cyan}%s: %s{reset})", name, depType, depValue)
+		ansi.printf("{green}Added %s: %s{reset} ({cyan}%s: %s{reset})", isDevelopment and "dev dependency" or "dependency", name, depType, depValue)
 	end
 
 	json.addField(dependencyTable, name, dep)
