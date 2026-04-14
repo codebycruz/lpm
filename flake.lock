@@ -7,15 +7,15 @@
         ]
       },
       "locked": {
-        "lastModified": 1774723686,
-        "narHash": "sha256-GX0YcvuHXUrRdVd7qDzmEhjjRjFMj4uaFtweFGXIVwg=",
-        "owner": "Silzinc",
+        "lastModified": 1776201701,
+        "narHash": "sha256-lWLbP6NyXUMmXp6nKw8DowwX2gGjZz03uyJyF4pj5Zo=",
+        "owner": "lde-org",
         "repo": "lde-nix",
-        "rev": "7ed99f8d028b2b626911a7bf1d66a421fa11416e",
+        "rev": "7c6f425bf53b7b56da7a819a076eb8ffacc45ca2",
         "type": "github"
       },
       "original": {
-        "owner": "Silzinc",
+        "owner": "lde-org",
         "repo": "lde-nix",
         "type": "github"
       }
