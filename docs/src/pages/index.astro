@@ -268,23 +268,23 @@ const features = [
 				</div>
 			</div>
 
-			{/* Mobile cards — one row per feature, lde highlighted */}
-			<div class="sm:hidden rounded-2xl border border-black/10 dark:border-white/10 overflow-hidden divide-y divide-black/[0.06] dark:divide-white/[0.06]">
+			{/* Mobile rows */}
+			<div class="sm:hidden divide-y divide-black/[0.06] dark:divide-white/[0.06]">
 				{comparison.map(({ feature, href, values: [lde, lux, luarocks] }) => {
 					const renderVal = (val: string, blue = false) => {
-						const cls = blue ? "text-blue-400 font-semibold" : "text-black/60 dark:text-white/50";
-						if (val === "y") return <span class="inline-flex size-7 items-center justify-center rounded-full bg-emerald-500/14 text-emerald-700 dark:text-emerald-300 font-bold ring-1 ring-emerald-600/20 dark:ring-emerald-400/20">✓</span>;
-						if (val === "n") return <span class="inline-flex size-7 items-center justify-center rounded-full bg-red-500/12 text-red-700 dark:text-red-300 font-bold ring-1 ring-red-600/20 dark:ring-red-400/20">✗</span>;
-						if (val === "wip") return <span class="inline-flex min-w-11 items-center justify-center rounded-full bg-amber-500/18 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wide text-amber-800 dark:text-amber-300 ring-1 ring-amber-600/20 dark:ring-amber-400/20">WIP</span>;
-						if (val.startsWith("y:")) return <span class="inline-flex items-center gap-2 rounded-full bg-emerald-500/14 px-2.5 py-1 ring-1 ring-emerald-600/20 dark:ring-emerald-400/20"><span class="text-emerald-700 dark:text-emerald-300 font-bold">✓</span><span class="text-xs text-emerald-800/80 dark:text-emerald-200/80">{val.slice(2)}</span></span>;
+						const cls = blue ? "text-blue-500 dark:text-blue-400 font-semibold" : "text-black/65 dark:text-white/55";
+						if (val === "y") return <span class="text-emerald-700 dark:text-emerald-300 font-bold">Yes</span>;
+						if (val === "n") return <span class="text-red-700 dark:text-red-300 font-bold">No</span>;
+						if (val === "wip") return <span class="text-amber-800 dark:text-amber-300 font-semibold uppercase tracking-wide text-[11px]">WIP</span>;
+						if (val.startsWith("y:")) return <span class="inline-flex items-baseline gap-1.5"><span class="text-emerald-700 dark:text-emerald-300 font-bold">Yes</span><span class="text-[11px] text-black/45 dark:text-white/35">{val.slice(2)}</span></span>;
 						return <span class={cls}>{val}</span>;
 					};
 					return (
-						<div class="px-4 py-3 bg-black/[0.01] dark:bg-white/[0.01]">
-							<p class="mb-2">
+						<div class="py-4">
+							<p class="mb-3">
 								<a
 									href={href}
-									class="inline-flex items-center gap-1.5 text-xs text-black/45 dark:text-white/30 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+									class="inline-flex items-center gap-1.5 text-sm font-medium text-black/75 dark:text-white/65 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
 								>
 									{feature}
 									<svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" class="opacity-45">
@@ -293,17 +293,17 @@ const features = [
 									</svg>
 								</a>
 							</p>
-							<div class="grid grid-cols-3 gap-2 text-sm">
-								<div class="flex flex-col gap-0.5">
-									<span class="text-[10px] text-blue-400 font-semibold uppercase tracking-wide">lde</span>
+							<div class="grid grid-cols-3 gap-3 text-sm">
+								<div class="flex flex-col gap-1">
+									<span class="text-[10px] text-blue-500 dark:text-blue-400 font-semibold uppercase tracking-[0.18em]">lde</span>
 									{renderVal(lde as string, true)}
 								</div>
-								<div class="flex flex-col gap-0.5">
-									<span class="text-[10px] text-black/30 dark:text-white/25 uppercase tracking-wide">lux</span>
+								<div class="flex flex-col gap-1">
+									<span class="text-[10px] text-black/35 dark:text-white/25 uppercase tracking-[0.18em]">lux</span>
 									{renderVal(lux as string)}
 								</div>
-								<div class="flex flex-col gap-0.5">
-									<span class="text-[10px] text-black/30 dark:text-white/25 uppercase tracking-wide">luarocks</span>
+								<div class="flex flex-col gap-1">
+									<span class="text-[10px] text-black/35 dark:text-white/25 uppercase tracking-[0.18em]">luarocks</span>
 									{renderVal(luarocks as string)}
 								</div>
 							</div>
