@@ -134,14 +134,8 @@ local function openRockspec(dir, rockspecPath)
 
 	local buildStamp = util.fnv1a(content)
 
-	local function mkdirp(p)
-		if fs.isdir(p) then return end
-		mkdirp(path.dirname(p))
-		fs.mkdir(p)
-	end
-
 	pkg.buildfn = function(_, outputDir)
-		if not fs.isdir(outputDir) then mkdirp(outputDir) end
+		if not fs.isdir(outputDir) then fs.mkdirAll(outputDir) end
 
 		local stampFile = path.join(outputDir, ".lde-built")
 		if fs.exists(stampFile) and fs.read(stampFile) == buildStamp then
@@ -276,7 +270,7 @@ local function openRockspec(dir, rockspecPath)
 					destAbs = path.join(modulesDir, modPath .. ".lua")
 				end
 				local destDir = path.dirname(destAbs)
-				if not fs.isdir(destDir) then mkdirp(destDir) end
+				if not fs.isdir(destDir) then fs.mkdirAll(destDir) end
 				fs.copy(path.join(dir, src), destAbs)
 			end
 
@@ -284,7 +278,7 @@ local function openRockspec(dir, rockspecPath)
 				local ext = jit.os == "Windows" and "dll" or jit.os == "OSX" and "dylib" or "so"
 				local destAbs = path.join(modulesDir, modname:gsub("%.", path.separator) .. "." .. ext)
 				local destDir = path.dirname(destAbs)
-				if not fs.isdir(destDir) then mkdirp(destDir) end
+				if not fs.isdir(destDir) then fs.mkdirAll(destDir) end
 
 				local srcFiles = {}
 				for _, s in ipairs(src.sources) do
@@ -324,7 +318,7 @@ local function openRockspec(dir, rockspecPath)
 				local binName = type(k) == "number" and path.basename(v) or k
 				local binDest = path.join(outputDir, binName)
 				local binDestDir = path.dirname(binDest)
-				if not fs.isdir(binDestDir) then mkdirp(binDestDir) end
+				if not fs.isdir(binDestDir) then fs.mkdirAll(binDestDir) end
 				fs.copy(path.join(dir, v), binDest)
 			end
 
@@ -336,7 +330,7 @@ local function openRockspec(dir, rockspecPath)
 				local modPath = modname:gsub("%.", path.separator)
 				local destAbs = path.join(modulesDir, modPath .. ".lua")
 				local destDir = path.dirname(destAbs)
-				if not fs.isdir(destDir) then mkdirp(destDir) end
+				if not fs.isdir(destDir) then fs.mkdirAll(destDir) end
 				fs.copy(path.join(dir, src), destAbs)
 				::continue_install_lua::
 			end

@@ -83,19 +83,12 @@ local TarHeaderT = ffi.typeof("TarHeader")
 
 local tarHeaderSize = ffi.sizeof("TarHeader")
 
----@param dir string
-local function mkdirp(dir)
-	if fs.isdir(dir) then return end
-	mkdirp(path.dirname(dir))
-	fs.mkdir(dir)
-end
-
 ---@param base    string
 ---@param name    string
 ---@param content string
 local function writeFile(base, name, content)
 	local out = path.join(base, name)
-	mkdirp(path.dirname(out))
+	fs.mkdirAll(path.dirname(out))
 	fs.write(out, content)
 end
 
