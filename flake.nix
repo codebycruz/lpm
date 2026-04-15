@@ -25,6 +25,15 @@
               [
                 luajit
                 lua-language-server
+
+                # Packages necessary for tests
+                autoconf
+                automake
+                cmake
+                gnumake
+                libtool
+                libxcrypt
+                openssl
               ]
               # inject lde in the devshell
               ++ [ lde.packages.${system}.default ];
