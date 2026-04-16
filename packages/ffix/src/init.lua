@@ -94,7 +94,9 @@ end
 
 ---@param typename string
 function Context:cast(typename, ...)
-	return ffi.cast(self.names[typename] or typename, ...)
+	local base, tail = typename:match("^([%a_][%w_]*)(.*)")
+	if base and self.names[base] then typename = self.names[base] .. tail end
+	return ffi.cast(typename, ...)
 end
 
 ---@param typename string

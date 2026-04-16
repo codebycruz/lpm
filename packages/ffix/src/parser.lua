@@ -127,6 +127,15 @@ function Parser:parseType()
 			name = kw .. " " .. tag.ident
 			break
 		elseif tok.variant == "ident" then
+			-- if we already have qualifiers (e.g. "unsigned long"), peek at the
+			-- token after this ident: if it looks like a declaration suffix
+			-- then this ident is a name not a type, so stop here without consuming
+			local next = self.tokens[self.ptr + 1]
+			local next_v = next and next.variant
+			if #quals > 0 and (next_v == "(" or next_v == ";" or next_v == "," or next_v == ")") then
+				break
+			end
+
 			name = tok.ident
 			self:advance()
 			break
