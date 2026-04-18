@@ -162,9 +162,15 @@ function Context:istype(typename, obj)
 	return ffi.istype(self.names[typename] or typename, obj)
 end
 
----@param pfx string
+---@param ctx table
+local function generatePrefix(ctx)
+	return string.format("%d%p", os.clock() * 1e6, ctx)
+end
+
+---@param pfx string?
 function ffix.context(pfx)
-	local ctx = setmetatable({ pfx = pfx, names = {} }, Context)
+	local ctx = setmetatable({ names = {} }, Context)
+	ctx.pfx = pfx or generatePrefix(ctx)
 
 	ctx.C = setmetatable({}, {
 		__index = function(_, k)
