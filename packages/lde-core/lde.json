@@ -17,6 +17,6 @@
 		"git": { "path": "../git" },
 		"rocked": { "path": "../rocked" },
 		"luarocks": { "path": "../luarocks" },
-		"archive": { "path": "../archive" }
+		"archive": { "git": "https://github.com/lde-org/archive" }
 	}
 }
