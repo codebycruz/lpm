@@ -1,6 +1,5 @@
 local ansi = require("ansi")
 local fs = require("fs")
-local process = require("process2")
 local path = require("path")
 
 local lde = require("lde-core")

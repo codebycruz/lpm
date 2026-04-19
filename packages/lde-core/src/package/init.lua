@@ -6,7 +6,7 @@ local fs = require("fs")
 local env = require("env")
 local json = require("json")
 local path = require("path")
-local process = require("process2")
+local process = require("process")
 
 ---@class lde.Package
 ---@field dir string

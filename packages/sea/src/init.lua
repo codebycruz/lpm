@@ -1,6 +1,6 @@
 local sea = {}
 
-local process = require("process2")
+local process = require("process")
 local path = require("path")
 local env = require("env")
 local fs = require("fs")

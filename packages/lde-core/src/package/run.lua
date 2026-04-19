@@ -1,7 +1,7 @@
 local fs = require("fs")
 local path = require("path")
 local ffi = require("ffi")
-local process = require("process2")
+local process = require("process")
 local runtime = require("lde-core.runtime")
 
 ---@param package lde.Package

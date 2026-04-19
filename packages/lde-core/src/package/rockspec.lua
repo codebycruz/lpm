@@ -5,7 +5,7 @@ local lde = require("lde-core")
 local fs = require("fs")
 local env = require("env")
 local path = require("path")
-local process = require("process2")
+local process = require("process")
 local util = require("util")
 local curl = require("curl-sys")
 

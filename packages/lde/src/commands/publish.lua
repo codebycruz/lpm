@@ -1,7 +1,7 @@
 local ansi = require("ansi")
 local git = require("git")
 local json = require("json")
-local process = require("process2")
+local process = require("process")
 
 local lde = require("lde-core")
 

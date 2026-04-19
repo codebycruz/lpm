@@ -3,14 +3,14 @@
 	"description": "Archive extraction library. Reads magic bytes to detect zip vs tar.",
 	"version": "0.1.0",
 	"dependencies": {
-		"fs": { "path": "../fs" },
-		"path": { "path": "../path" },
+		"fs": { "git": "https://github.com/lde-org/fs" },
+		"path": { "git": "https://github.com/lde-org/path" },
 		"deflate-sys": { "git": "https://github.com/lde-org/deflate-sys" }
 	},
 	"devDependencies": {
 		"lde-test": { "path": "../lde-test" },
-		"fs": { "path": "../fs" },
-		"env": { "path": "../env" },
-		"path": { "path": "../path" }
+		"fs": { "git": "https://github.com/lde-org/fs" },
+		"env": { "git": "https://github.com/lde-org/env" },
+		"path": { "git": "https://github.com/lde-org/path" }
 	}
 }

@@ -1,6 +1,6 @@
 local ffi = require("ffi")
 
-local process = require("process2")
+local process = require("process")
 local ansi = require("ansi")
 
 ---@type fun(): number
@@ -91,7 +91,8 @@ local function runBenchmarks(tool, tmpdir)
 	bench("install busted (cold)", function()
 		local code, _, stderr
 		if tool == "lde" then
-			code, _, stderr = process.exec("lde", { "--tree", tmpdir .. "/lde", "install", "rocks:busted" }, { stdout = "null" })
+			code, _, stderr = process.exec("lde", { "--tree", tmpdir .. "/lde", "install", "rocks:busted" },
+				{ stdout = "null" })
 		elseif tool == "luarocks" then
 			code, _, stderr = process.exec("luarocks", { "--tree", tmpdir .. "/rocks", "install", "busted" })
 		elseif tool == "lx" then
@@ -103,7 +104,8 @@ local function runBenchmarks(tool, tmpdir)
 	bench("install busted (warm)", function()
 		local code, _, stderr
 		if tool == "lde" then
-			code, _, stderr = process.exec("lde", { "--tree", tmpdir .. "/lde", "install", "rocks:busted" }, { stdout = "null" })
+			code, _, stderr = process.exec("lde", { "--tree", tmpdir .. "/lde", "install", "rocks:busted" },
+				{ stdout = "null" })
 		elseif tool == "luarocks" then
 			code, _, stderr = process.exec("luarocks", { "--tree", tmpdir .. "/rocks", "install", "busted" })
 		elseif tool == "lx" then
@@ -115,7 +117,8 @@ local function runBenchmarks(tool, tmpdir)
 	bench("build C rock (luafilesystem)", function()
 		local code, _, stderr
 		if tool == "lde" then
-			code, _, stderr = process.exec("lde", { "--tree", tmpdir .. "/lde", "install", "rocks:luafilesystem" }, { stdout = "null" })
+			code, _, stderr = process.exec("lde", { "--tree", tmpdir .. "/lde", "install", "rocks:luafilesystem" },
+				{ stdout = "null" })
 		elseif tool == "luarocks" then
 			code, _, stderr = process.exec("luarocks", { "--tree", tmpdir .. "/rocks", "install", "luafilesystem" })
 		elseif tool == "lx" then

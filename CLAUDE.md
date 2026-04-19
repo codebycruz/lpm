@@ -9,7 +9,7 @@ packages/
   lde/          # The CLI binary itself (entry: src/init.lua)
   lde-core/     # Core library: Package, Lockfile, runtime, install logic
   lde-test/     # Built-in test framework
-  ansi/clap/env/fs/git/http/json/path/process2/semver/util/  # Internal packages
+  ansi/clap/env/fs/git/http/json/path/process/semver/util/  # Internal packages
   sea/          # Single-executable assembly (compiles bundles into binaries)
   archive/      # Archive extraction support
   luarocks/     # LuaRocks integration
@@ -213,7 +213,7 @@ args:drain(start)           -- returns and removes all remaining args (or from i
 args:count()                -- number of remaining args
 ```
 
-### `process2`
+### `process`
 
 ```lua
 -- Blocking execution
@@ -228,7 +228,7 @@ child:kill(force)
 -- opts: { cwd, env, stdin, stdout, stderr }
 -- stdout/stderr: "pipe" (default for exec), "inherit", "null"
 
-process2.platform  -- "linux", "darwin", "win32", "unix"
+process.platform  -- "linux", "darwin", "win32", "unix"
 ```
 
 ### `env`
