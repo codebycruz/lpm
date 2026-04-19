@@ -60,6 +60,15 @@ jobs:
           curl -L -o luajit.tar.gz https://github.com/lde-org/lj-dist/releases/download/latest/${{ matrix.artifact }}.tar.gz
           tar -xzf luajit.tar.gz
 
+      - name: Add LuaJIT to PATH (Unix)
+        if: runner.os != 'Windows'
+        run: echo "$GITHUB_WORKSPACE/${{ matrix.artifact }}" >> $GITHUB_PATH
+
+      - name: Add LuaJIT to PATH (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: echo "$env:GITHUB_WORKSPACE\${{ matrix.artifact }}" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+
       - name: Install llvm-mingw (Windows ARM64)
         if: matrix.os == 'windows-11-arm'
         shell: pwsh
