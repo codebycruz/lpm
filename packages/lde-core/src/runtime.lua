@@ -338,19 +338,18 @@ local function executeWith(compile, opts, scriptName)
 		end
 	end
 
-	local ok, a, b, c, d, e, f = pcall(function()
-		local ra, rb, rc, rd, re, rf
-		if opts.args then
-			arg = opts.args
-			arg[0] = scriptName
-			ra, rb, rc, rd, re, rf = chunk(unpack(opts.args))
-		else
-			ra, rb, rc, rd, re, rf = chunk()
-		end
-		finishProfiler()
-		if opts.postexec then return opts.postexec() end
-		return ra, rb, rc, rd, re, rf
-	end)
+	if opts.args then
+		arg = opts.args
+		arg[0] = scriptName
+	end
+
+	local ok, a, b, c, d, e, f = pcall(chunk, unpack(opts.args or {}))
+
+	finishProfiler()
+
+	if ok and opts.postexec then
+		ok, a, b, c, d, e, f = pcall(opts.postexec)
+	end
 
 	if stopProfiler then
 		stopProfiler()
