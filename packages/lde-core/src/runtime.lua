@@ -332,8 +332,11 @@ local function executeWith(compile, opts, scriptName)
 			local fgTitle = scriptName and scriptName:match("[^/\\]+$")
 			local ok, err = lde.flamegraph.write(stacks, total, PROFILER_MS_PER_SAMPLE, opts.flamegraph, fgTitle)
 			if lde.verbose then
-				if ok then ansi.printf("{cyan}Flamegraph written to %s\n", opts.flamegraph)
-				else ansi.printf("{red}Flamegraph error: %s\n", err or "unknown error") end
+				if ok then
+					ansi.printf("{cyan}Flamegraph written to %s", opts.flamegraph)
+				else
+					ansi.printf("{red}Flamegraph error: %s", err or "unknown error")
+				end
 			end
 		end
 	end
