@@ -1,6 +1,6 @@
 local sea = {}
 
-local process = require("process2")
+local process = require("process")
 local path = require("path")
 local env = require("env")
 local fs = require("fs")
@@ -289,7 +289,7 @@ char lde_tmpdir[4096];
 			)
 	}
 
-	local stdintInclude = hasLibs and "#include <stdint.h>\n#include <string.h>\n#include <stdlib.h>" or ""
+	local stdintInclude = (hasLibs and "#include <stdint.h>\n#include <string.h>\n#include <stdlib.h>\n" or "") .. "#ifdef __ANDROID__\n#include <unistd.h>\n#endif\n"
 
 	-- lde_loadlib_loader: a C closure that calls package.loadlib(upvalue1, "*").
 	-- Only emitted when there are shared libs to avoid dead-code warnings.
@@ -362,11 +362,21 @@ int main(int argc, char** argv) {
 	if (result != LUA_OK) {
 		fprintf(stderr, "%s\n", lua_tostring(L, -1));
 		lua_close(L);
+#ifdef __ANDROID__
+		fflush(NULL);
+		_exit(1);
+#else
 		return 1;
+#endif
 	}
 
 	lua_close(L);
+#ifdef __ANDROID__
+	fflush(NULL);
+	_exit(0);
+#else
 	return 0;
+#endif
 }
 ]]
 

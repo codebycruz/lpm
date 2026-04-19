@@ -9,7 +9,7 @@ packages/
   lde/          # The CLI binary itself (entry: src/init.lua)
   lde-core/     # Core library: Package, Lockfile, runtime, install logic
   lde-test/     # Built-in test framework
-  ansi/clap/env/fs/git/http/json/path/process2/semver/util/  # Internal packages
+  ansi/clap/env/fs/git/http/json/path/process/semver/util/  # Internal packages
   sea/          # Single-executable assembly (compiles bundles into binaries)
   archive/      # Archive extraction support
   luarocks/     # LuaRocks integration
@@ -37,6 +37,7 @@ The key: **the require name is the key in `lde.json` `dependencies`, not the pac
 During `lde test`, the runner automatically exposes the package's `tests/` directory as `target/tests` (symlinked or copied). This means test files can `require("tests.lib.something")` to share helpers across test files.
 
 Example from `packages/lde/tests/main.test.lua`:
+
 ```lua
 local ldecli = require("tests.lib.ldecli")
 ```
@@ -107,6 +108,7 @@ This outputs `packages/lde/lde` (or `lde.exe` on Windows). To install it, copy i
 ## Runtime Isolation (`lde-core.runtime`)
 
 `lde run` / `lde test` execute scripts in an isolated environment:
+
 - `package.loaded` is cleared of non-builtins before and restored after each run.
 - A fresh `_G` metatable is created per execution (`setfenv`).
 - `ffi.cdef` is patched to silently ignore "attempt to redefine" errors (safe for repeated runs in the same process).
@@ -116,16 +118,16 @@ This means multiple `lde run` calls in the same process don't pollute each other
 
 ## Key Packages
 
-| Package | Purpose |
-|---|---|
-| `lde-core` | `Package`, `Lockfile`, install/build/run/test/compile logic |
-| `lde-test` | Test framework (`require("lde-test")` in test files) |
-| `clap` | CLI argument parsing (`args:option()`, `args:flag()`, `args:pop()`) |
-| `ansi` | Colored terminal output (`ansi.printf("{red}msg")`) |
-| `fs` | Filesystem ops (`read`, `write`, `mkdir`, `mklink`, `scan`, `stat`) |
-| `process2` | Process execution (`process.exec(bin, args, opts)`) |
-| `sea` | Compiles a bundled Lua string + native libs into a self-contained binary |
-| `env` | Env vars, cwd, `env.execPath()` |
+| Package    | Purpose                                                                  |
+| ---------- | ------------------------------------------------------------------------ |
+| `lde-core` | `Package`, `Lockfile`, install/build/run/test/compile logic              |
+| `lde-test` | Test framework (`require("lde-test")` in test files)                     |
+| `clap`     | CLI argument parsing (`args:option()`, `args:flag()`, `args:pop()`)      |
+| `ansi`     | Colored terminal output (`ansi.printf("{red}msg")`)                      |
+| `fs`       | Filesystem ops (`read`, `write`, `mkdir`, `mklink`, `scan`, `stat`)      |
+| `process`  | Process execution (`process.exec(bin, args, opts)`)                      |
+| `sea`      | Compiles a bundled Lua string + native libs into a self-contained binary |
+| `env`      | Env vars, cwd, `env.execPath()`                                          |
 
 ## Monorepo Conventions
 

@@ -1,4 +1,4 @@
-local process = require("process2")
+local process = require("process")
 local env = require("env")
 
 local ldePath = assert(env.execPath())

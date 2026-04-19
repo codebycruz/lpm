@@ -4,7 +4,6 @@ local fs = require("fs")
 local env = require("env")
 local path = require("path")
 local json = require("json")
-local process = require("process2")
 
 local tmpBase = path.join(env.tmpdir(), "lde-commonrocks-tests")
 fs.rmdir(tmpBase)
