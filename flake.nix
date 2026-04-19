@@ -27,12 +27,11 @@
                 lua-language-server
 
                 # Packages necessary for tests
-                autoconf
-                automake
                 cmake
+                curl
                 gnumake
-                libtool
                 libxcrypt
+                ninja
                 openssl
               ]
               # inject lde in the devshell
