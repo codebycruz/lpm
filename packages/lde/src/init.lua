@@ -232,54 +232,39 @@ commands.repl = require("lde.commands.repl")
 -- Commands that don't need the global cache dirs initialized
 local noInitCommands = { help = true }
 
-local ok, err = xpcall(function()
-	local commandName = args:pop()
-	if not commandName then
-		commands.help(args)
-		return
-	end
+local commandName = args:pop()
+if not commandName then
+	commands.help(args)
+	return
+end
 
-	if not noInitCommands[commandName] and not treeOverride then
-		lde.global.init()
-	end
+if not noInitCommands[commandName] and not treeOverride then
+	lde.global.init()
+end
 
-	local commandHandler = commands[commandName]
+local commandHandler = commands[commandName]
 
-	if commandHandler then
-		return commandHandler(args)
-	else
-		-- Fall back to package scripts, then to a loose file if it exists
-		local pkg = lde.Package.open()
-		local scripts = pkg and pkg:readConfig().scripts
+if commandHandler then
+	commandHandler(args)
+elseif fs.exists(commandName) then
+	-- TODO: Replace this hacky behavior
+	table.insert(args.raw, 1, commandName)
+	commands.run(args)
+else
+	local pkg = lde.Package.open()
+	local scripts = pkg and pkg:readConfig().scripts
 
-		if scripts and scripts[commandName] then
-			---@cast pkg -nil
+	if scripts and scripts[commandName] then
+		---@cast pkg -nil
 
-			pkg:build()
-			pkg:installDependencies()
+		pkg:build()
+		pkg:installDependencies()
 
-			local ok, err = pkg:runScript(commandName)
-			if not ok then
-				error("Script '" .. commandName .. "' failed: " .. err)
-			end
-		elseif fs.exists(commandName) then
-			-- TODO: Replace this hacky behavior
-			table.insert(args.raw, 1, commandName)
-			commands.run(args)
-		else
-			ansi.printf("{red}Unknown command: %s", tostring(commandName))
+		local ok, err = pkg:runScript(commandName)
+		if not ok then
+			error("Script '" .. commandName .. "' failed: " .. err)
 		end
+	else
+		ansi.printf("{red}Unknown command: %s", tostring(commandName))
 	end
-end, function(err)
-	return { msg = err, trace = debug.traceback(err, 2) }
-end)
-
-if not ok then ---@cast err { msg: string, trace: string }
-	ansi.printf("{red}Error: %s", tostring(err.msg))
-
-	if env.var("DEBUG") then
-		print(err.trace)
-	end
-
-	os.exit(1)
 end
