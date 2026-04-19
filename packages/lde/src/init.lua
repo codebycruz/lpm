@@ -16,61 +16,106 @@ if os.getenv("BOOTSTRAP") then
 	end
 
 	local isWindows = separator == '\\'
+
+	if not baseDir:match("^/") and not baseDir:match("^%a:[/\\]") then
+		local cwd = isWindows and io.popen("cd"):read("*l") or io.popen("pwd"):read("*l")
+		baseDir = cwd .. separator .. baseDir
+	end
+
 	local ldeModulesDir = join(baseDir, "target")
 
 	local function exists(path)
 		local ok, _, code = os.rename(path, path)
-
 		if not ok then
-			if code == 13 then -- permission denied but exists
-				return true
-			end
-
-			return false
+			return code == 13 -- permission denied means it exists
 		end
-
 		return true
 	end
 
-	if not exists(ldeModulesDir) then
-		if isWindows then
-			os.execute('mkdir "' .. ldeModulesDir .. '"')
-		else
-			os.execute('mkdir -p "' .. ldeModulesDir .. '"')
-		end
-	end
-
-	local pathPackages = {
-		"ansi", "clap", "fs", "env", "path", "git", "luarocks",
-		"sea", "semver", "util", "lde-core", "lde-test", "rocked", "archive"
-	}
-
-	for _, pkg in ipairs(pathPackages) do
-		-- Semantics of the 'src' differ between windows and linux symlinks
-		local relSrcPath = join("..", "..", pkg, "src")
-		local absSrcPath = join(baseDir, "..", pkg, "src")
-
-		local moduleDistPath = join(ldeModulesDir, pkg)
-		if not exists(moduleDistPath) then
+	local function mkdir(dir)
+		if not exists(dir) then
 			if isWindows then
-				os.execute('mklink /J "' .. moduleDistPath .. '" "' .. absSrcPath .. '"')
+				os.execute('mkdir "' .. dir .. '"')
 			else
-				os.execute("ln -sf '" .. relSrcPath .. "' '" .. moduleDistPath .. "'")
+				os.execute('mkdir -p "' .. dir .. '"')
 			end
 		end
 	end
 
-	local moduleDistPath = join(ldeModulesDir, "lde")
-	if not exists(moduleDistPath) then
-		local relSrcPath = join("..", "src")
-		local absSrcPath = join(baseDir, "src")
-
-		if isWindows then
-			os.execute('mklink /J "' .. moduleDistPath .. '" "' .. absSrcPath .. '"')
-		else
-			os.execute("ln -sf '" .. relSrcPath .. "' '" .. moduleDistPath .. "'")
+	-- Semantics of src differ between Windows and Unix symlinks: Windows needs
+	-- an absolute path for junction points, Unix prefers relative for portability.
+	local function mklink(src, dest, absSrc)
+		if not exists(dest) then
+			if isWindows then
+				os.execute('mklink /J "' .. dest .. '" "' .. absSrc .. '"')
+			else
+				os.execute("ln -sf '" .. src .. "' '" .. dest .. "'")
+			end
 		end
 	end
+
+	mkdir(ldeModulesDir)
+
+	local pathPackages = {
+		"ansi", "clap", "git", "luarocks", "readline",
+		"sea", "semver", "util", "lde-core", "lde-test", "rocked"
+	}
+
+	for _, pkg in ipairs(pathPackages) do
+		mklink(
+			join("..", "..", pkg, "src"),
+			join(ldeModulesDir, pkg),
+			join(baseDir, "..", pkg, "src")
+		)
+	end
+
+	local tmpBase = os.getenv("TEMP") or os.getenv("TMPDIR") or "/tmp"
+	local tmpLDEDir = join(tmpBase, "lde")
+
+	---@type { name: string, url: string }[]
+	local gitPackages = {
+		{ name = "fs",          url = "https://github.com/lde-org/fs" },
+		{ name = "env",         url = "https://github.com/lde-org/env" },
+		{ name = "process",     url = "https://github.com/lde-org/process" },
+		{ name = "path",        url = "https://github.com/lde-org/path" },
+		{ name = "archive",     url = "https://github.com/lde-org/archive" },
+		{ name = "git",         url = "https://github.com/lde-org/git" },
+		{ name = "json",        url = "https://github.com/lde-org/json" },
+		{ name = "ffix",        url = "https://github.com/lde-org/ffix" },
+		{ name = "curl-sys",    url = "https://github.com/lde-org/curl-sys" },
+		{ name = "git2-sys",    url = "https://github.com/lde-org/git2-sys" },
+		{ name = "deflate-sys", url = "https://github.com/lde-org/deflate-sys" }
+	}
+
+	mkdir(tmpLDEDir)
+
+	for _, pkg in ipairs(gitPackages) do
+		local moduleDistPath = join(ldeModulesDir, pkg.name)
+		if not exists(moduleDistPath) then
+			local cloneDir = join(tmpLDEDir, pkg.name)
+			if not exists(cloneDir) then
+				os.execute('git clone --depth 1 --recurse-submodules --shallow-submodules "' ..
+					pkg.url .. '" "' .. cloneDir .. '"')
+			end
+
+			local buildScript = join(cloneDir, "build.lua")
+			if exists(buildScript) then
+				if isWindows then
+					os.execute('xcopy /E /I /Y "' .. join(cloneDir, "src") .. '" "' .. moduleDistPath .. '"')
+					os.execute('cd /d "' ..
+						cloneDir .. '" && set LDE_OUTPUT_DIR=' .. moduleDistPath .. ' && luajit "' .. buildScript .. '"')
+				else
+					os.execute('cp -r "' .. join(cloneDir, "src") .. '/." "' .. moduleDistPath .. '"')
+					os.execute('cd "' ..
+						cloneDir .. '" && LDE_OUTPUT_DIR="' .. moduleDistPath .. '" luajit "' .. buildScript .. '"')
+				end
+			else
+				mklink(join(cloneDir, "src"), moduleDistPath, join(cloneDir, "src"))
+			end
+		end
+	end
+
+	mklink(join("..", "src"), join(ldeModulesDir, "lde"), join(baseDir, "src"))
 end
 
 local ansi = require("ansi")
