@@ -207,34 +207,35 @@ if args:flag("ensure-mingw") then
 	return
 end
 
-local commands = {}
-commands.help = require("lde.commands.help")
-commands.init = require("lde.commands.initialize")
-commands.new = require("lde.commands.new")
-commands.upgrade = require("lde.commands.upgrade")
-commands.add = require("lde.commands.add")
-commands.remove = require("lde.commands.remove")
-commands.run = require("lde.commands.run")
-commands.x = require("lde.commands.x")
-commands.install = require("lde.commands.install")
-commands.i = commands.install
-commands.sync = require("lde.commands.sync")
-commands.bundle = require("lde.commands.bundle")
-commands.compile = require("lde.commands.compile")
-commands.test = require("lde.commands.test")
-commands.tree = require("lde.commands.tree")
-commands.update = require("lde.commands.update")
-commands.outdated = require("lde.commands.outdated")
-commands.uninstall = require("lde.commands.uninstall")
-commands.publish = require("lde.commands.publish")
-commands.repl = require("lde.commands.repl")
+local commandFiles = {
+	help      = "lde.commands.help",
+	init      = "lde.commands.initialize",
+	new       = "lde.commands.new",
+	upgrade   = "lde.commands.upgrade",
+	add       = "lde.commands.add",
+	remove    = "lde.commands.remove",
+	run       = "lde.commands.run",
+	x         = "lde.commands.x",
+	install   = "lde.commands.install",
+	i         = "lde.commands.install",
+	sync      = "lde.commands.sync",
+	bundle    = "lde.commands.bundle",
+	compile   = "lde.commands.compile",
+	test      = "lde.commands.test",
+	tree      = "lde.commands.tree",
+	update    = "lde.commands.update",
+	outdated  = "lde.commands.outdated",
+	uninstall = "lde.commands.uninstall",
+	publish   = "lde.commands.publish",
+	repl      = "lde.commands.repl",
+}
 
 -- Commands that don't need the global cache dirs initialized
 local noInitCommands = { help = true }
 
 local commandName = args:pop()
 if not commandName then
-	commands.help(args)
+	require("lde.commands.help")(args)
 	return
 end
 
@@ -242,14 +243,13 @@ if not noInitCommands[commandName] and not treeOverride then
 	lde.global.init()
 end
 
-local commandHandler = commands[commandName]
-
-if commandHandler then
-	commandHandler(args)
+local commandFile = commandFiles[commandName]
+if commandFile then
+	require(commandFile)(args)
 elseif fs.exists(commandName) then
 	-- TODO: Replace this hacky behavior
 	table.insert(args.raw, 1, commandName)
-	commands.run(args)
+	require("lde.commands.run")(args)
 else
 	local pkg = lde.Package.open()
 	local scripts = pkg and pkg:readConfig().scripts
