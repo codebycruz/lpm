@@ -9,6 +9,7 @@ local function sync(args)
 		return
 	end
 
+	pkg:build()
 	pkg:installDependencies()
 	if not args:flag("production") then
 		pkg:installDevDependencies()
