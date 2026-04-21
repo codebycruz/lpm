@@ -26,13 +26,12 @@
                 luajit
                 lua-language-server
 
-                # Packages necessary for tests
-                autoconf
-                automake
+                # Packages necessary for tests and building
                 cmake
+                curl
                 gnumake
-                libtool
                 libxcrypt
+                ninja
                 openssl
               ]
               # inject lde in the devshell
