@@ -1,12 +1,11 @@
 local env = require("env")
 local ffi = require("ffi")
+local ffix = require("ffix")
 local profile = require("jit.profile")
 local ansi = require("ansi")
 local lde = require("lde-core")
 
 local PROFILER_MS_PER_SAMPLE = 1
-
-local originalCdef = ffi.cdef
 
 local builtinModules = {
 	package = true,
@@ -274,7 +273,25 @@ local function executeWith(compile, opts, scriptName)
 		end
 	end
 
-	local newG = setmetatable({}, { __index = _G })
+	-- Per-execution ffi isolation: route all ffi.cdef / ffi.new / etc. through
+	-- an ffix context so type names are prefixed and can't clash with lde's own defs.
+	local ffixCtx = ffix.context()
+	local ffiProxy = setmetatable({
+		cdef     = function(def) ffixCtx:cdef(def) end,
+		new      = function(t, ...) return ffixCtx:new(t, ...) end,
+		cast     = function(t, ...) return ffixCtx:cast(t, ...) end,
+		typeof   = function(t) return ffixCtx:typeof(t) end,
+		sizeof   = function(t, ...) return ffixCtx:sizeof(t, ...) end,
+		alignof  = function(t) return ffixCtx:alignof(t) end,
+		offsetof = function(t, field) return ffixCtx:offsetof(t, field) end,
+		metatype = function(t, mt) return ffixCtx:metatype(t, mt) end,
+		istype   = function(t, obj) return ffixCtx:istype(t, obj) end,
+		load     = function(lib, ...) return ffixCtx:load(lib, ...) end,
+		C        = ffixCtx.C,
+	}, { __index = ffi })
+	package.loaded.ffi = ffiProxy
+
+	local newG = setmetatable({ ffi = ffiProxy }, { __index = _G })
 	setfenv(chunk, newG)
 	package.loaded._G = newG
 
@@ -291,13 +308,6 @@ local function executeWith(compile, opts, scriptName)
 	end
 	package.loaders = freshLoaders
 
-	ffi.cdef = function(def)
-		local ok, err = pcall(originalCdef, def)
-		if not ok and not string.find(err, "attempt to redefine", 1, true) then
-			error(err, 2)
-		end
-	end
-
 	local originalTmpname = os.tmpname
 	os.tmpname = env.tmpfile
 
@@ -311,7 +321,6 @@ local function executeWith(compile, opts, scriptName)
 		if not stopProfiler then
 			for k, v in pairs(oldEnvVars) do env.set(k, v) end
 			if oldCwd then env.chdir(oldCwd) end
-			ffi.cdef = originalCdef
 			os.tmpname = originalTmpname
 			restore(package.loaded, savedLoaded)
 			restore(package.preload, savedPreload)
@@ -361,7 +370,6 @@ local function executeWith(compile, opts, scriptName)
 	for k, v in pairs(oldEnvVars) do env.set(k, v) end
 	if oldCwd then env.chdir(oldCwd) end
 
-	ffi.cdef = originalCdef
 	os.tmpname = originalTmpname
 	restore(package.loaded, savedLoaded)
 	restore(package.preload, savedPreload)

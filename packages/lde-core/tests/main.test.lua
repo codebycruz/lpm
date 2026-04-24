@@ -32,7 +32,8 @@ test.it("runtime.executeFile postexec runs inside os.tmpname override", function
 	test.truthy(tmpnameResult)
 	-- The overridden os.tmpname uses env.tmpdir(), not C tmpnam() which uses /tmp
 	local tmpdir = env.tmpdir()
-	test.truthy(tmpnameResult:sub(1, #tmpdir) == tmpdir, "tmpname should be under tmpdir, got: " .. tostring(tmpnameResult))
+	test.truthy(tmpnameResult:sub(1, #tmpdir) == tmpdir,
+		"tmpname should be under tmpdir, got: " .. tostring(tmpnameResult))
 end)
 
 test.it("runtime.executeFile runs a Lua script", function()
@@ -87,6 +88,67 @@ test.it("runtime.executeFile supports profiling", function()
 		profile = true
 	})
 	test.truthy(ok)
+end)
+
+test.it("runtime: ffi.cdef is isolated between executions", function()
+	fs.mkdir(tmpBase)
+
+	-- Both scripts define the same struct name with different field layouts.
+	-- Without isolation these would clash; with isolation each gets a prefixed name.
+	local script1 = path.join(tmpBase, "ffi-iso-1.lua")
+	fs.write(script1, [==[
+		local ffi = require("ffi")
+		ffi.cdef [[ typedef struct { int x; } MyPoint; ]]
+		local p = ffi.new("MyPoint")
+		p.x = 42
+		assert(p.x == 42, "field x should be 42")
+	]==])
+
+	local script2 = path.join(tmpBase, "ffi-iso-2.lua")
+	fs.write(script2, [==[
+		local ffi = require("ffi")
+		ffi.cdef [[ typedef struct { float x; float y; } MyPoint; ]]
+		local p = ffi.new("MyPoint")
+		p.x = 1.5
+		p.y = 2.5
+		assert(math.abs(p.x - 1.5) < 0.001, "field x should be 1.5")
+		assert(math.abs(p.y - 2.5) < 0.001, "field y should be 2.5")
+	]==])
+
+	local ok1, err1 = lde.runtime.executeFile(script1)
+	print(err1)
+	test.truthy(ok1, tostring(err1))
+
+	local ok2, err2 = lde.runtime.executeFile(script2)
+	print(err2)
+	test.truthy(ok2, tostring(err2))
+end)
+
+test.it("runtime: ffi type defined in one execution is not visible in another", function()
+	fs.mkdir(tmpBase)
+
+	local script1 = path.join(tmpBase, "ffi-leak-1.lua")
+	fs.write(script1, [==[
+		local ffi = require("ffi")
+		ffi.cdef [[ typedef struct { int val; } UniqueType12345; ]]
+	]==])
+
+	-- If isolation works, UniqueType12345 is only known under a prefixed name
+	-- and is not accessible as the bare name in a second execution.
+	local script2 = path.join(tmpBase, "ffi-leak-2.lua")
+	fs.write(script2, [[
+		local ffi = require("ffi")
+		local ok = pcall(ffi.typeof, "UniqueType12345")
+		assert(not ok, "bare type name should not be visible across executions")
+	]])
+
+	local ok1, err1 = lde.runtime.executeFile(script1)
+	print("?", ok1, err1)
+	test.truthy(ok1, tostring(err1))
+
+	local ok2, err2 = lde.runtime.executeFile(script2)
+	print("?2", ok2, err2)
+	test.truthy(ok2, tostring(err2))
 end)
 
 test.it("runtime.executeFile isolates globals between runs", function()
