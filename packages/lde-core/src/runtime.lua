@@ -280,14 +280,14 @@ local function executeWith(compile, opts, scriptName)
 		cdef     = function(def) ffixCtx:cdef(def) end,
 		new      = function(t, ...) return ffixCtx:new(t, ...) end,
 		cast     = function(t, ...) return ffixCtx:cast(t, ...) end,
-		typeof   = function(t) return ffixCtx:typeof(t) end,
+		typeof   = function(t, ...) return ffixCtx:typeof(t, ...) end,
 		sizeof   = function(t, ...) return ffixCtx:sizeof(t, ...) end,
 		alignof  = function(t) return ffixCtx:alignof(t) end,
 		offsetof = function(t, field) return ffixCtx:offsetof(t, field) end,
 		metatype = function(t, mt) return ffixCtx:metatype(t, mt) end,
 		istype   = function(t, obj) return ffixCtx:istype(t, obj) end,
 		load     = function(lib, ...) return ffixCtx:load(lib, ...) end,
-		C        = ffixCtx.C,
+		C        = ffixCtx.C
 	}, { __index = ffi })
 	package.loaded.ffi = ffiProxy
 
