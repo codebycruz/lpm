@@ -4,7 +4,7 @@ local fs = require("fs")
 local env = require("env")
 local path = require("path")
 local json = require("json")
-local git = require("git")
+local git2 = require("git2-sys")
 
 local lde = require("lde-core")
 
@@ -15,7 +15,7 @@ test.it("should not ignore --git in ldx", function()
 	local repoDir = lde.global.getGitRepoDir("hood")
 	fs.rmdir(repoDir)
 	fs.mkdir(repoDir)
-	git.init(repoDir, true)
+	git2.init(repoDir, true)
 	fs.write(path.join(repoDir, "lde.json"), json.encode({
 		name = "hood",
 		version = "1.0.0",

@@ -2,18 +2,19 @@ local path = require("path")
 local fs = require("fs")
 local util = require("util")
 local ansi = require("ansi")
-local git = require("git")
+local git2 = require("git2-sys")
 
 local Package = require("lde-core.package")
 
 local function hasGit()
-	return git.version() == true
+	return true
 end
 
 ---@param dir string
 local function isInsideGitRepo(dir)
-	local ok = git.isInsideWorkTree(dir)
-	return ok == true
+	local repo = git2.open(dir)
+	if not repo then return false end
+	return repo:workdir() ~= nil
 end
 
 --- Initializes a package at the given directory.
@@ -79,8 +80,8 @@ local function initPackage(dir)
 	end
 
 	if hasGit() and not isInsideGitRepo(dir) then
-		local ok = git.init(dir)
-		if not ok then
+		local repo = git2.init(dir)
+		if not repo then
 			ansi.printf("{yellow}Warning: failed to initialize git repository")
 		end
 	end
