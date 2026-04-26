@@ -1,6 +1,6 @@
 local fs = require("fs")
 local path = require("path")
-local git = require("git")
+local git2 = require("git2-sys")
 local lde = require("lde-core")
 
 ---@param packageName string
@@ -11,11 +11,15 @@ local function resolve(packageName, depInfo)
 
 	local resolvedCommit = depInfo.commit
 	if not resolvedCommit then
-		local ok, output = git.getCommitHash(repoDir)
-		resolvedCommit = (ok and output) and string.gsub(output, "%s+$", "") or nil
-		if not resolvedCommit then
-			error("Failed to resolve HEAD commit for git dependency")
+		local repo, openErr = git2.open(repoDir)
+		if not repo then
+			error("Failed to resolve HEAD commit for git dependency: " .. (openErr or ""))
 		end
+		local sha, revErr = repo:revparse("HEAD")
+		if not sha then
+			error("Failed to resolve HEAD commit for git dependency: " .. (revErr or ""))
+		end
+		resolvedCommit = sha
 	end
 
 	---@type lde.Lockfile.GitDependency

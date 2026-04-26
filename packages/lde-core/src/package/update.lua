@@ -1,6 +1,6 @@
 local fs = require("fs")
 local json = require("json")
-local git = require("git")
+local git2 = require("git2-sys")
 local semver = require("semver")
 local luarocks = require("luarocks")
 
@@ -23,12 +23,17 @@ local function updateGitDependency(name, depInfo)
 		return false, "skipped (not installed)"
 	end
 
-	local ok, output = git.pull(repoDir)
-	if not ok then
-		return false, "failed: " .. (output or "unknown error")
+	local repo, openErr = git2.open(repoDir)
+	if not repo then
+		return false, "failed: " .. (openErr or "unknown error")
 	end
 
-	return true, (string.gsub(output or "updated", "%s+$", ""))
+	local ok, pullErr = repo:pull()
+	if not ok then
+		return false, "failed: " .. (pullErr or "unknown error")
+	end
+
+	return true, "updated"
 end
 
 --- Updates a registry dependency to the latest compatible version (same major).

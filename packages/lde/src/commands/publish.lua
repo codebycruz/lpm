@@ -1,5 +1,5 @@
 local ansi = require("ansi")
-local git = require("git")
+local git2 = require("git2-sys")
 local json = require("json")
 local process = require("process")
 
@@ -28,14 +28,6 @@ local function openBrowser(url)
 	end
 end
 
----@param ok boolean
----@param output string?
----@return string?
-local function trimOutput(ok, output)
-	if not ok or not output then return nil end
-	return (string.gsub(output, "%s+$", ""))
-end
-
 ---@param args clap.Args
 local function publish(args)
 	local pkg, err = lde.Package.open()
@@ -47,19 +39,25 @@ local function publish(args)
 	local config = pkg:readConfig()
 	local pkgDir = pkg:getDir()
 
-	local gitUrl = trimOutput(git.remoteGetUrl("origin", pkgDir))
+	local repo, repoErr = git2.open(pkgDir)
+	if not repo then
+		ansi.printf("{red}Could not open git repository: %s", repoErr or "unknown error")
+		return
+	end
+
+	local gitUrl, urlErr = repo:remoteUrl("origin")
 	if not gitUrl then
 		ansi.printf("{red}Could not get git remote URL. Is this a git repo with an 'origin' remote?")
 		return
 	end
 
-	local commit = trimOutput(git.getCommitHash(pkgDir))
+	local commit, commitErr = repo:revparse("HEAD")
 	if not commit then
 		ansi.printf("{red}Could not get current commit. Does this repo have any commits?")
 		return
 	end
 
-	local branch = trimOutput(git.getCurrentBranch(pkgDir)) or "master"
+	local branch = repo:currentBranch() or "master"
 
 	local versions = {}
 	json.addField(versions, config.version, commit)

@@ -14,7 +14,7 @@
 		"curl-sys": { "git": "https://github.com/lde-org/curl-sys" },
 		"semver": { "path": "../semver" },
 		"lde-test": { "path": "../lde-test" },
-		"git": { "path": "../git" },
+		"git2-sys": { "git": "https://github.com/lde-org/git2-sys" },
 		"rocked": { "path": "../rocked" },
 		"luarocks": { "path": "../luarocks" },
 		"archive": { "git": "https://github.com/lde-org/archive" },

@@ -1,5 +1,5 @@
 local fs = require("fs")
-local git = require("git")
+local git2 = require("git2-sys")
 local json = require("json")
 local path = require("path")
 local process = require("process")
@@ -100,12 +100,14 @@ function global.syncRegistry()
 
 	local registryDir = global.getRegistryDir()
 	if not fs.exists(registryDir) then
-		local ok, err = git.clone(global.getConfig().registry, registryDir)
-		if not ok then
+		local repo, err = git2.clone(global.getConfig().registry, registryDir)
+		if not repo then
 			error("Failed to clone lde registry: " .. (err or "unknown error"))
 		end
+		repo:updateSubmodules()
 	else
-		git.pull(registryDir)
+		local repo = git2.open(registryDir)
+		if repo then repo:pull() end
 	end
 end
 
@@ -182,7 +184,14 @@ end
 ---@param commit string?
 function global.cloneDir(repoName, repoUrl, branch, commit)
 	local repoDir = global.getGitRepoDir(repoName, branch, commit)
-	return git.clone(repoUrl, repoDir, branch, commit)
+	local repo, err = git2.clone(repoUrl, repoDir, branch)
+	if not repo then return nil, err end
+	repo:updateSubmodules()
+	if commit then
+		local ok, cerr = repo:checkout(commit)
+		if not ok then return nil, cerr end
+	end
+	return true
 end
 
 ---@param repoName string
@@ -278,10 +287,11 @@ function global.getOrCloneRepo(repoName, cloneUrl, branch)
 	local safeName = branch and (repoName .. "-" .. branch) or repoName
 	local repoDir = global.getGitRepoDir(safeName)
 	if not fs.exists(repoDir) then
-		local ok, err = git.clone(cloneUrl, repoDir, branch)
-		if not ok then
+		local repo, err = git2.clone(cloneUrl, repoDir, branch)
+		if not repo then
 			error("Failed to clone git repository: " .. (err or "unknown error"))
 		end
+		repo:updateSubmodules()
 	end
 	return repoDir
 end

@@ -16,7 +16,7 @@
 			"git": "https://github.com/codebycruz/winapi",
 			"optional": true
 		},
-		"git": { "path": "../git" },
+		"git2-sys": { "git": "https://github.com/lde-org/git2-sys" },
 		"luarocks": { "path": "../luarocks" },
 		"readline": { "path": "../readline" }
 	},

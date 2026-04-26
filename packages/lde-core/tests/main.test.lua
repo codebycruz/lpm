@@ -4,7 +4,6 @@ local fs = require("fs")
 local env = require("env")
 local path = require("path")
 local json = require("json")
-local git = require("git")
 
 local lde = require("lde-core")
 
