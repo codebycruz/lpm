@@ -1,5 +1,6 @@
 local fs = require("fs")
 local path = require("path")
+local env = require("env")
 local ffi = require("ffi")
 local runtime = require("lde-core.runtime")
 
@@ -82,6 +83,17 @@ local function runTests(package, reporter, filters)
 
 	local testFiles = fs.scan(testDir, "**" .. path.separator .. "*.test.lua")
 	if filters and #filters > 0 then
+		-- Normalize path-like filters (./, ../, absolute) to be relative to testDir
+		for i, filter in ipairs(filters) do
+			local first = filter:sub(1, 1)
+			if first == "." or first == "/" or (ffi.os == "Windows" and filter:match("^%a:\\")) then
+				local resolved = path.resolve(env.cwd(), filter)
+				local rel = path.relative(testDir, resolved)
+				if rel and not rel:match("^%.%.") then
+					filters[i] = rel == "." and "*" or rel
+				end
+			end
+		end
 		local filtered = {}
 		for _, relPath in ipairs(testFiles) do
 			for _, filterGlob in ipairs(filters) do

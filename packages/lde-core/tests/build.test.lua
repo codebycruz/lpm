@@ -561,6 +561,42 @@ test.it("runTests without filters runs all test files", function()
 	test.equal(results.total, 2)
 end)
 
+test.it("runTests with absolute path filter runs only that file", function()
+	local dir = makePackageWithSrc("runtests-filter-abspath", { ["init.lua"] = 'return true' })
+
+	local testsDir = path.join(dir, "tests")
+	fs.mkdir(testsDir)
+	fs.write(path.join(testsDir, "ohyes.test.lua"), filterTestFile)
+	fs.write(path.join(testsDir, "ohno.test.lua"), filterTestFile)
+
+	local absPath = path.join(testsDir, "ohyes.test.lua")
+	local pkg = lde.Package.open(dir)
+	local results = pkg:runTests(nil, { absPath })
+
+	test.equal(results.failures, 0)
+	test.equal(#results.files, 1)
+	test.equal(results.files[1].file, "ohyes.test.lua")
+end)
+
+test.it("runTests with path-like filter containing glob resolves and matches", function()
+	local dir = makePackageWithSrc("runtests-filter-pathglob", { ["init.lua"] = 'return true' })
+
+	local testsDir = path.join(dir, "tests")
+	local subDir = path.join(testsDir, "sub")
+	fs.mkdir(testsDir)
+	fs.mkdir(subDir)
+	fs.write(path.join(testsDir, "one.test.lua"), filterTestFile)
+	fs.write(path.join(subDir, "two.test.lua"), filterTestFile)
+
+	local globPath = path.join(testsDir, "sub", "*.test.lua")
+	local pkg = lde.Package.open(dir)
+	local results = pkg:runTests(nil, { globPath })
+
+	test.equal(results.failures, 0)
+	test.equal(#results.files, 1)
+	test.equal(results.files[1].file, "sub" .. path.separator .. "two.test.lua")
+end)
+
 test.skipIf(jit.os == "Windows" or jit.os == "OSX")(
 	"rockspec buildfn: array-style sources table compiles native module", function()
 		local rockDir = path.join(tmpBase, "array-sources-rock")
