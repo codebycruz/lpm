@@ -5,6 +5,7 @@ local lde = require("lde-core")
 local fs = require("fs")
 local env = require("env")
 local path = require("path")
+local git2 = require("git2-sys")
 
 local tmpBase = path.join(env.tmpdir(), "lde-init-tests")
 
@@ -105,4 +106,20 @@ test.it("Package.init result can be opened as a Package", function()
 	local reopened, err = lde.Package.open(dir)
 	test.truthy(reopened)
 	test.falsy(err)
+end)
+
+test.it("Package.init skips git init when inside a nested subdir of a git repo", function()
+	fs.mkdir(tmpBase)
+	local repoDir = path.join(tmpBase, "parent-repo")
+	fs.mkdir(repoDir)
+
+	local repo, err = git2.init(repoDir)
+	test.truthy(repo, err or "failed to init git")
+
+	local nestedDir = path.join(repoDir, "deep", "nested")
+	fs.mkdirAll(nestedDir)
+
+	lde.Package.init(nestedDir)
+
+	test.falsy(fs.exists(path.join(nestedDir, ".git")), "should not create nested .git")
 end)

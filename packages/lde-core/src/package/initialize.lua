@@ -12,9 +12,17 @@ end
 
 ---@param dir string
 local function isInsideGitRepo(dir)
-	local repo = git2.open(dir)
-	if not repo then return false end
-	return repo:workdir() ~= nil
+	local current = dir
+	while current do
+		local repo = git2.open(current)
+		if repo then
+			if repo:workdir() ~= nil then return true end
+		end
+		local parent = path.dirname(current)
+		if parent == current then break end
+		current = parent
+	end
+	return false
 end
 
 --- Initializes a package at the given directory.
