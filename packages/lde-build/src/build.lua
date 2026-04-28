@@ -93,7 +93,7 @@ end
 ---@param cmd string
 function Instance:sh(cmd)
 	local res = os.execute(cmd)
-	assert(res == 0, "failed to execute " .. cmd)
+	assert(res == 0 or res == true, "failed to execute " .. cmd)
 end
 
 return Instance
