@@ -487,6 +487,80 @@ test.it("runTests can require tests.fixture with build script", function()
 	test.equal(results.error, nil)
 end)
 
+--
+-- runTests: file filter globs
+--
+
+local filterTestFile = [[
+local t = require("lde-test")
+t.it("runs", function() end)
+]]
+
+test.it("runTests with single filter runs only matching files", function()
+	local dir = makePackageWithSrc("runtests-filter-single", { ["init.lua"] = 'return true' })
+
+	local testsDir = path.join(dir, "tests")
+	fs.mkdir(testsDir)
+	fs.write(path.join(testsDir, "foo.test.lua"), filterTestFile)
+	fs.write(path.join(testsDir, "bar.test.lua"), filterTestFile)
+	fs.write(path.join(testsDir, "baz.test.lua"), filterTestFile)
+
+	local pkg = lde.Package.open(dir)
+	local results = pkg:runTests(nil, { "foo*" })
+
+	test.equal(results.failures, 0)
+	test.equal(#results.files, 1)
+	test.equal(results.files[1].file, "foo.test.lua")
+end)
+
+test.it("runTests with multiple filters runs matching files (OR logic)", function()
+	local dir = makePackageWithSrc("runtests-filter-multi", { ["init.lua"] = 'return true' })
+
+	local testsDir = path.join(dir, "tests")
+	fs.mkdir(testsDir)
+	fs.write(path.join(testsDir, "alpha.test.lua"), filterTestFile)
+	fs.write(path.join(testsDir, "beta.test.lua"), filterTestFile)
+	fs.write(path.join(testsDir, "gamma.test.lua"), filterTestFile)
+
+	local pkg = lde.Package.open(dir)
+	local results = pkg:runTests(nil, { "alpha*", "*gamma*" })
+
+	test.equal(results.failures, 0)
+	test.equal(#results.files, 2)
+	test.equal(results.total, 2)
+end)
+
+test.it("runTests with filter that matches nothing returns empty results", function()
+	local dir = makePackageWithSrc("runtests-filter-empty", { ["init.lua"] = 'return true' })
+
+	local testsDir = path.join(dir, "tests")
+	fs.mkdir(testsDir)
+	fs.write(path.join(testsDir, "main.test.lua"), filterTestFile)
+
+	local pkg = lde.Package.open(dir)
+	local results = pkg:runTests(nil, { "doesnot*exist*" })
+
+	test.equal(results.failures, 0)
+	test.equal(#results.files, 0)
+	test.equal(results.total, 0)
+end)
+
+test.it("runTests without filters runs all test files", function()
+	local dir = makePackageWithSrc("runtests-filter-none", { ["init.lua"] = 'return true' })
+
+	local testsDir = path.join(dir, "tests")
+	fs.mkdir(testsDir)
+	fs.write(path.join(testsDir, "a.test.lua"), filterTestFile)
+	fs.write(path.join(testsDir, "b.test.lua"), filterTestFile)
+
+	local pkg = lde.Package.open(dir)
+	local results = pkg:runTests()
+
+	test.equal(results.failures, 0)
+	test.equal(#results.files, 2)
+	test.equal(results.total, 2)
+end)
+
 test.skipIf(jit.os == "Windows" or jit.os == "OSX")(
 	"rockspec buildfn: array-style sources table compiles native module", function()
 		local rockDir = path.join(tmpBase, "array-sources-rock")
