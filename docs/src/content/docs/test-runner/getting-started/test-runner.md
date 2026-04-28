@@ -21,6 +21,40 @@ But just running files isn't traditionally enough. Usually you write more than a
 
 This is why lde ships the minimal testing library, [`lde-test`](#`lde-test`).
 
+### Filtering Tests
+
+You can pass glob patterns to `lde test` to run only a subset of your test files:
+
+```sh
+# Run only test files whose name contains "auth"
+lde test "*auth*"
+
+# Run only test files inside the unit/ directory
+lde test "unit/*"
+```
+
+Multiple filters combine with OR semantics — a file is run if it matches *any* of them:
+
+```sh
+lde test "*auth*" "unit/*"
+```
+
+You can also target a specific file by path using `./` or `../` prefixes:
+
+```sh
+# Run a specific test file by relative path
+lde test ./tests/unit/auth.test.lua
+```
+
+When passing a path, glob characters like `*` still work inside the resolved path:
+
+```sh
+# Run all test files inside the unit/ directory via path
+lde test "./tests/unit/*"
+```
+
+If no files match your filters, the package is skipped silently (or shows "No files matched" in multi-package runs).
+
 ## lde-test
 
 This is a minimal testing library that comes bundled with lde. You can require it in your test files and use its simple API to write tests.
