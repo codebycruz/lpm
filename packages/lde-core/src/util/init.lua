@@ -2,7 +2,6 @@ local util = {}
 
 local fs = require("fs")
 local path = require("path")
-local git2 = require("git2-sys")
 local json = require("json")
 local rocked = require("rocked")
 local ansi = require("ansi")
@@ -126,10 +125,8 @@ function util.openRockspecUrl(name, url, branch, commit)
 	local dir, lockEntry
 	if sourceUrl:match("^git") then
 		sourceUrl = util.normalizeGitUrl(sourceUrl)
-		dir = lde.global.getOrInitGitRepo(name, sourceUrl, branch or sourceTag, commit)
-		local repo = git2.open(dir)
-		local sha = repo and repo:revparse("HEAD")
-		lockEntry = { git = sourceUrl, commit = sha or commit, rockspec = url }
+		dir, commit = lde.global.getOrInitGitRepo(name, sourceUrl, branch or sourceTag, commit)
+		lockEntry = { git = sourceUrl, commit = commit, rockspec = url }
 	elseif sourceUrl:match("^https?://") then
 		dir = lde.global.getOrInitArchive(sourceUrl)
 		lockEntry = { archive = sourceUrl, rockspec = url }

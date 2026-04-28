@@ -369,7 +369,7 @@ test.it("git dep: installs root package, not a sub-package, when repo has lde.js
 	-- Pinning a fake commit in the dep skips the getCommitHash call entirely,
 	-- keeping the test self-contained (no real git repo needed).
 	local fakeCommit = "abc1234567890abcdef1234567890abcdef123456"
-	local repoDir = lde.global.getGitRepoDir("my-root-pkg", nil, fakeCommit)
+	local repoDir = lde.global.getGitRepoDir("my-root-pkg", fakeCommit)
 	fs.rmdir(repoDir)
 	fs.mkdir(repoDir)
 
