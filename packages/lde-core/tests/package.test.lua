@@ -331,3 +331,27 @@ test.it("bundle includes top-level lua files in target/ (not just subdir modules
 	test.truthy(bundle:find('"mymod"'), "top-level mymod.lua should be bundled as 'mymod'")
 	test.truthy(bundle:find('"mymod.sub"'), "subdir mymod/sub.lua should be bundled as 'mymod.sub'")
 end)
+
+--
+-- getDependencyPath
+--
+
+test.it("getDependencyPath returns nil for git dep without a commit", function()
+	local dir = makePackageDir("nodep-commit", { name = "nodep-commit", version = "0.1.0", dependencies = {} })
+	local pkg = lde.Package.open(dir)
+
+	local depPath, err = pkg:getDependencyPath("foo", { git = "https://example.com/foo.git" })
+	test.falsy(depPath)
+	test.includes(err, "no commit pinned")
+end)
+
+test.it("getDependencyPath returns path for git dep with commit", function()
+	local dir = makePackageDir("with-commit", { name = "with-commit", version = "0.1.0", dependencies = {} })
+	local pkg = lde.Package.open(dir)
+
+	local depPath, err = pkg:getDependencyPath("foo", { git = "https://example.com/foo.git", commit = "abc123" })
+	test.truthy(depPath)
+	test.falsy(err)
+	test.truthy(depPath:find("foo"))
+	test.truthy(depPath:find("abc123"))
+end)

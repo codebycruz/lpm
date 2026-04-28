@@ -67,12 +67,18 @@ local function tree(_args)
 				local treeChar = last and "└── " or "├── "
 				ansi.printf("%s%s{gray}%s {gray}(optional, skipped on %s)", childPrefix, treeChar, dep.name, jit.os)
 			else
-				local depPkg, err = lde.Package.open(pkg:getDependencyPath(dep.name, info))
-				if not depPkg then
+				local depPath, err = pkg:getDependencyPath(dep.name, info)
+				if not depPath then
 					local treeChar = last and "└── " or "├── "
 					ansi.printf("%s%s{red}%s {gray}(error: %s)", childPrefix, treeChar, dep.name, err)
 				else
-					printTree(depPkg, info, depth + 1, childPrefix, last)
+					local depPkg, err2 = lde.Package.open(depPath)
+					if not depPkg then
+						local treeChar = last and "└── " or "├── "
+						ansi.printf("%s%s{red}%s {gray}(error: %s)", childPrefix, treeChar, dep.name, err2)
+					else
+						printTree(depPkg, info, depth + 1, childPrefix, last)
+					end
 				end
 			end
 		end

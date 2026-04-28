@@ -28,6 +28,7 @@ global.currentVersion = "0.9.1"
 
 ---@param s string
 local function sanitize(s)
+	if not s then return "" end
 	return (string.gsub(s, "[^%w_%-]", "_"))
 end
 

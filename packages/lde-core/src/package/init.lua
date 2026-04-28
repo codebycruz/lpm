@@ -189,6 +189,7 @@ function Package:getDependencyPath(dir, info, relativeTo)
 	relativeTo = relativeTo or self.dir
 
 	if info.git then
+		if not info.commit then return nil, "no commit pinned for '" .. dir .. "'" end
 		return global.getGitRepoDir(dir, info.commit)
 	elseif info.path then
 		return path.normalize(path.join(relativeTo, info.path))
