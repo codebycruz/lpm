@@ -7,33 +7,27 @@ local luarocks = require("luarocks")
 local global = require("lde-core.global")
 local util = require("lde-core.util")
 
---- Updates a single git dependency by pulling latest changes.
---- Only applies to git dependencies without a pinned commit.
+--- Checks a git dependency for newer commits via ls-remote.
 ---@param name string
 ---@param depInfo lde.Package.Config.GitDependency
 ---@return boolean updated
 ---@return string message
 local function updateGitDependency(name, depInfo)
-	if depInfo.commit then
-		return false, "skipped (pinned to commit)"
+	local ref = depInfo.branch and ("refs/heads/" .. depInfo.branch) or "HEAD"
+	local latestCommit, err = git2.lsRemote(depInfo.git, ref)
+	if not latestCommit then
+		return false, "failed: " .. (err or "unknown error")
 	end
 
-	local repoDir = global.getGitRepoDir(name, depInfo.branch, depInfo.commit)
-	if not fs.exists(repoDir) then
-		return false, "skipped (not installed)"
+	if depInfo.commit and latestCommit == depInfo.commit then
+		return false, "already up to date (" .. latestCommit:sub(1, 7) .. ")"
 	end
 
-	local repo, openErr = git2.open(repoDir)
-	if not repo then
-		return false, "failed: " .. (openErr or "unknown error")
-	end
+	local msg = depInfo.commit
+		and (depInfo.commit:sub(1, 7) .. " -> " .. latestCommit:sub(1, 7))
+		or ("at " .. latestCommit:sub(1, 7))
 
-	local ok, pullErr = repo:pull()
-	if not ok then
-		return false, "failed: " .. (pullErr or "unknown error")
-	end
-
-	return true, "updated"
+	return true, msg
 end
 
 --- Updates a registry dependency to the latest compatible version (same major).

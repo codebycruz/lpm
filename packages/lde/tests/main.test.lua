@@ -11,11 +11,15 @@ local lde = require("lde-core")
 local ldecli = require("tests.lib.ldecli")
 
 test.it("should not ignore --git in ldx", function()
-	-- Pre-populate the git cache so no real clone happens
-	local repoDir = lde.global.getGitRepoDir("hood")
+	local cloneUrl = "https://github.com/codebycruz/hood"
+
+	-- Resolve the real commit so the cache key matches what getOrCloneRepo expects.
+	local commit = assert(git2.lsRemote(cloneUrl, "HEAD"))
+
+	-- Pre-populate the cache with a fake repo that lacks a "triangle" package.
+	local repoDir = lde.global.getGitRepoDir("hood", commit)
 	fs.rmdir(repoDir)
 	fs.mkdir(repoDir)
-	git2.init(repoDir, true)
 	fs.write(path.join(repoDir, "lde.json"), json.encode({
 		name = "hood",
 		version = "1.0.0",
@@ -24,7 +28,7 @@ test.it("should not ignore --git in ldx", function()
 	fs.mkdir(path.join(repoDir, "src"))
 	fs.write(path.join(repoDir, "src", "init.lua"), "")
 
-	local _, out = ldecli { "x", "triangle", "--git", "https://github.com/codebycruz/hood" }
+	local _, out = ldecli { "x", "triangle", "--git", cloneUrl }
 	test.falsy(out:find("not found in lde registry"))
 	test.includes(out, "No package named 'triangle'")
 

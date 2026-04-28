@@ -1,26 +1,14 @@
 local fs = require("fs")
 local path = require("path")
-local git2 = require("git2-sys")
 local lde = require("lde-core")
 
 ---@param packageName string
 ---@param depInfo lde.Package.Config.GitDependency
 ---@return lde.Package, lde.Lockfile.GitDependency
 local function resolve(packageName, depInfo)
-	local repoDir = lde.global.getOrInitGitRepo(packageName, depInfo.git, depInfo.branch, depInfo.commit)
-
-	local resolvedCommit = depInfo.commit
-	if not resolvedCommit then
-		local repo, openErr = git2.open(repoDir)
-		if not repo then
-			error("Failed to resolve HEAD commit for git dependency: " .. (openErr or ""))
-		end
-		local sha, revErr = repo:revparse("HEAD")
-		if not sha then
-			error("Failed to resolve HEAD commit for git dependency: " .. (revErr or ""))
-		end
-		resolvedCommit = sha
-	end
+	local repoDir, resolvedCommit = lde.global.getOrInitGitRepo(
+		packageName, depInfo.git, depInfo.branch, depInfo.commit
+	)
 
 	---@type lde.Lockfile.GitDependency
 	local lockEntry = {

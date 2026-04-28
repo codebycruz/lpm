@@ -31,6 +31,81 @@ local function sanitize(s)
 	return (string.gsub(s, "[^%w_%-]", "_"))
 end
 
+--- Returns "github", "gitlab", or nil if the URL is not a recognized git host.
+---@param url string
+---@return string?
+local function isRecognizedGitHost(url)
+	if url:match("^https?://github%.com/") then return "github" end
+	if url:match("^https?://gitlab%.com/") then return "gitlab" end
+	return nil
+end
+
+--- Builds a tarball URL for a recognized git host at a given ref.
+---@param url string  # git clone URL (may have .git suffix or /tree/... paths)
+---@param ref string  # commit SHA, branch name, or tag
+---@param hostType string  # "github" or "gitlab"
+---@return string
+local function buildTarballUrl(url, ref, hostType)
+	local base = url:gsub("%.git$", "")
+	base = base:gsub("/tree/.*$", "")
+	base = base:gsub("/$", "")
+
+	if hostType == "github" then
+		return base .. "/archive/" .. ref .. ".tar.gz"
+	elseif hostType == "gitlab" then
+		local repoName = base:match("/([^/]+)$")
+		return base .. "/-/archive/" .. ref .. "/" .. repoName .. "-" .. ref .. ".tar.gz"
+	end
+
+	error("Unknown host type: " .. hostType)
+end
+
+--- Downloads and extracts a git tarball for a recognized host into repoDir.
+---@param url string
+---@param commit string
+---@param hostType string
+---@param repoDir string
+---@param label string
+local function downloadTarball(url, commit, hostType, repoDir, label)
+	local tarballUrl = buildTarballUrl(url, commit, hostType)
+	local bar = lde.verbose and ansi.ProgressBar("Downloading " .. label) or nil
+	fs.mkdir(repoDir)
+
+	local archiveFile = repoDir .. ".archive"
+
+	local dlOpts
+	if bar then
+		dlOpts = {
+			progress = function(dltotal, dlnow)
+				local ratio = dltotal > 0 and (dlnow / dltotal) or nil
+				local info = dltotal > 0
+					and (ansi.formatBytes(dlnow) .. " / " .. ansi.formatBytes(dltotal))
+					or ansi.formatBytes(dlnow)
+				bar:update(ratio, info)
+			end
+		}
+	end
+
+	local ok, dlErr = curl.download(tarballUrl, archiveFile, dlOpts)
+	if not ok then
+		fs.rmdir(repoDir)
+		fs.delete(archiveFile)
+		if bar then bar:fail("Downloading " .. label) end
+		error("Failed to download " .. tarballUrl .. ": " .. (dlErr or ""))
+	end
+
+	local ok2, err2 = Archive.new(archiveFile):extract(repoDir, { stripComponents = true })
+	fs.delete(archiveFile)
+
+	if not ok2 then
+		fs.rmdir(repoDir)
+		if bar then bar:fail("Downloading " .. label) end
+		error("Failed to extract " .. label .. ": " .. (err2 or ""))
+	end
+
+	if bar then bar:done("Downloaded " .. label) end
+end
+
 ---@type string?
 local dirOverride = nil
 
@@ -157,75 +232,78 @@ function global.resolveRegistryVersion(portfile, version)
 	return latest, versions[latest]
 end
 
---- Builds the cache directory name for a git repo.
---- Format: name, name-branch, or name-branch-commit
+--- Builds the cache directory name for a git repo: <name>-<commit>.
 ---@param repoName string
----@param branch string?
----@param commit string?
+---@param commit string
 ---@return string
-function global.getGitRepoDir(repoName, branch, commit)
-	local parts = { sanitize(repoName) }
-
-	if branch then
-		parts[#parts + 1] = sanitize(branch)
-	end
-
-	if commit then
-		parts[#parts + 1] = sanitize(commit)
-	end
-
-	local fullName = table.concat(parts, "-")
-	return path.join(global.getGitCacheDir(), fullName)
+function global.getGitRepoDir(repoName, commit)
+	return path.join(global.getGitCacheDir(), sanitize(repoName) .. "-" .. sanitize(commit))
 end
 
+--- Git clone fallback for unrecognized hosts. Always checks out the specific commit.
 ---@param repoName string
 ---@param repoUrl string
----@param branch string?
----@param commit string?
+---@param commit string
 ---@param progress fun(stats: table)?
-function global.cloneDir(repoName, repoUrl, branch, commit, progress)
-	local repoDir = global.getGitRepoDir(repoName, branch, commit)
-	local repo, err = git2.clone(repoUrl, repoDir, branch, nil, progress)
+function global.cloneDir(repoName, repoUrl, commit, progress)
+	local repoDir = global.getGitRepoDir(repoName, commit)
+	local repo, err = git2.clone(repoUrl, repoDir, nil, nil, progress)
 	if not repo then return nil, err end
 	repo:updateSubmodules(nil, progress)
-	if commit then
-		local ok, cerr = repo:checkout(commit)
-		if not ok then return nil, cerr end
-	end
+	local ok, cerr = repo:checkout(commit)
+	if not ok then return nil, cerr end
 	return true
 end
 
+--- Ensures a git repo is cached locally (via tarball for GitHub/GitLab, git clone otherwise).
+--- Always resolves to a specific commit. Returns the cache directory and the pinned commit.
 ---@param repoName string
 ---@param repoUrl string
 ---@param branch string?
 ---@param commit string?
+---@return string repoDir
+---@return string commit
 function global.getOrInitGitRepo(repoName, repoUrl, branch, commit)
-	local repoDir = global.getGitRepoDir(repoName, branch, commit)
-	if not fs.exists(repoDir) then
-		local progress
-		local bar = lde.verbose and ansi.ProgressBar("Cloning " .. repoName) or nil
-		if bar then
-			local totalObjs = 0
-			progress = function(stats)
-				if stats.total_objects > 0 then
-					totalObjs = stats.total_objects
-				end
-				local ratio = totalObjs > 0 and (stats.indexed_objects / totalObjs) or nil
-				local info = totalObjs > 0
-					and string.format("%d/%d objects", stats.indexed_objects, totalObjs)
-					or string.format("%d objects, %s", stats.received_objects, ansi.formatBytes(stats.received_bytes))
-				bar:update(ratio, info)
-			end
+	if not commit then
+		local ref = branch and ("refs/heads/" .. branch) or "HEAD"
+		local sha, err = git2.lsRemote(repoUrl, ref)
+		if not sha then
+			error("Failed to resolve '" .. ref .. "' for " .. repoUrl .. ": " .. (err or ""))
 		end
-		local ok, err = global.cloneDir(repoName, repoUrl, branch, commit, progress)
-		if not ok then
-			if bar then bar:fail("Cloning " .. repoName) end
-			error("Failed to clone git repository: " .. err)
-		end
-		if bar then bar:done("Cloned " .. repoName) end
+		commit = sha
 	end
 
-	return repoDir
+	local repoDir = global.getGitRepoDir(repoName, commit)
+	if not fs.exists(repoDir) then
+		local hostType = isRecognizedGitHost(repoUrl)
+		if hostType then
+			downloadTarball(repoUrl, commit, hostType, repoDir, repoName)
+		else
+			local progress
+			local bar = lde.verbose and ansi.ProgressBar("Cloning " .. repoName) or nil
+			if bar then
+				local totalObjs = 0
+				progress = function(stats)
+					if stats.total_objects > 0 then
+						totalObjs = stats.total_objects
+					end
+					local ratio = totalObjs > 0 and (stats.indexed_objects / totalObjs) or nil
+					local info = totalObjs > 0
+						and string.format("%d/%d objects", stats.indexed_objects, totalObjs)
+						or string.format("%d objects, %s", stats.received_objects, ansi.formatBytes(stats.received_bytes))
+					bar:update(ratio, info)
+				end
+			end
+			local ok, err = global.cloneDir(repoName, repoUrl, commit, progress)
+			if not ok then
+				if bar then bar:fail("Cloning " .. repoName) end
+				error("Failed to clone git repository: " .. err)
+			end
+			if bar then bar:done("Cloned " .. repoName) end
+		end
+	end
+
+	return repoDir, commit
 end
 
 --- Downloads and extracts an archive URL (.zip, .tar.gz, .tar.bz2, etc.) into the cache.
@@ -305,22 +383,37 @@ function global.repoNameFromUrl(url)
 	return url:match("([^/]+)%.git$") or url:match("([^/]+)$")
 end
 
---- Clones or retrieves a cached git repo directory (simple name+branch key, no commit).
+--- Clones or retrieves a cached git repo directory. Always resolves to the latest commit.
 ---@param repoName string
 ---@param cloneUrl string
 ---@param branch string?
 ---@return string repoDir
+---@return string commit
 function global.getOrCloneRepo(repoName, cloneUrl, branch)
-	local safeName = branch and (repoName .. "-" .. branch) or repoName
-	local repoDir = global.getGitRepoDir(safeName)
-	if not fs.exists(repoDir) then
-		local repo, err = git2.clone(cloneUrl, repoDir, branch)
-		if not repo then
-			error("Failed to clone git repository: " .. (err or "unknown error"))
-		end
-		repo:updateSubmodules()
+	local ref = branch and ("refs/heads/" .. branch) or "HEAD"
+	local commit, err = git2.lsRemote(cloneUrl, ref)
+	if not commit then
+		error("Failed to resolve ref for " .. cloneUrl .. ": " .. (err or ""))
 	end
-	return repoDir
+
+	local repoDir = global.getGitRepoDir(repoName, commit)
+	if not fs.exists(repoDir) then
+		local hostType = isRecognizedGitHost(cloneUrl)
+		if hostType then
+			downloadTarball(cloneUrl, commit, hostType, repoDir, repoName)
+		else
+			local repo, cerr = git2.clone(cloneUrl, repoDir, branch)
+			if not repo then
+				error("Failed to clone git repository: " .. (cerr or "unknown error"))
+			end
+			repo:updateSubmodules()
+			local ok, cerr2 = repo:checkout(commit)
+			if not ok then
+				error("Failed to checkout commit: " .. (cerr2 or "unknown error"))
+			end
+		end
+	end
+	return repoDir, commit
 end
 
 --- Finds a named package inside a directory by scanning for lde.json files.
