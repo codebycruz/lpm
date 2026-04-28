@@ -4,18 +4,26 @@ local fs = require("fs")
 local env = require("env")
 local path = require("path")
 local json = require("json")
-local git2 = require("git2-sys")
 
 local lde = require("lde-core")
 
 local ldecli = require("tests.lib.ldecli")
 
 test.it("should not ignore --git in ldx", function()
-	-- Pre-populate the git cache so no real clone happens
-	local repoDir = lde.global.getGitRepoDir("hood")
+	-- Pre-populate the git cache so no real download happens.
+	-- Clean up any existing cache entries for this repo name first.
+	local cacheDir = lde.global.getGitCacheDir()
+	if fs.isdir(cacheDir) then
+		for entry in fs.readdir(cacheDir) do
+			if entry.name:match("^hood%-") then
+				fs.rmdir(path.join(cacheDir, entry.name))
+			end
+		end
+	end
+
+	local repoDir = lde.global.getGitRepoDir("hood", "abc1234567890abcdef1234567890abcdef123456")
 	fs.rmdir(repoDir)
 	fs.mkdir(repoDir)
-	git2.init(repoDir, true)
 	fs.write(path.join(repoDir, "lde.json"), json.encode({
 		name = "hood",
 		version = "1.0.0",
