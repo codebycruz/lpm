@@ -136,9 +136,8 @@ function ansi.ProgressBar(label)
 		local pct = ratio and string.format("%3d%%", math.floor(ratio * 100)) or nil
 		local elapsed = formatElapsed(os.clock() - startTime)
 
-		local key = (barStr or "") .. (pct or "") .. (info or "")
-		if key == lastRendered then return end
-		lastRendered = key
+		if pct == lastRendered then return end
+		lastRendered = pct
 
 		local line = ESC .. "2K\r" .. colors.gray .. "  - " .. colors.reset .. label
 		if barStr then
