@@ -12,7 +12,8 @@ local function executePackage(pkg, scriptArgs, cwd)
 
 	local ok, err = pkg:runFile(nil, scriptArgs, nil, cwd)
 	if not ok then
-		error("Failed to run script: " .. err)
+		ansi.printf("{red}Error: %s", err or "Script exited with a non-zero exit code")
+		os.exit(1)
 	end
 end
 
