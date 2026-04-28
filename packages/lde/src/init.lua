@@ -227,7 +227,7 @@ local commandFiles = {
 	outdated  = "lde.commands.outdated",
 	uninstall = "lde.commands.uninstall",
 	publish   = "lde.commands.publish",
-	repl      = "lde.commands.repl",
+	repl      = "lde.commands.repl"
 }
 
 -- Commands that don't need the global cache dirs initialized
@@ -266,5 +266,6 @@ else
 		end
 	else
 		ansi.printf("{red}Unknown command: %s", tostring(commandName))
+		os.exit(1)
 	end
 end
