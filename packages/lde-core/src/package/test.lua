@@ -8,6 +8,14 @@ local runtime = require("lde-core.runtime")
 ---@field results lde.test.Result[]
 ---@field error string?
 
+---@class lde.TestReporter
+---@field onFileStart? fun(file: string)
+---@field onFileDone? fun(file: string)
+---@field onStart? fun(name: string): any
+---@field onPass? fun(name: string, handle: any)
+---@field onFail? fun(name: string, err: string, handle: any)
+---@field onSkip? fun(name: string)
+
 ---@class lde.TestResults
 ---@field package lde.Package
 ---@field files lde.TestFileResult[]
@@ -35,8 +43,9 @@ local ldeTest = require("lde-test.test")
 
 --- Runs all tests for this package.
 ---@param package lde.Package
+---@param reporter? lde.TestReporter
 ---@return lde.TestResults
-local function runTests(package)
+local function runTests(package, reporter)
 	package:installDependencies()
 	package:installDevDependencies()
 	package:build()
@@ -74,6 +83,10 @@ local function runTests(package)
 	for _, relativePath in ipairs(testFiles) do
 		local testFile = path.join(testDir, relativePath)
 
+		if reporter and reporter.onFileStart then
+			reporter.onFileStart(relativePath)
+		end
+
 		local testObj = ldeTest.new()
 
 		local ok, results = runtime.executeFile(testFile, {
@@ -84,7 +97,7 @@ local function runTests(package)
 				["lde-test"] = function() return testObj end,
 				["lde-test.run"] = function() return testObj.run end
 			},
-			postexec = function() return testObj.run() end
+			postexec = function() return testObj.run(reporter) end
 		})
 
 		if not ok then
@@ -112,6 +125,11 @@ local function runTests(package)
 				file = relativePath,
 				results = results
 			}
+
+		end
+
+		if reporter and reporter.onFileDone then
+			reporter.onFileDone(relativePath)
 		end
 	end
 

@@ -9,7 +9,7 @@
 ---@field skipIf fun(condition: boolean): fun(name: string, fn: fun())
 ---@field afterEach fun(fn: fun())
 ---@field afterAll fun(fn: fun())
----@field run fun(): lde.test.Result[]
+---@field run fun(reporter?: lde.TestReporter): lde.test.Result[]
 ---@field equal fun(a: any, b: any)
 ---@field notEqual fun(a: any, b: any)
 ---@field truthy fun(value: any)
@@ -204,18 +204,27 @@ function M.new()
 		table.insert(afterAllFns, fn)
 	end
 
-	function instance.run()
+	---@param reporter? lde.TestReporter
+	function instance.run(reporter)
 		---@type lde.test.Result[]
 		local results = {}
+		reporter = reporter or {}
 
 		for _, callback in ipairs(callbacks) do
 			if callback.skipped then
+				if reporter.onSkip then reporter.onSkip(callback.name) end
 				table.insert(results, { name = callback.name, ok = true, skipped = true })
 			else
+				local handle = reporter.onStart and reporter.onStart(callback.name)
 				local ok, err = pcall(callback.callback)
 				for _, fn in ipairs(afterEachFns) do
 					local aok, aerr = pcall(fn)
 					if not aok then ok, err = false, aerr end
+				end
+				if ok and reporter.onPass then
+					reporter.onPass(callback.name, handle)
+				elseif not ok and reporter.onFail then
+					reporter.onFail(callback.name, err, handle)
 				end
 				table.insert(results, { name = callback.name, ok = ok, error = err })
 			end
