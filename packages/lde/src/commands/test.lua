@@ -66,8 +66,16 @@ local function printSummary(failures, passed, total, skipped)
 	end
 end
 
----@param _args clap.Args
-local function test(_args)
+---@param args clap.Args
+local function test(args)
+	-- Collect remaining positional args as test file filter globs
+	local filters = {}
+	while true do
+		local v = args:pop()
+		if not v then break end
+		filters[#filters + 1] = v
+	end
+
 	local package = lde.Package.open()
 
 	print()
@@ -105,9 +113,11 @@ local function test(_args)
 			ansi.printf("{gray}%s", pkg:getName())
 			print()
 			local reporter = makeReporter(pkg:getDir())
-			local results = pkg:runTests(reporter)
+			local results = pkg:runTests(reporter, filters)
 			if results.error then
 				ansi.printf("  {red}%s", results.error)
+			elseif #results.files == 0 and #filters > 0 then
+				ansi.printf("  {gray}No files matched")
 			else
 				printFileErrors(results, pkg:getDir())
 				totalPassed = totalPassed + (results.total - results.failures)
@@ -129,7 +139,7 @@ local function test(_args)
 	end
 
 	local reporter = makeReporter(package:getDir())
-	local results = package:runTests(reporter)
+	local results = package:runTests(reporter, filters)
 	if results.error then
 		ansi.printf("{red}%s", results.error)
 	else

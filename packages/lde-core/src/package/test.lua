@@ -41,11 +41,12 @@ end
 
 local ldeTest = require("lde-test.test")
 
---- Runs all tests for this package.
+--- Runs tests for this package, optionally filtered by glob patterns.
 ---@param package lde.Package
 ---@param reporter? lde.TestReporter
+---@param filters? string[] glob patterns to filter test files by
 ---@return lde.TestResults
-local function runTests(package, reporter)
+local function runTests(package, reporter, filters)
 	package:installDependencies()
 	package:installDevDependencies()
 	package:build()
@@ -80,6 +81,19 @@ local function runTests(package, reporter)
 	local totalSkipped = 0
 
 	local testFiles = fs.scan(testDir, "**" .. path.separator .. "*.test.lua")
+	if filters and #filters > 0 then
+		local filtered = {}
+		for _, relPath in ipairs(testFiles) do
+			for _, filterGlob in ipairs(filters) do
+				local pattern = fs.globToPattern(filterGlob)
+				if string.find(relPath, pattern) then
+					filtered[#filtered + 1] = relPath
+					break
+				end
+			end
+		end
+		testFiles = filtered
+	end
 	for _, relativePath in ipairs(testFiles) do
 		local testFile = path.join(testDir, relativePath)
 
