@@ -26,6 +26,9 @@ local function install(args)
 	local pkg, err = resolvePackage(args)
 	if not pkg then error(err) end
 
+	pkg:build()
+	pkg:installDependencies()
+
 	if name and name:match("^rocks:") then
 		lde.global.writeWrapper(pkg:getName(), nil, name)
 	else
