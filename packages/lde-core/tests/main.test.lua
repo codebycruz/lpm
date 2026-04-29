@@ -555,6 +555,64 @@ test.it("installDependencies: writes a single flat lockfile containing all trans
 	test.falsy(lde.Lockfile.open(path.join(middleDir, "lde.lock")))
 end)
 
+test.it("installDependencies: ignores sub-package lockfiles during transitive resolution", function()
+	fs.mkdir(tmpBase)
+
+	-- A deep package that actually exists and will be the real transitive dep
+	local deepA = path.join(tmpBase, "ignore-lockfile-deep-a")
+	fs.mkdir(deepA)
+	fs.mkdir(path.join(deepA, "src"))
+	fs.write(path.join(deepA, "src", "init.lua"), "return { name = 'deep-a' }")
+	fs.write(path.join(deepA, "lde.json"), json.encode({
+		name = "ignore-lockfile-deep-a",
+		version = "0.1.0",
+		dependencies = {}
+	}))
+
+	-- Middle package: lde.json says deep-a, but it has a stale lde.lock referencing deep-b (nonexistent)
+	local middleDir = path.join(tmpBase, "ignore-lockfile-middle")
+	fs.mkdir(middleDir)
+	fs.mkdir(path.join(middleDir, "src"))
+	fs.write(path.join(middleDir, "src", "init.lua"), "return {}")
+	fs.write(path.join(middleDir, "lde.json"), json.encode({
+		name = "ignore-lockfile-middle",
+		version = "0.1.0",
+		dependencies = {
+			["ignore-lockfile-deep-a"] = { path = "../ignore-lockfile-deep-a" }
+		}
+	}))
+	-- Write a stale lockfile in the middle that points to a nonexistent deep-b
+	-- If this lockfile were consulted, install would fail trying to resolve deep-b
+	fs.write(path.join(middleDir, "lde.lock"), json.encode({
+		version = "1",
+		dependencies = {
+			["ignore-lockfile-deep-b"] = { path = path.join(tmpBase, "ignore-lockfile-deep-b") }
+		}
+	}))
+
+	-- Root depends only on middle
+	local rootDir = path.join(tmpBase, "ignore-lockfile-root")
+	fs.mkdir(rootDir)
+	fs.mkdir(path.join(rootDir, "src"))
+	fs.write(path.join(rootDir, "src", "init.lua"), "return {}")
+	fs.write(path.join(rootDir, "lde.json"), json.encode({
+		name = "ignore-lockfile-root",
+		version = "0.1.0",
+		dependencies = {
+			["ignore-lockfile-middle"] = { path = "../ignore-lockfile-middle" }
+		}
+	}))
+
+	local root = lde.Package.open(rootDir)
+	root:installDependencies()
+
+	-- Root lockfile must contain deep-a (from lde.json), NOT deep-b (from stale lockfile)
+	local lockfile = root:readLockfile()
+	test.truthy(lockfile)
+	test.truthy(lockfile:getDependency("ignore-lockfile-deep-a"))
+	test.falsy(lockfile:getDependency("ignore-lockfile-deep-b"))
+end)
+
 -- It's undefined behavior for lde specifically to rely on transitive deps.
 -- But regardless need to ensure it works at runtime for the actual dependencies that will use it.
 test.it("transitive dep: util is resolvable as a dependency of lde-core", function()

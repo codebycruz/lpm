@@ -89,7 +89,7 @@ local function collectDependencies(dependencies, ctx)
 			ctx.visiting[alias] = true
 			local parentRelativeTo = ctx.relativeTo
 			ctx.relativeTo = pkg:getDir()
-			collectDependencies(pkg:getDependencies(), ctx)
+			collectDependencies(pkg:readConfig().dependencies or {}, ctx)
 			ctx.relativeTo = parentRelativeTo
 			ctx.visiting[alias] = nil
 		end
