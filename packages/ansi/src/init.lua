@@ -1,3 +1,18 @@
+local ffi = require("ffi")
+
+local isTTY = true
+do
+	if ffi.os == "Windows" then
+		pcall(ffi.cdef, "int _isatty(int fd);")
+		local ok, result = pcall(function() return ffi.C._isatty(1) ~= 0 end)
+		if ok then isTTY = result end
+	else
+		pcall(ffi.cdef, "int isatty(int fd);")
+		local ok, result = pcall(function() return ffi.C.isatty(1) ~= 0 end)
+		if ok then isTTY = result end
+	end
+end
+
 local ansi = {}
 
 ---@alias ansi.Color
@@ -75,8 +90,22 @@ end
 ---@param label string
 ---@return ansi.Progress
 function ansi.progress(label)
+	if not isTTY then
+		return {
+			done = function(_, msg)
+				io.write(colors.green .. "  ✓ " .. colors.reset .. (msg or label) .. "\n")
+				io.flush()
+			end,
+			fail = function(_, msg)
+				io.write(colors.red .. "  ✗ " .. colors.reset .. (msg or label) .. "\n")
+				io.flush()
+			end,
+		}
+	end
+
 	io.write(colors.gray .. "  - " .. colors.reset .. label)
 	io.flush()
+
 	return {
 		done = function(_, msg)
 			io.write(ESC .. "2K\r" .. colors.green .. "  ✓ " .. colors.reset .. (msg or label) .. "\n")
