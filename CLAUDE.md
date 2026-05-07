@@ -1,407 +1,220 @@
 # lde
 
-`lde` is a package manager and toolkit for Lua, written in Lua and running on LuaJIT. It manages project-local dependencies, runs Lua programs, and compiles them into single executables.
+`lde` is a project-local package manager and toolkit for Lua, written in Lua and running on LuaJIT. It manages dependencies, runs Lua programs, and compiles them into single executables.
+
+**lde is built with itself.** Working on lde uses the exact same commands as working on any lde package — the same manifest, lockfile, deps, and CLI apply.
 
 ## Repo Structure
 
 ```
-packages/
-  lde/          # The CLI binary itself (entry: src/init.lua)
-  lde-core/     # Core library: Package, Lockfile, runtime, install logic
-  lde-test/     # Built-in test framework
-  ansi/clap/env/fs/git/http/json/path/process/semver/util/  # Internal packages
-  sea/          # Single-executable assembly (compiles bundles into binaries)
-  archive/      # Archive extraction support
-  luarocks/     # LuaRocks integration
-  rocked/       # Rockspec support
-  readline/     # Readline support
-schemas/        # JSON schema for lde.json
-tests/          # Top-level integration test fixtures (e.g. some-package/)
+packages/             # Internal packages (local path deps of each other)
+  lde/                # CLI binary — entry: src/init.lua
+  lde-core/           # Core library: Package, Lockfile, runtime, install logic
+  lde-test/           # Test framework
+  lde-build/          # Build script context API (injected into build.lua scripts)
+  sea/                # Single-executable assembly (compiles bundles into binaries)
+  ansi clap semver util luarocks rocked readline
+schemas/              # JSON schema for lde.json
+tests/                # Integration test fixtures
+minilde.lua           # Bootstrap script (see below)
 ```
 
-Each package has:
+External packages like `fs`, `path`, `env`, `process`, `json`, `archive`, `git2-sys`, `curl-sys` are git deps from `github.com/lde-org/` — not in this repo, installed into `target/` on `lde install`/`lde run`.
 
-- `src/` — source files (or `src/init.lua` as the entry point)
-- `lde.json` — package manifest
-- `lde.lock` — lockfile (auto-generated, commit this)
-- `target/` — build output (never commit this)
-- `tests/` — test files matching `**/*.test.lua`
-- `build.lua` — optional build script (only if the package needs compilation)
+## lde vs luajit
 
-## `lde.json` Config
+**Always use `lde`, never `luajit` directly** (unless bootstrapping — see minilde).
+
+| | `lde` | `luajit` |
+|---|---|---|
+| `package.path` | Set to `target/` (all installed deps available) | Stock LuaJIT defaults only |
+| Deps | Built and installed automatically before running | Nothing — you get bare LuaJIT |
+| Runtime isolation | Yes — isolated `_G`, fresh `package.loaded` per run | No |
+
+```sh
+lde -e "print(require('json').encode({x=1}))"  # runs with all project deps available
+lde ./file.lua                                  # runs file with project's dep tree
+lde run                                         # runs the package entry point (src/init.lua)
+```
+
+`lde -e` and `lde ./file.lua` both build the package and set `package.path` from `target/` first.
+
+## Package Manifest (`lde.json`)
 
 ```jsonc
 {
   "name": "my-package",
   "version": "0.1.0",
-  "description": "...",
-  "authors": ["..."],
-  "bin": "src/main.lua",          // optional, overrides default entry (src/init.lua via target/<name>)
-  "engine": "lde",                // "lde" (default), "lua", or "luajit"
-  "scripts": { "build": "..." },  // runnable via `lde <name>` or `lde run <name>`
+  "bin": "src/main.lua",        // optional, defaults to src/init.lua
+  "scripts": { "build": "..." },
   "dependencies": {
-    "json":    { "path": "../json" },                    // local path dep
-    "hood":    { "git": "https://...", "commit": "abc123", "branch": "main" }, // git dep
-    "semver":  { "version": "1.0.0" },                  // lde registry dep
-    "mylib":   { "luarocks": "luafilesystem" },          // luarocks dep
-    "archive": { "archive": "https://.../x.zip" },       // archive dep
-    "winapi":  { "git": "...", "optional": true }        // optional dep
+    "json":    { "path": "../json" },                         // local path
+    "hood":    { "git": "https://...", "commit": "abc123" }, // git (commit auto-pinned)
+    "semver":  { "version": "1.0.0" },                       // registry
+    "mylib":   { "luarocks": "luafilesystem" },              // luarocks
+    "winapi":  { "git": "...", "optional": true }            // optional
   },
   "devDependencies": { ... },
-  "features": {
-    "windows": ["winapi"],   // optional deps enabled per platform
-    "linux":   ["..."],
-    "macos":   ["..."]
-  }
+  "features": { "windows": ["winapi"], "linux": ["..."] }
 }
 ```
 
-- Lockfile is `lde.lock`. Commit it. The `target/` directory is build output — never commit it.
-- The **require name** for a dependency is the **key** in `dependencies`, not the package's `name` field. You can alias a package by using a different key.
-- `name` in a dep entry overrides the package name used for registry/git lookup (for aliasing).
+The require name is the **key** in `dependencies`, not the package's `name` field. Deps are installed as symlinks (or copies if `build.lua` exists) at `target/<alias>`. `package.path` includes `target/?.lua` and `target/?/init.lua`.
 
-## How `require()` Paths Are Resolved
+Commit `lde.lock`. Never commit `target/`.
 
-`lde install` / `lde run` populate `target/` with symlinks (or copies for packages with a build script). Each dep is installed at `target/<alias>`.
-
-`package.path` is set to:
-
-```
-target/?.lua
-target/?/init.lua
-target/?.so  (or .dll / .dylib)
-```
-
-So `require("json")` → `target/json/init.lua` → symlink to `packages/json/src/init.lua`.
-
-During `lde test`, `tests/` is also exposed as `target/tests`, so test files can do:
-
-```lua
-local helper = require("tests.lib.something")  -- resolves to tests/lib/something.lua
-```
-
-## Build System
-
-- `lde run` / `lde test` both call `pkg:build()` + `pkg:installDependencies()` automatically.
-- **No build script**: `src/` is symlinked directly to `target/<name>`.
-- **With `build.lua`**: it is executed with `LDE_OUTPUT_DIR` set to the output path (`target/<name>`). The script is responsible for writing files there.
-- `target/.installed` stores an FNV1a hash of `lde.lock` — if it matches, install is skipped entirely (fast path).
-- Git dependencies are cloned with `--recurse-submodules`.
-
-## Package API (`lde-core`)
-
-`require("lde-core")` returns a table with:
-
-- `lde.Package` — the Package class
-- `lde.Lockfile` — the Lockfile class
-- `lde.global` — global state/cache helpers
-- `lde.runtime` — isolated script execution
-- `lde.util` — internal utilities
-- `lde.verbose` — boolean, set to `true` in the CLI to show progress output
-
-### `lde.Package`
-
-```lua
-local pkg, err = lde.Package.open(dir)       -- opens lde.json or rockspec
-local pkg, err = lde.Package.openLDE(dir)    -- opens lde.json only
-
-pkg:getDir()             -- package root directory
-pkg:getName()            -- reads name from lde.json
-pkg:readConfig()         -- returns lde.Package.Config (cached, invalidated on mtime change)
-pkg:readLockfile()       -- returns lde.Lockfile or nil
-pkg:getDependencies()    -- merged config+lockfile deps (lockfile wins for pinned commits)
-pkg:getDevDependencies() -- devDependencies table
-pkg:getModulesDir()      -- target/
-pkg:getTargetDir()       -- target/<name>
-pkg:getSrcDir()          -- src/
-pkg:getTestDir()         -- tests/
-pkg:getBuildScriptPath() -- build.lua
-pkg:hasBuildScript()     -- true if build.lua exists or buildfn is set
-pkg:build(destPath)      -- runs build script or symlinks src/ into target/<name>
-pkg:installDependencies(deps, relativeTo, features)  -- installs all deps into target/
-pkg:runFile(path, args, vars)    -- runs a Lua file in isolated runtime
-pkg:runString(code, args, vars)  -- runs a Lua string in isolated runtime
-pkg:runScript(name, capture)     -- runs a script from lde.json scripts table
-pkg:runTests()           -- runs all *.test.lua files
-pkg:bundle()             -- bundles into a single Lua file
-pkg:compile()            -- compiles into a single executable
-```
-
-### `lde.global`
-
-Manages the global `~/.lde/` directory (git cache, archive cache, registry, tools).
-
-```lua
-lde.global.getDir()              -- ~/.lde
-lde.global.getGitCacheDir()      -- ~/.lde/git
-lde.global.getTarCacheDir()      -- ~/.lde/tar
-lde.global.getRegistryDir()      -- ~/.lde/registry
-lde.global.getToolsDir()         -- ~/.lde/tools
-lde.global.currentVersion        -- e.g. "0.9.0"
-
-lde.global.getOrInitGitRepo(name, url, branch, commit)  -- clones if not cached, returns dir
-lde.global.getOrInitArchive(url)                        -- downloads+extracts if not cached, returns dir
-lde.global.syncRegistry()                               -- clones/pulls the lde registry
-lde.global.lookupRegistryPackage(name)                  -- returns portfile table or nil, err
-lde.global.resolveRegistryVersion(portfile, version)    -- returns version, commit
-lde.global.writeWrapper(toolName, packageDir, pkgName)  -- writes ~/.lde/tools/<name> wrapper script
-lde.global.init()                                       -- ensures ~/.lde dirs exist
-```
-
-### `lde.runtime`
-
-Executes Lua in an isolated environment (clears `package.loaded`, fresh `_G` metatable, patches `ffi.cdef`).
-
-```lua
-lde.runtime.executeFile(path, opts)    -- runs a file
-lde.runtime.executeString(code, opts)  -- runs a string
-
--- opts: { env, args, globals, packagePath, packageCPath, preload, cwd }
-```
-
-## Key Internal Packages
-
-### `fs`
-
-```lua
-fs.read(path)                    -- returns string or nil
-fs.write(path, content)          -- returns boolean
-fs.exists(path)                  -- boolean
-fs.isdir(path)                   -- boolean
-fs.isfile(path)                  -- boolean
-fs.islink(path)                  -- boolean
-fs.mkdir(path)                   -- boolean
-fs.mklink(src, dest)             -- creates symlink
-fs.rmlink(path)                  -- removes symlink/junction
-fs.rmdir(path)                   -- recursive delete
-fs.delete(path)                  -- os.remove wrapper
-fs.copy(src, dest)               -- recursive copy
-fs.move(old, new)                -- rename or copy+delete
-fs.stat(path)                    -- { size, accessTime, modifyTime, type, mode }
-fs.lstat(path)                   -- same but doesn't follow symlinks
-fs.readdir(path)                 -- iterator of { name, type } entries
-fs.scan(cwd, glob, opts)         -- returns string[] of relative paths matching glob
-                                 -- opts: { absolute: boolean, followSymlinks: boolean }
-```
-
-### `ansi`
-
-```lua
-ansi.printf("{red}msg %s", val)          -- colored print (resets at end)
-ansi.format("{green}msg %s", val)        -- returns colored string
-ansi.colorize("blue", str)               -- wraps str in color codes
-ansi.clearLine()                         -- clears current terminal line
-
-local p = ansi.progress("label")        -- shows spinner line
-p:done("optional done msg")             -- replaces line with ✓
-p:fail("optional fail msg")             -- replaces line with ✗
-```
-
-Available colors: `reset red green yellow blue magenta cyan white gray bold` and `bg_*` variants.
-
-### `clap`
-
-```lua
-local args = clap.parse({ ... })   -- parse raw arg list (pass `{...}` from script)
-
-args:pop()                  -- removes and returns next positional arg
-args:peek()                 -- returns next positional arg without removing
-args:flag("name")           -- returns true if --name present (removes it)
-args:option("name")         -- returns value of --name or --name=val (removes it)
-args:short("x")             -- returns value of -x or -x=val (removes it)
-args:drain(start)           -- returns and removes all remaining args (or from index)
-args:count()                -- number of remaining args
-```
-
-### `process`
-
-```lua
--- Blocking execution
-local code, stdout, stderr = process.exec("git", { "clone", url }, opts)
-
--- Async
-local child, err = process.spawn("cmd", args, opts)
-child:wait()    -- returns code, stdout, stderr
-child:poll()    -- returns exit code or nil if still running
-child:kill(force)
-
--- opts: { cwd, env, stdin, stdout, stderr }
--- stdout/stderr: "pipe" (default for exec), "inherit", "null"
-
-process.platform  -- "linux", "darwin", "win32", "unix"
-```
-
-### `env`
-
-```lua
-env.var("NAME")          -- get env var
-env.set("NAME", value)   -- set env var (nil to unset)
-env.cwd()                -- current working directory
-env.chdir(dir)           -- change directory
-env.tmpdir()             -- system temp directory
-env.tmpfile()            -- unique temp file path (safe on all platforms)
-env.execPath()           -- path to the current lde executable
-```
-
-### `path`
-
-```lua
-path.join(a, b, ...)     -- joins with OS separator
-path.basename(p)         -- filename portion
-path.dirname(p)          -- directory portion
-path.extension(p)        -- file extension (without dot)
-path.normalize(p)        -- resolves . and ..
-path.resolve(base, rel)  -- resolves relative path against base
-path.relative(from, to)  -- relative path from -> to
-path.isAbsolute(p)       -- boolean
-path.parts(p)            -- iterator over path segments
-path.separator           -- "/" or "\\"
-```
-
-### `git`
-
-```lua
-git.clone(url, dir, branch, commit)   -- clones with --recurse-submodules
-git.pull(repoDir)
-git.checkout(commit, repoDir)
-git.getCommitHash(cwd, ref)           -- returns ok, hash
-git.init(dir, bare)
-git.isInsideWorkTree(dir)
-git.remoteGetUrl(remoteName, cwd)
-git.getCurrentBranch(cwd)
-git.version()
-```
-
-## Test Framework (`lde-test`)
-
-Test files must match `**/*.test.lua`.
-
-```lua
-local test = require("lde-test")
-
-test.it("does something", function()
-  test.equal(a, b)
-  test.notEqual(a, b)
-  test.truthy(x)
-  test.falsy(x)
-  test.deepEqual(t1, t2)      -- recursive, checks metatables
-  test.match(actual, expected) -- like jest toMatchObject (subset match)
-  test.includes(str, substr)
-  test.greater(a, b)
-  test.less(a, b)
-  test.greaterEqual(a, b)
-  test.lessEqual(a, b)
-end)
-
-test.skip("skipped test", function() end)
-test.skipIf(condition)("name", function() end)
-```
-
-Run tests: `lde test` (from a package dir, or from repo root to run all packages).
-
-## Running Lua Code for Inspection/Testing
-
-**Never use `luajit` directly.** Always use `lde` to run Lua so the correct runtime context, package paths, and built-in modules are available.
+## Commands
 
 ```sh
-# Run a one-liner inside the lde context (from any package dir)
-lde -e "print(require('json').encode({x=1}))"
+lde run             # run the package entry point
+lde test            # run all *.test.lua files
+lde compile         # compile to a single executable
+lde -e "..."        # run a Lua expression in project context
+lde ./file.lua      # run a file in project context
 
-# Run a specific file
-lde ./path/to/file.lua
-
-# Run a specific file with args
-lde ./path/to/file.lua -- arg1 arg2
+lde add json --path ../json        # add local dep
+lde add hood --git https://...     # add git dep (commit auto-pinned)
+lde add semver@1.0.0               # add registry dep
+lde remove hood                    # remove dep
 ```
 
-`lde -e` runs the expression/statement with all installed deps available (same as `lde run` but inline). `lde ./file` runs a file directly using the current package's dep tree.
+Always use `lde add`/`lde remove` — never edit `lde.json` manually (leaves lockfile out of sync).
 
-## Updating the `lde` Binary
+## Build Scripts (`build.lua`)
 
-After making changes to any package source, rebuild the binary:
+If a package has a `build.lua` at its root, lde runs it instead of symlinking `src/`. The script receives a `lde-build` context via `require("lde-build")` with all paths relative to the output dir (`target/<name>`):
+
+```lua
+local build = require("lde-build")
+
+build:fetch(url)            -- HTTP GET, returns body string
+build:write(rel, content)   -- write file at outDir/rel
+build:read(rel)             -- read file at outDir/rel
+build:extract(rel, dest)    -- extract archive at outDir/rel to outDir/dest
+build:copy(rel, dest)       -- copy outDir/rel to outDir/dest
+build:move(rel, dest)       -- move outDir/rel to outDir/dest
+build:delete(rel)           -- delete outDir/rel
+build:exists(rel)           -- returns bool
+build:sh(cmd)               -- run shell command (asserts exit 0)
+```
+
+`LDE_OUTPUT_DIR` env var is also set to the output path. Build scripts are used for packages that need to compile native code or download platform-specific binaries (e.g. `curl-sys`, `git2-sys`).
+
+## Developing lde
+
+Since lde is built with itself, you work on it like any other lde package:
 
 ```sh
 cd packages/lde
-lde compile
+lde test            # run lde's own tests
+lde compile         # rebuild the binary → packages/lde/lde
+cp lde ~/.lde/lde   # install globally
 ```
 
-This outputs `packages/lde/lde` (or `lde.exe` on Windows). To install it globally: copy to `~/.lde/lde`.
+Tests in `packages/lde/tests/` invoke the compiled binary via `env.execPath()`. After source changes, recompile before running those tests.
 
-**Important:** Tests in `packages/lde/tests/` run the actual `lde` CLI binary via `env.execPath()`. If those tests fail after source changes, recompile and replace the binary first.
+To run from repo root: `lde test` runs all packages. Use `-C <dir>` to target a specific one.
 
-## Profiling `lde` code
+## minilde.lua
 
-You can profile an lde package with `lde run --profile` with `--flamegraph` to additionally generate a flamegraph.
+`minilde.lua` is a minimal bootstrap script for platforms that don't yet have an `lde` binary — used only when creating a new platform build from scratch. It requires only `luajit`, `curl`, and `tar`, and implements just enough of lde to resolve deps and run the package entry point.
 
-To profile the entire test suite running this:
+```sh
+luajit minilde.lua run [-- extra-args]   # build and run the package (passes args after --)
+```
+
+Only `run` is supported. Use it to bootstrap the first `lde compile` on a new platform, then use `lde` from there on. The built binary goes to `packages/lde/lde` — copy it to `~/.lde/lde` to install globally.
+
+## Monorepo Conventions
+
+- All packages in `packages/` depend on siblings via `{ "path": "../<pkg>" }`.
+- External deps (fs, path, env, etc.) are git deps pointing to `github.com/lde-org/`.
+- Add new internal packages to `packages/lde/lde.json` as a path dep.
+- Old name `lpm` may appear in legacy code — always use `lde` equivalents.
+
+## Testing
+
+```lua
+local test = require("lde-test")
+test.it("name", function()
+  test.equal(a, b)
+  test.deepEqual(t1, t2)
+  test.match(actual, expected)   -- subset match (like jest toMatchObject)
+  test.truthy(x) / test.falsy(x)
+  test.includes(str, substr)
+end)
+test.skip("name", fn)
+test.skipIf(cond)("name", fn)
+```
+
+Test files must match `**/*.test.lua`. During `lde test`, `tests/` is exposed as `target/tests` so test files can `require("tests.lib.something")`.
+
+## Code Style
+
+Use LuaCATS annotations everywhere — all functions, parameters, return values, and class definitions. This codebase uses the Lua Language Server; annotations are the primary way types are communicated across modules.
+
+```lua
+---@class MyClass
+---@field name string
+local MyClass = {}
+MyClass.__index = MyClass
+
+---@param path string
+---@return string?, string? # value, error
+function MyClass:read(path) end
+
+---@type table<string, MyClass>
+local cache = {}
+```
+
+## Performance
+
+**Minimize allocations.** LuaJIT's GC is a stop-the-world mark-and-sweep — excess table/string creation causes latency spikes. Prefer reusing tables, avoid string concatenation in hot loops (use `table.concat`), and don't create closures or upvalue captures inside tight loops.
+
+**Use FFI for hot paths.** LuaJIT can inline FFI calls to near-C speed, while Lua→C function call overhead is significant. For anything performance-sensitive (byte manipulation, system calls, math-heavy code), prefer `ffi.cdef` + `ffi.C.*` over Lua wrappers. For typed buffers, use `ffi.typeof` to create a reusable constructor rather than calling `ffi.new` directly — this lets LuaJIT specialize and inline allocations:
+
+```lua
+local Buffer = ffi.typeof("uint8_t[?]")
+local buf = Buffer(1024)  -- fast, JIT-friendly
+```
+
+### Profiling
+
+Profile a package entry point:
+
+```sh
+lde run --profile              # prints a flat call profile on exit
+lde run --profile --flamegraph # also writes a flamegraph HTML file
+```
+
+To profile the full test suite from repo root:
 
 ```sh
 cd packages/lde
 lde run --profile --flamegraph -- -C ../.. test
 ```
 
-This profiles the `lde` package entrypoint itself, not just an individual test file, and runs `lde test` as if it had been started from the repo root.
+This profiles the `lde` entrypoint itself running `lde test` as if invoked from the repo root — gives a complete picture across all packages.
 
-## Managing Dependencies
+## Key Packages
 
-Always use `lde add` / `lde remove` instead of manually editing `lde.json`. Manual edits leave `lde.lock` out of sync and can break installs.
+Local (in `packages/`):
 
-```sh
-# Add a local path dep
-lde add json --path ../json
+| Package | Purpose |
+|---------|---------|
+| `lde-core` | `Package`, `Lockfile`, install/build/run/test/compile logic |
+| `lde-test` | Test framework |
+| `lde-build` | Build script context (injected into `build.lua` scripts) |
+| `clap` | CLI arg parsing: `args:option()`, `args:flag()`, `args:pop()` |
+| `ansi` | Terminal output: `ansi.printf("{red}msg")`, `ansi.progress(label)` |
+| `sea` | Compiles bundled Lua + native libs into a self-contained binary |
 
-# Add a git dep (commit is resolved and pinned automatically)
-lde add hood --git https://github.com/codebycruz/hood
-lde add hood --git https://github.com/codebycruz/hood --branch main
+External (from `github.com/lde-org/`, installed via `lde install`):
 
-# Add a registry dep
-lde add semver@1.0.0
-
-# Remove a dep
-lde remove hood
-```
-
-## Monorepo Conventions
-
-- All packages live in `packages/` and depend on each other via `{ "path": "../<pkg>" }`.
-- The `lde` package's `lde.json` lists all sibling packages as path dependencies.
-- When adding a new internal package, add it to `packages/lde/lde.json` as a path dep.
-- `lde-core` uses `package.loaded[(...)] = lde` early to allow circular requires within the package.
-
-## Bootstrap Mode
-
-`lde` can be built with `BOOTSTRAP=1` using stock LuaJIT (no existing `lde` binary required). In this mode, `packages/lde/src/init.lua` manually creates symlinks in `target/` for all dependencies instead of using the normal install flow.
-
-```sh
-BOOTSTRAP=1 luajit packages/lde/src/init.lua compile
-```
-
-## Naming
-
-The project was previously named `lpm`. You may see `lpm.json` or `lpm-test` references in older code — always use the `lde` equivalents (`lde.json`, `lde-test`) when writing new code. The compat aliases are handled internally.
-
-## Global Cache Layout
-
-```
-~/.lde/
-  git/          # cloned git repos, keyed as <name>[-branch][-commit]
-  tar/          # extracted archives, keyed by sanitized URL
-  registry/     # cloned lde registry (git repo)
-  rockspecs/    # cached rockspec files
-  tools/        # wrapper scripts installed by `lde install --global`
-  mingw/        # MinGW toolchain (Windows only, for compiling C extensions)
-  config.json   # global lde config
-```
-
-## CI Build Architecture
-
-`lde compile` links against `libluajit` from [lj-dist](https://github.com/lde-org/lj-dist) using a C compiler controlled by `SEA_CC`. Linux and macOS use the system compiler. Windows and Android need special toolchains.
-
-**Windows:** The system GCC on `windows-latest` targets msvcrt, but lj-dist's `libluajit` is built against UCRT. This causes linker errors (`undefined reference to __imp_fseeko64` etc). CI downloads [llvm-mingw](https://github.com/mstorsjo/llvm-mingw) (a Clang/LLD MinGW-w64 toolchain targeting UCRT) and sets `SEA_CC`:
-
-| Runner           | `SEA_CC`                    |
-| ---------------- | --------------------------- |
-| `windows-latest` | `x86_64-w64-mingw32-clang`  |
-| `windows-11-arm` | `aarch64-w64-mingw32-clang` |
-
-**Android:** Android uses Bionic rather than glibc. The binary is compiled on the host using the Android NDK's clang (`aarch64-linux-android21-clang`), which links against Bionic. Tests run inside a Termux Docker container (`termux/termux-docker:aarch64` under QEMU on the ARM64 runner), which provides a matching Bionic environment.
+| Package | Purpose |
+|---------|---------|
+| `fs` | File I/O: `read`, `write`, `copy`, `move`, `rmdir`, `scan`, `stat` |
+| `path` | Path ops: `join`, `basename`, `dirname`, `resolve`, `relative` |
+| `env` | Env vars: `env.var()`, `env.set()`, `env.cwd()`, `env.execPath()` |
+| `process` | Subprocesses: `process.exec(cmd, args, opts)`, `process.platform` |
+| `json` | `json.encode(t)`, `json.decode(s)` |

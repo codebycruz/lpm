@@ -1,4 +1,4 @@
--- This file implements a tiny mini lde for the sake of creating an initial lde binary for a platform without requiring lde.
+-- This file implements a 'mini' lde for the sake of bootstrapping an initial lde binary for a platform without requiring lde.
 -- Dependencies:
 --  - All: curl, tar
 --  - Windows: Developer Mode or Administrator
