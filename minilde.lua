@@ -36,13 +36,17 @@ local function mklink(src, dest)
 	)
 end
 
+---@type fun(handle: file*?): string?
+local function readhandle(handle)
+	if not handle then return end
+	local content = handle:read("*a")
+	handle:close()
+	return content
+end
+
 ---@type fun(path: string): string?
 local function read(path)
-	local file = io.open(path, "r")
-	if not file then return end
-	local content = file:read("*a")
-	file:close()
-	return content
+	return readhandle(io.open(path, "r"))
 end
 
 ---@type fun(path: string, content: string)
@@ -68,8 +72,7 @@ local function copy(src, dest)
 	)
 end
 
---- Tiny json decoder with basic support
----@param b string
+---@type fun(b: string): any? # Tiny json decoder with very basic support for what we will use in lde.json files
 local function jsonDecode(b)
 	local c = 0; local function d(e)
 		local f, g, m = b:find("^%s*", c)
@@ -79,16 +82,12 @@ local function jsonDecode(b)
 		end
 	end; local h, i; local function j()
 		local n = d("^(%d+%.?%d*)"); if n then return tonumber(n) end
-
-		return d("^(true)") and true or d("^(false)") and false or
-			d("^\"([^\"]*)\"") or h() or i()
+		return d("^\"([^\"]*)\"") or h() or i() or d("^true") or (d("^false") and false)
 	end; function h()
 		if not d("^{") then return end; local k = {}
 		while not d("^}") do
 			local l = d("^\"([^\"]*)\"")
-			d("^:")
-			k[l] = j()
-			d("^,")
+			d("^:"); k[l] = j(); d("^,")
 		end; return k
 	end; function i()
 		if not d("^%[") then return end; local k = {}
@@ -157,46 +156,20 @@ local function buildPackage(packagePath, targetDir)
 		local build = {}
 		build.__index = build
 
-		function build:fetch(url)
-			local handle = assert(io.popen("curl -sL " .. url), "failed to fetch " .. url)
-			local result = handle:read("*a")
-			handle:close()
-			return result
-		end
-
-		---@type fun(self: minilde.build, rel: string, content: string)
-		function build:write(rel, content)
-			write(join(outputDir, rel), content)
-		end
-
-		function build:read(rel)
-			return read(join(outputDir, rel))
-		end
-
-		function build:extract(rel, dest)
-			mkdir(join(outputDir, dest))
-			os.execute('tar -xzf "' .. join(outputDir, rel) .. '" -C "' .. join(outputDir, dest) .. '"')
-		end
-
-		function build:copy(rel, dest)
-			copy(join(outputDir, rel), join(outputDir, dest))
-		end
-
-		function build:delete(rel)
-			rm(join(outputDir, rel))
-		end
-
-		function build:move(rel, dest)
-			os.rename(join(outputDir, rel), join(outputDir, dest))
-		end
-
-		function build:exists(rel)
-			return exists(join(outputDir, rel))
-		end
-
-		function build:sh(cmd)
-			local res = os.execute(cmd)
-			assert(res == 0 or res == true, "failed to execute " .. cmd)
+		---@format disable-next
+		do
+			function build:fetch(url) return assert(readhandle(io.popen("curl -sL " .. url)), "failed to fetch " .. url) end
+			function build:write(rel, content) write(join(outputDir, rel), content) end
+			function build:read(rel) return read(join(outputDir, rel)) end
+			function build:extract(rel, dest) mkdir(join(outputDir, dest)); os.execute('tar -xzf "' .. join(outputDir, rel) .. '" -C "' .. join(outputDir, dest) .. '"') end
+			function build:copy(rel, dest) copy(join(outputDir, rel), join(outputDir, dest)) end
+			function build:delete(rel) rm(join(outputDir, rel)) end
+			function build:move(rel, dest) os.rename(join(outputDir, rel), join(outputDir, dest)) end
+			function build:exists(rel) return exists(join(outputDir, rel)) end
+			function build:sh(cmd)
+				local res = os.execute(cmd)
+				assert(res == 0 or res == true, "failed to execute " .. cmd)
+			end
 		end
 
 		package.loaded["lde-build"] = setmetatable({ outDir = outputDir }, build)
