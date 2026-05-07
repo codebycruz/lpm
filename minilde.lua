@@ -13,6 +13,7 @@ local isWindows = separator == '\\'
 
 local cwd = isWindows and io.popen("cd"):read("*l") or io.popen("pwd"):read("*l")
 
+---@param path string
 local function exists(path)
 	local ok, _, code = os.rename(path, path)
 	if not ok then
@@ -46,10 +47,18 @@ local function read(path)
 	return content
 end
 
+---@type fun(path: string, content: string)
+local function write(path, content)
+	local file = io.open(path, "w")
+	if not file then return end
+	file:write(content)
+	file:close()
+end
+
 ---@type fun(src: string, dest: string) # Recursive copy
 local function copy(src, dest)
 	if not exists(src) then return end
-	if not exists(dest) then mkdir(dest) end
+	if exists(dest) then os.remove(dest) end
 
 	os.execute(
 		isWindows and ('xcopy /E /I /Y "' .. src .. '" "' .. dest .. '"')
@@ -90,7 +99,6 @@ end
 
 local args = { ... }
 local function pop() return table.remove(args, 1) end
-local function peek() return args[1] end
 
 ---@alias minilde.dep
 --- | { path: string }
@@ -116,8 +124,63 @@ local function buildPackage(packagePath, targetDir)
 
 	mkdir(targetDir)
 	if exists(join(packagePath, "build.lua")) then
-		copy(join(packagePath, "src"), join(targetDir, config.name))
-		setenv("LDE_OUTPUT_DIR", join(targetDir, config.name))
+		local outputDir = join(targetDir, config.name)
+
+		copy(join(packagePath, "src"), outputDir)
+		setenv("LDE_OUTPUT_DIR", outputDir)
+
+		---@alias minilde.build { outDir: string }
+
+		package.preload["lde-build"] = function()
+			---@class minilde.build
+			local build = {}
+			build.__index = build
+
+			function build:fetch(url)
+				local handle = assert(io.popen("curl -sL " .. url), "failed to fetch " .. url)
+				local result = handle:read("*a")
+				handle:close()
+				return result
+			end
+
+			---@type fun(self: minilde.build, rel: string, content: string)
+			function build:write(rel, content)
+				write(join(outputDir, rel), content)
+			end
+
+			function build:read(rel)
+				return read(join(outputDir, rel))
+			end
+
+			function build:extract(rel, dest)
+				mkdir(join(outputDir, dest))
+				os.execute('tar -xzf "' .. join(outputDir, rel) .. '" -C "' .. join(outputDir, dest) .. '"')
+			end
+
+			function build:copy(rel, dest)
+				copy(join(outputDir, rel), join(outputDir, dest))
+			end
+
+			function build:delete(rel)
+				os.remove(join(outputDir, rel))
+			end
+
+			function build:move(rel, dest)
+				os.rename(join(outputDir, rel), join(outputDir, dest))
+			end
+
+			function build:exists(rel)
+				return exists(join(outputDir, rel))
+			end
+
+			function build:sh(cmd)
+				local res = os.execute(cmd)
+				assert(res == 0 or res == true, "failed to execute " .. cmd)
+			end
+
+			return setmetatable({ outDir = outputDir }, build)
+		end
+
 		dofile(join(packagePath, "build.lua"))
 	else
 		mklink(join(packagePath, "src"), join(targetDir, config.name))
@@ -160,6 +223,11 @@ if #args == 0 then
 end
 
 if pop() == "run" then
-	local config = build()
+	local config = assert(build())
+
+	package.path = join(cwd, "target", "?.lua") .. ";" ..
+		join(cwd, "target", "?", "init.lua") .. ";" ..
+		package.path
+
 	dofile(join(cwd, "target", config.name, "init.lua"))
 end
