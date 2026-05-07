@@ -11,8 +11,6 @@ end
 
 local isWindows = separator == '\\'
 
-local cwd = isWindows and io.popen("cd"):read("*l") or io.popen("pwd"):read("*l")
-
 ---@param path string
 local function exists(path)
 	local ok, _, code = os.rename(path, path)
@@ -55,14 +53,18 @@ local function write(path, content)
 	file:close()
 end
 
+---@type fun(path: string)
+local function rm(path)
+	os.execute(isWindows and ('rmdir /S /Q "' .. path .. '"') or ('rm -rf "' .. path .. '"'))
+end
+
 ---@type fun(src: string, dest: string) # Recursive copy
 local function copy(src, dest)
 	if not exists(src) then return end
-	if exists(dest) then os.remove(dest) end
 
 	os.execute(
 		isWindows and ('xcopy /E /I /Y "' .. src .. '" "' .. dest .. '"')
-		or ('cp -r "' .. src .. '" "' .. dest .. '"')
+		or ('cp -rL "' .. src .. '" "' .. dest .. '"')
 	)
 end
 
@@ -109,18 +111,37 @@ local tmpLDEDir = join(tmpBase, "lde")
 
 local ffi = require("ffi")
 local setenv ---@type fun(name: string, value: string)
+local chdir ---@type fun(dir: string)
+local getcwd ---@type fun(): string
 if isWindows then
 	ffi.cdef [[int _putenv_s(const char *name, const char *value);]]
 	setenv = function(name, value) ffi.C._putenv_s(name, value) end
+	ffi.cdef [[int _chdir(const char *dirname);]]
+	chdir = function(dir) ffi.C._chdir(dir) end
+	ffi.cdef [[int _getcwd(char *buffer, size_t size);]]
+	getcwd = function()
+		local buffer = ffi.new("char[?]", 1024)
+		ffi.C._getcwd(buffer, 1024)
+		return ffi.string(buffer)
+	end
 else
 	ffi.cdef [[int setenv(const char *name, const char *value, int overwrite);]]
 	setenv = function(name, value) ffi.C.setenv(name, value, 1) end
+	ffi.cdef [[int chdir(const char *path);]]
+	chdir = function(dir) ffi.C.chdir(dir) end
+	ffi.cdef [[char *getcwd(char *buf, size_t size);]]
+	getcwd = function()
+		local buffer = ffi.new("char[?]", 1024)
+		ffi.C.getcwd(buffer, 1024)
+		return ffi.string(buffer)
+	end
 end
 
 ---@param packagePath string
 ---@param targetDir string
 local function buildPackage(packagePath, targetDir)
-	local config = jsonDecode(assert(read(join(packagePath, "lde.json")), "No lde.json at " .. packagePath)) --[[@as { name: string, dependencies: { [string]: minilde.dep } }]]
+	local config = jsonDecode(assert(read(join(packagePath, "lde.json")) or read(join(packagePath, "lpm.json")),
+		"No lde.json at " .. packagePath)) --[[@as { name: string, dependencies: { [string]: minilde.dep } }]]
 
 	mkdir(targetDir)
 	if exists(join(packagePath, "build.lua")) then
@@ -128,60 +149,62 @@ local function buildPackage(packagePath, targetDir)
 
 		copy(join(packagePath, "src"), outputDir)
 		setenv("LDE_OUTPUT_DIR", outputDir)
+		setenv("LPM_OUTPUT_DIR", outputDir)
 
 		---@alias minilde.build { outDir: string }
 
-		package.preload["lde-build"] = function()
-			---@class minilde.build
-			local build = {}
-			build.__index = build
+		---@class minilde.build
+		local build = {}
+		build.__index = build
 
-			function build:fetch(url)
-				local handle = assert(io.popen("curl -sL " .. url), "failed to fetch " .. url)
-				local result = handle:read("*a")
-				handle:close()
-				return result
-			end
-
-			---@type fun(self: minilde.build, rel: string, content: string)
-			function build:write(rel, content)
-				write(join(outputDir, rel), content)
-			end
-
-			function build:read(rel)
-				return read(join(outputDir, rel))
-			end
-
-			function build:extract(rel, dest)
-				mkdir(join(outputDir, dest))
-				os.execute('tar -xzf "' .. join(outputDir, rel) .. '" -C "' .. join(outputDir, dest) .. '"')
-			end
-
-			function build:copy(rel, dest)
-				copy(join(outputDir, rel), join(outputDir, dest))
-			end
-
-			function build:delete(rel)
-				os.remove(join(outputDir, rel))
-			end
-
-			function build:move(rel, dest)
-				os.rename(join(outputDir, rel), join(outputDir, dest))
-			end
-
-			function build:exists(rel)
-				return exists(join(outputDir, rel))
-			end
-
-			function build:sh(cmd)
-				local res = os.execute(cmd)
-				assert(res == 0 or res == true, "failed to execute " .. cmd)
-			end
-
-			return setmetatable({ outDir = outputDir }, build)
+		function build:fetch(url)
+			local handle = assert(io.popen("curl -sL " .. url), "failed to fetch " .. url)
+			local result = handle:read("*a")
+			handle:close()
+			return result
 		end
 
+		---@type fun(self: minilde.build, rel: string, content: string)
+		function build:write(rel, content)
+			write(join(outputDir, rel), content)
+		end
+
+		function build:read(rel)
+			return read(join(outputDir, rel))
+		end
+
+		function build:extract(rel, dest)
+			mkdir(join(outputDir, dest))
+			os.execute('tar -xzf "' .. join(outputDir, rel) .. '" -C "' .. join(outputDir, dest) .. '"')
+		end
+
+		function build:copy(rel, dest)
+			copy(join(outputDir, rel), join(outputDir, dest))
+		end
+
+		function build:delete(rel)
+			rm(join(outputDir, rel))
+		end
+
+		function build:move(rel, dest)
+			os.rename(join(outputDir, rel), join(outputDir, dest))
+		end
+
+		function build:exists(rel)
+			return exists(join(outputDir, rel))
+		end
+
+		function build:sh(cmd)
+			local res = os.execute(cmd)
+			assert(res == 0 or res == true, "failed to execute " .. cmd)
+		end
+
+		package.loaded["lde-build"] = setmetatable({ outDir = outputDir }, build)
+
+		local oldDir = getcwd()
+		chdir(packagePath)
 		dofile(join(packagePath, "build.lua"))
+		chdir(oldDir)
 	else
 		mklink(join(packagePath, "src"), join(targetDir, config.name))
 	end
@@ -211,6 +234,7 @@ local function build()
 	mkdir(join(tmpLDEDir, "tar"))
 	mkdir(join(tmpLDEDir, "git"))
 
+	local cwd = getcwd()
 	return buildPackage(cwd, join(cwd, "target"))
 end
 
@@ -225,6 +249,7 @@ end
 if pop() == "run" then
 	local config = assert(build())
 
+	local cwd = getcwd()
 	package.path = join(cwd, "target", "?.lua") .. ";" ..
 		join(cwd, "target", "?", "init.lua") .. ";" ..
 		package.path
