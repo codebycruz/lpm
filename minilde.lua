@@ -229,5 +229,19 @@ if pop() == "run" then
 		join(cwd, "target", "?", "init.lua") .. ";" ..
 		package.path
 
-	dofile(join(cwd, "target", config.name, "init.lua"))
+	local extraArgs = {}
+	local foundSep = false
+	for _, v in ipairs(args) do
+		if foundSep then
+			extraArgs[#extraArgs + 1] = v
+		elseif v == "--" then
+			foundSep = true
+		end
+	end
+	_G.arg = extraArgs
+
+	local chunk = loadfile(join(cwd, "target", config.name, "init.lua"))
+	if chunk then
+		chunk(unpack(extraArgs))
+	end
 end
