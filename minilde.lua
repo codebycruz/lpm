@@ -1,0 +1,165 @@
+-- This file implements a tiny mini lde for the sake of creating an initial lde binary for a platform without requiring lde.
+-- Dependencies:
+--  - All: curl, tar
+--  - Windows: Developer Mode or Administrator
+
+local separator = package.config:sub(1, 1)
+
+local function join(...)
+	return table.concat({ ... }, separator)
+end
+
+local isWindows = separator == '\\'
+
+local cwd = isWindows and io.popen("cd"):read("*l") or io.popen("pwd"):read("*l")
+
+local function exists(path)
+	local ok, _, code = os.rename(path, path)
+	if not ok then
+		return code == 13 -- permission denied means it exists
+	end
+
+	return true
+end
+
+---@param dir string
+local function mkdir(dir)
+	if exists(dir) then return end
+	os.execute(isWindows and ('mkdir "' .. dir .. '"') or ('mkdir -p "' .. dir .. '"'))
+end
+
+---@type fun(src: string, dest: string)
+local function mklink(src, dest)
+	if exists(dest) then return end
+	os.execute(
+		isWindows and ('mklink /D "' .. dest .. '" "' .. src .. '"')
+		or ("ln -sf '" .. src .. "' '" .. dest .. "'")
+	)
+end
+
+---@type fun(path: string): string?
+local function read(path)
+	local file = io.open(path, "r")
+	if not file then return end
+	local content = file:read("*a")
+	file:close()
+	return content
+end
+
+---@type fun(src: string, dest: string) # Recursive copy
+local function copy(src, dest)
+	if not exists(src) then return end
+	if not exists(dest) then mkdir(dest) end
+
+	os.execute(
+		isWindows and ('xcopy /E /I /Y "' .. src .. '" "' .. dest .. '"')
+		or ('cp -r "' .. src .. '" "' .. dest .. '"')
+	)
+end
+
+--- Tiny json decoder with basic support
+---@param b string
+local function jsonDecode(b)
+	local c = 0; local function d(e)
+		local f, g, m = b:find("^%s*", c)
+		if f then c = g + 1 end; f, g, m = b:find(e, c)
+		if f then
+			c = g + 1; return m or true
+		end
+	end; local h, i; local function j()
+		local n = d("^(%d+%.?%d*)"); if n then return tonumber(n) end
+
+		return d("^(true)") and true or d("^(false)") and false or
+			d("^\"([^\"]*)\"") or h() or i()
+	end; function h()
+		if not d("^{") then return end; local k = {}
+		while not d("^}") do
+			local l = d("^\"([^\"]*)\"")
+			d("^:")
+			k[l] = j()
+			d("^,")
+		end; return k
+	end; function i()
+		if not d("^%[") then return end; local k = {}
+		while not d("^%]") do
+			k[#k + 1] = j()
+			d("^,")
+		end; return k
+	end; return h()
+end
+
+local args = { ... }
+local function pop() return table.remove(args, 1) end
+local function peek() return args[1] end
+
+---@alias minilde.dep
+--- | { path: string }
+--- | { git: string }
+
+local tmpBase = os.getenv("TEMP") or os.getenv("TMPDIR") or "/tmp"
+local tmpLDEDir = join(tmpBase, "lde")
+
+local ffi = require("ffi")
+local setenv ---@type fun(name: string, value: string)
+if isWindows then
+	ffi.cdef [[int _putenv_s(const char *name, const char *value);]]
+	setenv = function(name, value) ffi.C._putenv_s(name, value) end
+else
+	ffi.cdef [[int setenv(const char *name, const char *value, int overwrite);]]
+	setenv = function(name, value) ffi.C.setenv(name, value, 1) end
+end
+
+---@param packagePath string
+---@param targetDir string
+local function buildPackage(packagePath, targetDir)
+	local config = jsonDecode(assert(read(join(packagePath, "lde.json")), "No lde.json at " .. packagePath)) --[[@as { name: string, dependencies: { [string]: minilde.dep } }]]
+
+	mkdir(targetDir)
+	if exists(join(packagePath, "build.lua")) then
+		copy(join(packagePath, "src"), join(targetDir, config.name))
+		setenv("LDE_OUTPUT_DIR", join(targetDir, config.name))
+		dofile(join(packagePath, "build.lua"))
+	else
+		mklink(join(packagePath, "src"), join(targetDir, config.name))
+	end
+
+	if not config.dependencies then return end
+
+	for name, dep in pairs(config.dependencies) do
+		---@format disable-next
+		if dep.path then
+			buildPackage(join(packagePath, dep.path), targetDir)
+		elseif dep.git then -- downloads to tmpLDEDir/<name> then build to target
+			local tarballUrl = dep.git .. "/archive/master.tar.gz"
+			os.execute("curl -s -L " .. tarballUrl .. " -o " .. join(tmpLDEDir, "tar", name))
+			mkdir(join(tmpLDEDir, "git", name))
+			os.execute("tar -xzf " .. join(tmpLDEDir, "tar", name) .. " --strip-components=1 -C " .. join(tmpLDEDir, "git", name))
+			buildPackage(join(tmpLDEDir, "git", name), targetDir)
+		else
+			error("Unknown dependency type: " .. name)
+		end
+	end
+
+	return config
+end
+
+local function build()
+	mkdir(tmpLDEDir)
+	mkdir(join(tmpLDEDir, "tar"))
+	mkdir(join(tmpLDEDir, "git"))
+
+	return buildPackage(cwd, join(cwd, "target"))
+end
+
+if #args == 0 then
+	print("Usage: minilde <command>")
+	print("Commands:")
+	print("  run: build and run the package")
+
+	return
+end
+
+if pop() == "run" then
+	local config = build()
+	dofile(join(cwd, "target", config.name, "init.lua"))
+end
