@@ -124,8 +124,10 @@ end
 local BAR_WIDTH = 20
 
 local function formatElapsed(seconds)
-	if seconds < 1 then
-		return string.format("%.2fms", seconds * 1000)
+	if seconds < 0.1 then
+		return string.format("%.0fms", seconds * 1000)
+	elseif seconds < 10 then
+		return string.format("%.2fs", seconds)
 	elseif seconds < 60 then
 		return string.format("%.1fs", seconds)
 	else
@@ -163,13 +165,15 @@ function ansi.progress(label)
 			update = function() end,
 			done = function(_, msg)
 				local elapsed = formatElapsed(now() - startTime)
-				io.write(colors.green .. "  ✓ " .. colors.reset .. (msg or label) .. " " .. colors.gray .. "(" .. elapsed .. ")" .. colors.reset .. "\n")
+				io.write(colors.green ..
+				"  ✓ " ..
+				colors.reset .. (msg or label) .. " " .. colors.gray .. "(" .. elapsed .. ")" .. colors.reset .. "\n")
 				io.flush()
 			end,
 			fail = function(_, msg)
 				io.write(colors.red .. "  ✗ " .. colors.reset .. (msg or label) .. "\n")
 				io.flush()
-			end,
+			end
 		}
 	end
 
@@ -203,13 +207,17 @@ function ansi.progress(label)
 		end,
 		done = function(_, msg)
 			local elapsed = formatElapsed(now() - startTime)
-			io.write(ESC .. "2K\r" .. colors.green .. "  ✓ " .. colors.reset .. (msg or label) .. " " .. colors.gray .. "(" .. elapsed .. ")" .. colors.reset .. "\n")
+			io.write(ESC ..
+			"2K\r" ..
+			colors.green ..
+			"  ✓ " ..
+			colors.reset .. (msg or label) .. " " .. colors.gray .. "(" .. elapsed .. ")" .. colors.reset .. "\n")
 			io.flush()
 		end,
 		fail = function(_, msg)
 			io.write(ESC .. "2K\r" .. colors.red .. "  ✗ " .. colors.reset .. (msg or label) .. "\n")
 			io.flush()
-		end,
+		end
 	}
 end
 
