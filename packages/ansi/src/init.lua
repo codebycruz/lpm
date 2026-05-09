@@ -1,16 +1,50 @@
 local ffi = require("ffi")
 
 local isTTY = true
+local now
 do
 	if ffi.os == "Windows" then
 		pcall(ffi.cdef, "int _isatty(int fd);")
 		local ok, result = pcall(function() return ffi.C._isatty(1) ~= 0 end)
 		if ok then isTTY = result end
+
+		pcall(ffi.cdef, [[
+			typedef union { struct { uint32_t lo, hi; }; uint64_t val; } LARGE_INTEGER;
+			int QueryPerformanceCounter(LARGE_INTEGER *lpPerformanceCount);
+			int QueryPerformanceFrequency(LARGE_INTEGER *lpFrequency);
+		]])
+		local freqOk, freq = pcall(function()
+			local f = ffi.new("LARGE_INTEGER")
+			ffi.C.QueryPerformanceFrequency(f)
+			return tonumber(f.val)
+		end)
+		if freqOk then
+			now = function()
+				local t = ffi.new("LARGE_INTEGER")
+				ffi.C.QueryPerformanceCounter(t)
+				return tonumber(t.val) / freq
+			end
+		end
 	else
 		pcall(ffi.cdef, "int isatty(int fd);")
 		local ok, result = pcall(function() return ffi.C.isatty(1) ~= 0 end)
 		if ok then isTTY = result end
+
+		pcall(ffi.cdef, "typedef struct { long tv_sec; long tv_nsec; } timespec;")
+		pcall(ffi.cdef, "int clock_gettime(int clk_id, timespec *tp);")
+		local clockOk = pcall(function()
+			local t = ffi.new("timespec")
+			ffi.C.clock_gettime(1, t)
+		end)
+		if clockOk then
+			now = function()
+				local t = ffi.new("timespec")
+				ffi.C.clock_gettime(1, t)
+				return tonumber(t.tv_sec) + tonumber(t.tv_nsec) * 1e-9
+			end
+		end
 	end
+	if not now then now = os.clock end
 end
 
 local ansi = {}
@@ -83,42 +117,7 @@ function ansi.clearLine()
 	io.flush()
 end
 
----@class ansi.Progress
----@field done fun(self: ansi.Progress, msg: string?)
----@field fail fun(self: ansi.Progress, msg: string?)
-
----@param label string
----@return ansi.Progress
-function ansi.progress(label)
-	if not isTTY then
-		return {
-			done = function(_, msg)
-				io.write(colors.green .. "  ✓ " .. colors.reset .. (msg or label) .. "\n")
-				io.flush()
-			end,
-			fail = function(_, msg)
-				io.write(colors.red .. "  ✗ " .. colors.reset .. (msg or label) .. "\n")
-				io.flush()
-			end,
-		}
-	end
-
-	io.write(colors.gray .. "  - " .. colors.reset .. label)
-	io.flush()
-
-	return {
-		done = function(_, msg)
-			io.write(ESC .. "2K\r" .. colors.green .. "  ✓ " .. colors.reset .. (msg or label) .. "\n")
-			io.flush()
-		end,
-		fail = function(_, msg)
-			io.write(ESC .. "2K\r" .. colors.red .. "  ✗ " .. colors.reset .. (msg or label) .. "\n")
-			io.flush()
-		end,
-	}
-end
-
--- ProgressBar: real-time progress bar with elapsed time.
+-- progress: animated spinner with elapsed time.
 -- update(ratio, info) — ratio is 0–1 or nil (indeterminate); info is optional status text.
 -- done(msg) / fail(msg) — finalize with checkmark or cross.
 
@@ -126,7 +125,7 @@ local BAR_WIDTH = 20
 
 local function formatElapsed(seconds)
 	if seconds < 1 then
-		return string.format("%.0fms", seconds * 1000)
+		return string.format("%.2fms", seconds * 1000)
 	elseif seconds < 60 then
 		return string.format("%.1fs", seconds)
 	else
@@ -149,21 +148,37 @@ local function renderBar(ratio)
 	end
 end
 
----@class ansi.ProgressBar
----@field update fun(self: ansi.ProgressBar, ratio: number?, info: string?)
----@field done fun(self: ansi.ProgressBar, msg: string?)
----@field fail fun(self: ansi.ProgressBar, msg: string?)
+---@class ansi.Progress
+---@field update fun(self: ansi.Progress, ratio: number?, info: string?)
+---@field done fun(self: ansi.Progress, msg: string?)
+---@field fail fun(self: ansi.Progress, msg: string?)
 
 ---@param label string
----@return ansi.ProgressBar
-function ansi.ProgressBar(label)
-	local startTime = os.clock()
+---@return ansi.Progress
+function ansi.progress(label)
+	local startTime = now()
+
+	if not isTTY then
+		return {
+			update = function() end,
+			done = function(_, msg)
+				local elapsed = formatElapsed(now() - startTime)
+				io.write(colors.green .. "  ✓ " .. colors.reset .. (msg or label) .. " " .. colors.gray .. "(" .. elapsed .. ")" .. colors.reset .. "\n")
+				io.flush()
+			end,
+			fail = function(_, msg)
+				io.write(colors.red .. "  ✗ " .. colors.reset .. (msg or label) .. "\n")
+				io.flush()
+			end,
+		}
+	end
+
 	local lastRendered = nil
 
 	local function render(ratio, info)
 		local barStr = renderBar(ratio)
 		local pct = ratio and string.format("%3d%%", math.floor(ratio * 100)) or nil
-		local elapsed = formatElapsed(os.clock() - startTime)
+		local elapsed = formatElapsed(now() - startTime)
 
 		if pct == lastRendered then return end
 		lastRendered = pct
@@ -187,7 +202,7 @@ function ansi.ProgressBar(label)
 			render(ratio, info)
 		end,
 		done = function(_, msg)
-			local elapsed = formatElapsed(os.clock() - startTime)
+			local elapsed = formatElapsed(now() - startTime)
 			io.write(ESC .. "2K\r" .. colors.green .. "  ✓ " .. colors.reset .. (msg or label) .. " " .. colors.gray .. "(" .. elapsed .. ")" .. colors.reset .. "\n")
 			io.flush()
 		end,

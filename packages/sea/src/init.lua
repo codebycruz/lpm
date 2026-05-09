@@ -105,7 +105,7 @@ local function getLuajitPath(compiler)
 	)
 	local tarballPath = path.join(cacheDir, tarballName)
 
-	local bar = ansi.ProgressBar("Downloading " .. tarballName)
+	local bar = ansi.progress("Downloading " .. tarballName)
 	local ok, dlErr = curl.download(downloadUrl, tarballPath, {
 		progress = function(dltotal, dlnow)
 			local ratio = dltotal > 0 and (dlnow / dltotal) or nil

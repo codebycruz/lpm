@@ -101,7 +101,7 @@ local function upgrade(args)
 	local tempNewLocation = path.join(binDir, binName .. ".new")
 	local tempOldLocation = path.join(binDir, binName .. ".old")
 
-	local bar = ansi.ProgressBar("Downloading " .. artifactName)
+	local bar = ansi.progress("Downloading " .. artifactName)
 
 	-- Download directly to file
 	local dlOk, dlErr = curl.download(downloadUrl, tempNewLocation, {

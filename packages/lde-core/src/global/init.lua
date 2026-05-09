@@ -69,7 +69,7 @@ end
 ---@param label string
 local function downloadTarball(url, commit, hostType, repoDir, label)
 	local tarballUrl = buildTarballUrl(url, commit, hostType)
-	local bar = lde.verbose and ansi.ProgressBar("Downloading " .. label) or nil
+	local bar = lde.verbose and ansi.progress("Downloading " .. label) or nil
 	fs.mkdir(repoDir)
 
 	local archiveFile = repoDir .. ".archive"
@@ -281,7 +281,7 @@ function global.getOrInitGitRepo(repoName, repoUrl, branch, commit)
 			downloadTarball(repoUrl, commit, hostType, repoDir, repoName)
 		else
 			local progress
-			local bar = lde.verbose and ansi.ProgressBar("Cloning " .. repoName) or nil
+			local bar = lde.verbose and ansi.progress("Cloning " .. repoName) or nil
 			if bar then
 				local totalObjs = 0
 				progress = function(stats)
@@ -316,7 +316,7 @@ function global.getOrInitArchive(url)
 	local archiveDir = path.join(global.getTarCacheDir(), key)
 	if not fs.exists(archiveDir) then
 		local filename = url:match("([^/]+)$") or url
-		local bar = lde.verbose and ansi.ProgressBar("Downloading " .. filename) or nil
+		local bar = lde.verbose and ansi.progress("Downloading " .. filename) or nil
 		fs.mkdir(archiveDir)
 
 		local archiveFile = archiveDir .. ".archive"
@@ -488,7 +488,7 @@ function global.ensureMingw()
 	local code = process.exec("gcc", { "--version" })
 	if code == 0 then return end
 
-	local p1 = lde.verbose and ansi.ProgressBar("Downloading 7zr.exe") or nil
+	local p1 = lde.verbose and ansi.progress("Downloading 7zr.exe") or nil
 
 	local tmpDir = path.join(global.getDir(), "mingw-tmp")
 	fs.mkdir(tmpDir)
@@ -516,7 +516,7 @@ function global.ensureMingw()
 	end
 	if p1 then p1:done("Downloaded 7zr.exe") end
 
-	local p2 = lde.verbose and ansi.ProgressBar("Downloading MinGW toolchain") or nil
+	local p2 = lde.verbose and ansi.progress("Downloading MinGW toolchain") or nil
 	local dlOpts2
 	if p2 then
 		dlOpts2 = {
