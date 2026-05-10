@@ -29,4 +29,14 @@ lde compile
 
 This will bundle into a single lua file and then compile an executable with the lde runtime built-in to execute it.
 
+### Shared library output
+
+You can also compile your project to a shared library (`.so` / `.dll` / `.dylib`) with `--shared`:
+
+```sh
+lde compile --shared
+```
+
+This initializes LuaJIT on load and can expose C-callable functions via `---@export` annotations. See [Compiling to an Executable](/docs/bundler/guides/compiling#shared-library-output) for details.
+
 The lde executable itself is in fact just created with `lde compile`!

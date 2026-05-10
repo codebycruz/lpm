@@ -105,6 +105,37 @@ This outputs `packages/lde/lde` (or `lde.exe` on Windows). To install it, copy i
 
 **Important:** Tests in `packages/lde/tests/` run the actual `lde` CLI binary via `env.execPath()`. If those tests are failing after source changes, you need to recompile and replace the binary first.
 
+## Shared Library Compilation (`--shared`)
+
+`lde compile --shared` compiles a package into a shared library (.so / .dll / .dylib) instead of an executable. It uses `sea.compileShared()`.
+
+### Export Annotations
+
+Functions can be exported as C symbols via `---@export` annotations in the entrypoint file:
+
+```lua
+---@export add fun(a: uint32_t, b: uint32_t): uint32_t
+local function add(a, b)
+    return a + b
+end
+```
+
+The parser (`lde-core.package.export`) finds these annotations, determines the associated function name, finds the function's `end` keyword (via depth counting), and injects `_G.C_EXPORTS_CB_<name> = ffi.cast("<sig>", func); _G.C_EXPORTS_<name> = ffi.cast("void *", ...)` right after it.
+
+### C Code Generation
+
+`export.generateSharedLibraryC()` generates a complete C source with:
+- `lde_init_lua()` — initializes LuaJIT, extracts embedded shared libs, runs bundled code
+- Per-export: a lazy-init wrapper that caches the callback pointer from `_G.C_EXPORTS_<name>` via `lua_topointer` on first call, then dispatches directly through the cached function pointer
+- `DllMain` (Windows) or `__attribute__((constructor))` (Unix) that calls `lde_init_lua()` on load
+
+### Key Files
+| File | Purpose |
+|------|---------|
+| `lde-core/src/package/export.lua` | Parse `---@export`, inject Lua code, generate C wrappers |
+| `sea/src/init.lua` | `compileShared(cCode, compiler)` — compiles C with `-shared -fPIC` |
+| `lde-core/src/package/compile.lua` | `compilePackageShared()` — orchestrates the full shared compile flow |
+
 ## Runtime Isolation (`lde-core.runtime`)
 
 `lde run` / `lde test` execute scripts in an isolated environment:
@@ -126,7 +157,7 @@ This means multiple `lde run` calls in the same process don't pollute each other
 | `ansi`     | Colored terminal output (`ansi.printf("{red}msg")`)                      |
 | `fs`       | Filesystem ops (`read`, `write`, `mkdir`, `mklink`, `scan`, `stat`)      |
 | `process`  | Process execution (`process.exec(bin, args, opts)`)                      |
-| `sea`      | Compiles a bundled Lua string + native libs into a self-contained binary |
+| `sea`      | Compiles a bundled Lua string + native libs into a self-contained binary or shared library |
 | `env`      | Env vars, cwd, `env.execPath()`                                          |
 
 ## Monorepo Conventions

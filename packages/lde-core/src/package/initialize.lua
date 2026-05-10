@@ -137,11 +137,42 @@ Assertions take no message argument — the test name serves as the description.
 ## Compiling
 
 ```sh
-lde compile     # compile to a single native executable
-lde bundle      # bundle into a single .lua file (no embedded runtime)
+lde compile             # compile to a single native executable
+lde compile --shared    # compile to a shared library (.so / .dll / .dylib)
+lde bundle              # bundle into a single .lua file (no embedded runtime)
 ```
 
 `lde compile` produces a self-contained binary that bundles your code, all dependencies, and the LuaJIT runtime.
+
+### Shared Libraries and FFI Exports
+
+`lde compile --shared` produces a shared library (.so, .dll, or .dylib) that initializes LuaJIT on load and exposes C-callable functions via `---@export` annotations.
+
+Annotate functions in your entrypoint (`src/init.lua`) to export them as C symbols:
+
+```lua
+---@export add fun(a: uint32_t, b: uint32_t): uint32_t
+local function add(a, b)
+    return a + b
+end
+
+-- Or let the name be derived from the function:
+---@export fun(message: const char *): void
+local function log(message)
+    print(message)
+end
+```
+
+Supported C types include: `int`, `uint32_t`, `float`, `double`, `bool`, `char *`, `void *`, `size_t`, and more.
+
+At compile time, lde injects code that registers each exported function as a C callback via `ffi.cast`. At runtime, when the shared library is loaded:
+
+1. LuaJIT initializes and runs your bundled code
+2. Each exported function gets a cached C function pointer
+3. On first call, the pointer is retrieved from `_G` and cached
+4. Subsequent calls go directly through the cached pointer with zero Lua overhead
+
+The exported symbols can be called from any language that supports C FFI (C, Rust, Python ctypes, etc.).
 
 ## Build Scripts (`build.lua`)
 
