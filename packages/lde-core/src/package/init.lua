@@ -211,7 +211,9 @@ function Package:updateDevDependencies()
 end
 
 Package.bundle = require("lde-core.package.bundle")
-Package.compile = require("lde-core.package.compile")
+local compileMod = require("lde-core.package.compile")
+Package.compile = compileMod.compile
+Package.compileShared = compileMod.compileShared
 local run = require("lde-core.package.run")
 Package.runFile = run.runFile
 Package.runString = run.runString

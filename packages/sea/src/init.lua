@@ -162,24 +162,16 @@ local function safeIdent(name)
 	return string.gsub(name, "[^%w]", "_")
 end
 
----@param main string # name used as the chunk label
----@param source string # bundled lua source (output of bundlePackage)
----@param sharedLibs? { name: string, content: string }[]
----@param compiler? string # path to compiler binary; defaults to SEA_CC env var or "gcc"
----@return string
-function sea.compile(main, source, sharedLibs, compiler)
-	local outPath = path.join(env.tmpdir(), "sea.out")
+---Build shared library extraction data (reusable by both compile and compileShared).
+---@param sharedLibs { name: string, content: string }[]
+---@return table data  # with keys: libDeclsStr, libStartupStr, libPreloadsStr, preloadsC, ffiShim, tmpnameShim, hasLibs
+function sea.buildSharedLibData(sharedLibs)
 	sharedLibs = sharedLibs or {}
 
-	local filePreloads
-
-	-- For each shared library, emit a uint8_t array and the write+preload logic.
-	-- The path is deterministic: /tmp/lde-lib-<name>-<hash>.so so that
-	-- the file is only written once across runs with identical content.
-	local libDecls = {}    -- top-level C declarations (arrays + path strings)
-	local libStartup = {}  -- code that runs before lua_State is created
-	local libPreloads = {} -- package.preload registrations
-	local ffiShimEntries = {} -- name -> extracted path, for ffi.load shim
+	local libDecls = {}
+	local libStartup = {}
+	local libPreloads = {}
+	local ffiShimEntries = {}
 
 	for _, lib in ipairs(sharedLibs) do
 		local id                            = safeIdent(lib.name)
@@ -189,9 +181,8 @@ function sea.compile(main, source, sharedLibs, compiler)
 			or "so"
 		local libFileName                   = string.format("lde-lib-%s-%s.%s", lib.name, hash, ext)
 		ffiShimEntries[#ffiShimEntries + 1] = string.format('["%s"]="%s"', lib.name, libFileName)
-		-- alias as libcurl, libcurl.so, and curl
-		local leaf                          = lib.name:match("[^.]+$")  -- e.g. "libcurl"
-		local bare                          = leaf:match("^lib(.+)$") or leaf -- e.g. "curl"
+		local leaf                          = lib.name:match("[^.]+$")
+		local bare                          = leaf:match("^lib(.+)$") or leaf
 		ffiShimEntries[#ffiShimEntries + 1] = string.format('["%s"]="%s"', leaf, libFileName)
 		ffiShimEntries[#ffiShimEntries + 1] = string.format('["%s.%s"]="%s"', leaf, ext, libFileName)
 		ffiShimEntries[#ffiShimEntries + 1] = string.format('["%s"]="%s"', bare, libFileName)
@@ -231,9 +222,9 @@ function sea.compile(main, source, sharedLibs, compiler)
 	lua_setfield(L, -2, "%s");]], id, luaopenSym, string.gsub(lib.name, ".", CEscapes))
 	end
 
-	local hasLibs        = #sharedLibs > 0
-	local libDeclsStr    = table.concat(libDecls, "\n")
-	local libTmpDirInit  = not hasLibs and "" or [[
+	local hasLibs = #sharedLibs > 0
+	local libDeclsStr = table.concat(libDecls, "\n")
+	local libTmpDirInit = not hasLibs and "" or [[
 char lde_tmpdir[4096];
 {
 #ifdef _WIN32
@@ -251,10 +242,10 @@ char lde_tmpdir[4096];
 	}
 }
 ]]
-	local libStartupStr  = libTmpDirInit .. table.concat(libStartup, "\n")
+	local libStartupStr = libTmpDirInit .. table.concat(libStartup, "\n")
 	local libPreloadsStr = table.concat(libPreloads, "\n")
 
-	local tmpnameShim    = util.dedent([[
+	local tmpnameShim = util.dedent([[
 		do
 			local _ctr = 0
 			local _tmpdir = os.getenv("TMPDIR") or os.getenv("TEMP") or os.getenv("TMP") or "/tmp"
@@ -266,8 +257,9 @@ char lde_tmpdir[4096];
 		end
 	]])
 
+	local ffiShim = ""
 	if #ffiShimEntries > 0 then
-		source = util.dedent(string.format([[
+		ffiShim = util.dedent(string.format([[
 			do
 				local _ffi = require("ffi")
 				local _tmpdir
@@ -286,25 +278,10 @@ char lde_tmpdir[4096];
 					return _orig(remap or name, ...)
 				end
 			end
-		]], table.concat(ffiShimEntries, ", "))) .. "\n" .. source
+		]], table.concat(ffiShimEntries, ", ")))
 	end
 
-	source              = tmpnameShim .. "\n" .. source
-
-	filePreloads        = {
-		('luaL_loadbuffer(L, "%s", %d, "%s"); lua_setfield(L, -2, "%s");')
-			:format(
-				source:gsub(".", CEscapes),
-				#source,
-				"@" .. main:gsub(".", CEscapes),
-				main:gsub(".", CEscapes)
-			)
-	}
-
-	local stdintInclude = (hasLibs and "#include <stdint.h>\n#include <string.h>\n#include <stdlib.h>\n" or "") .. "#ifdef __ANDROID__\n#include <unistd.h>\n#endif\n"
-
-	-- lde_loadlib_loader: a C closure that calls package.loadlib(upvalue1, "*").
-	-- Only emitted when there are shared libs to avoid dead-code warnings.
+	-- C helper: lde_loadlib_loader
 	local loadlibHelper = ""
 	if hasLibs then
 		loadlibHelper = [[
@@ -328,14 +305,56 @@ static int lde_loadlib_loader(lua_State* L) {
 ]]
 	end
 
+	return {
+		libDeclsStr = libDeclsStr,
+		libStartupStr = libStartupStr,
+		libPreloadsStr = libPreloadsStr,
+		preloadsC = libPreloadsStr, -- Lua C API preload calls
+		ffiShim = ffiShim,    -- Lua ffi.load shim
+		tmpnameShim = tmpnameShim, -- Lua os.tmpname shim
+		hasLibs = hasLibs,
+		loadlibHelper = loadlibHelper
+	}
+end
+
+---@param main string # name used as the chunk label
+---@param source string # bundled lua source (output of bundlePackage)
+---@param sharedLibs? { name: string, content: string }[]
+---@param compiler? string # path to compiler binary; defaults to SEA_CC env var or "gcc"
+---@return string
+function sea.compile(main, source, sharedLibs, compiler)
+	local outPath = path.join(env.tmpdir(), "sea.out")
+	sharedLibs = sharedLibs or {}
+
+	local data = sea.buildSharedLibData(sharedLibs)
+
+	-- Apply ffi shim and tmpname shim to source
+	if data.ffiShim ~= "" then
+		source = data.ffiShim .. "\n" .. source
+	end
+	source = data.tmpnameShim .. "\n" .. source
+
+	local filePreloads = {
+		('luaL_loadbuffer(L, "%s", %d, "%s"); lua_setfield(L, -2, "%s");')
+			:format(
+				source:gsub(".", CEscapes),
+				#source,
+				"@" .. main:gsub(".", CEscapes),
+				main:gsub(".", CEscapes)
+			)
+	}
+
+	local stdintInclude = (data.hasLibs and "#include <stdint.h>\n#include <string.h>\n#include <stdlib.h>\n" or "") ..
+		"#ifdef __ANDROID__\n#include <unistd.h>\n#endif\n"
+
 	local code = stdintInclude .. [[
 #include <stdio.h>
 #include "lauxlib.h"
 #include "lualib.h"
 
-]] .. libDeclsStr .. [[
+]] .. data.libDeclsStr .. [[
 
-]] .. loadlibHelper .. [[
+]] .. data.loadlibHelper .. [[
 
 int traceback(lua_State* L) {
 	const char* msg = lua_tostring(L, 1);
@@ -348,7 +367,7 @@ int traceback(lua_State* L) {
 }
 
 int main(int argc, char** argv) {
-]] .. libStartupStr .. [[
+]] .. data.libStartupStr .. [[
 
 	lua_State* L = luaL_newstate();
 	luaL_openlibs(L);
@@ -358,7 +377,7 @@ int main(int argc, char** argv) {
 
 	]] .. table.concat(filePreloads, "\n\t") .. [[
 
-	]] .. libPreloadsStr .. [[
+	]] .. data.libPreloadsStr .. [[
 
 	lua_getfield(L, -1, "]] .. main:gsub(".", CEscapes) .. [[");
 
@@ -419,6 +438,53 @@ int main(int argc, char** argv) {
 	if code ~= 0 or string.find(stderr or "", "is not recognized as an internal", 1, true) then
 		local err = (stderr and stderr ~= "" and stderr) or (stdout and stdout ~= "" and stdout) or ""
 		error("Compilation failed: " .. err)
+	end
+
+	return outPath
+end
+
+---Compile C source code into a shared library (.so / .dll / .dylib).
+---@param cCode string # Complete C source code for the shared library
+---@param compiler? string # path to compiler binary; defaults to SEA_CC env var or "gcc"
+---@return string outPath
+function sea.compileShared(cCode, compiler)
+	compiler = compiler or env.var("SEA_CC") or "gcc"
+
+	local ext = jit.os == "Windows" and "dll"
+		or jit.os == "OSX" and "dylib"
+		or "so"
+	local outPath = path.join(env.tmpdir(), "sea-shared." .. ext)
+
+	local ljPath = getLuajitPath()
+	local includePath = path.join(ljPath, "include")
+	local libPath = path.join(ljPath, "lib")
+
+	local args = {
+		"-I" .. includePath,
+		"-fPIC",
+		"-shared",
+		"-xc", "-",
+		"-o", outPath,
+		"-xnone", path.join(libPath, "libluajit.a")
+	}
+
+	if jit.os == "Linux" then
+		args[#args + 1] = "-lm"
+		args[#args + 1] = "-ldl"
+		args[#args + 1] = "-Wl,--export-dynamic"
+	elseif jit.os == "OSX" then
+		args[#args + 1] = "-Wl,-export_dynamic"
+	end
+
+	local execEnv
+	if jit.os == "Windows" and compiler ~= "gcc" then
+		execEnv = { PATH = path.dirname(compiler) .. ";" .. (env.var("PATH") or "") }
+	end
+
+	local code, stdout, stderr = process.exec(compiler, args, { stdin = cCode, env = execEnv })
+	if code ~= 0 or string.find(stderr or "", "is not recognized as an internal", 1, true) then
+		local err = (stderr and stderr ~= "" and stderr) or (stdout and stdout ~= "" and stdout) or ""
+		error("Shared library compilation failed: " .. err)
 	end
 
 	return outPath
