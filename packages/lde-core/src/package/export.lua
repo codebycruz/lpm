@@ -178,18 +178,18 @@ local function findFunctionEnd(source, funcStart)
 	local pos = funcStart
 
 	while pos <= #source do
-		-- Find next keyword
-		local nextWord, wordEnd = source:match("()(function)([^%w]|$)", pos)
+		-- Find next keyword. Use ()KEYWORD() to capture start and end positions.
+		local nextWord, wordEnd = source:match("()function()", pos)
 		if not nextWord then nextWord, wordEnd = #source + 1, #source + 1 end
-		local nextThen, thenEnd = source:match("()(then)([^%w]|$)", pos)
+		local nextThen, thenEnd = source:match("()then()", pos)
 		if not nextThen then nextThen, thenEnd = #source + 1, #source + 1 end
-		local nextDo, doEnd = source:match("()(do)([^%w]|$)", pos)
+		local nextDo, doEnd = source:match("()do()", pos)
 		if not nextDo then nextDo, doEnd = #source + 1, #source + 1 end
-		local nextRepeat, repeatEnd = source:match("()(repeat)([^%w]|$)", pos)
+		local nextRepeat, repeatEnd = source:match("()repeat()", pos)
 		if not nextRepeat then nextRepeat, repeatEnd = #source + 1, #source + 1 end
-		local nextEnd, endEnd = source:match("()(end)([^%w]|$)", pos)
+		local nextEnd, endEnd = source:match("()end()", pos)
 		if not nextEnd then nextEnd, endEnd = #source + 1, #source + 1 end
-		local nextUntil, untilEnd = source:match("()(until)([^%w]|$)", pos)
+		local nextUntil, untilEnd = source:match("()until()", pos)
 		if not nextUntil then nextUntil, untilEnd = #source + 1, #source + 1 end
 
 		local minPos = math.min(nextWord, nextThen, nextDo, nextRepeat, nextEnd, nextUntil)
@@ -287,15 +287,10 @@ local function processSourceWithExports(entrypointSource)
 
 		local funcEnd = findFunctionEnd(entrypointSource, funcStart)
 
-		-- Build injection code: safe variant that stores both the callback and a void* reference
-		-- The callback cdata is stored to prevent GC; the void* is what C reads.
-		-- Use require("ffi") since ffi may not be a global in the bundled environment.
-		local cbKey = "C_EXPORTS_CB_" .. exp.name
-		local ptrKey = "C_EXPORTS_" .. exp.name
-		local injection = string.format(
-			' do local _f=require("ffi"); _G.%s = _f.cast("%s", %s); _G.%s = _f.cast("void *", _G.%s) end',
-			cbKey, exp.ffiSignature, funcName, ptrKey, cbKey
-		)
+		-- Build injection code: store the raw function in a _G slot.
+		-- The C side calls it via lua_getglobal + lua_call.
+		local key = "C_EXPORTS_" .. exp.name
+		local injection = string.format(' _G.%s = %s', key, funcName)
 
 		injections[funcEnd] = (injections[funcEnd] or "") .. injection
 		exports[#exports + 1] = exp
@@ -364,81 +359,45 @@ local function generateCExportWrapper(exp)
 	local params = exp.params
 
 	-- Build type strings
-	local paramTypes = {}
-	local paramDecls = {} -- type + name pairs: "uint32_t a"
+	local paramDecls = {}
 	for _, p in ipairs(params) do
-		paramTypes[#paramTypes + 1] = p.type
 		paramDecls[#paramDecls + 1] = p.type .. " " .. p.name
 	end
-	local paramTypeStr = table.concat(paramTypes, ", ")
 	local paramDeclStr = table.concat(paramDecls, ", ")
 
-	-- Typedef for function pointer
-	local typedef = "typedef " .. retType .. " (*" .. name .. "_func)(" .. paramTypeStr .. ");"
-
-	-- Cached function pointer initialized to the init function
-	local initName = name .. "_ldein"
-
-	-- Forward declaration of the init function (needed before cached pointer init)
-	local forwardDecl = "static " .. retType .. " " .. initName .. "(" .. paramDeclStr .. ");"
-
-	-- Init function body: gets the function pointer from Lua, caches it, and calls through
-	local initBody = {}
-	initBody[#initBody + 1] = "    lua_State *L = lde_get_state();"
-	initBody[#initBody + 1] = '    lua_getglobal(L, "C_EXPORTS_' .. name .. '");'
-	initBody[#initBody + 1] = "    if (lua_isnil(L, -1)) {"
-	initBody[#initBody + 1] = '        luaL_error(L, "lde-shared: export not found: ' .. name .. '");'
-	initBody[#initBody + 1] = "    }"
-	initBody[#initBody + 1] = "    cached_" .. name .. " = (" .. name .. "_func)lua_topointer(L, -1);"
-	initBody[#initBody + 1] = "    lua_pop(L, 1);"
+	-- Build the function body: lua_getglobal + push args + lua_call + get return
+	local body = {}
+	body[#body + 1] = "    lua_State *L = lde_get_state();"
+	body[#body + 1] = '    lua_getglobal(L, "C_EXPORTS_' .. name .. '");'
 	-- Push args
 	for _, p in ipairs(params) do
 		local push = genPushArg(p.type, p.name)
-		if push:match("^/") then
-			initBody[#initBody + 1] = "    " .. push
-		elseif push ~= "" then
-			initBody[#initBody + 1] = "    " .. push
+		if push ~= "" and not push:match("^/") then
+			body[#body + 1] = "    " .. push
+		elseif push:match("^/") then
+			body[#body + 1] = "    " .. push
 		end
 	end
-	-- Call through cached pointer
+	-- Call
 	local nret = isVoidType(retType) and "0" or "1"
-	initBody[#initBody + 1] = "    if (lua_pcall(L, " .. #params .. ", " .. nret .. ", 0) != LUA_OK) {"
-	initBody[#initBody + 1] = '        const char *err = lua_tostring(L, -1);'
-	initBody[#initBody + 1] = '        luaL_error(L, "lde-shared: call to ' ..
-		name .. ' failed: %s", err ? err : "unknown");'
-	initBody[#initBody + 1] = "    }"
+	body[#body + 1] = "    if (lua_pcall(L, " .. #params .. ", " .. nret .. ", 0) != LUA_OK) {"
+	body[#body + 1] = '        luaL_error(L, "' .. name .. ': %s", lua_tostring(L, -1));'
+	body[#body + 1] = "    }"
 	-- Get return
 	local retExpr = genGetReturn(retType)
 	if retExpr ~= "" then
-		initBody[#initBody + 1] = "    " .. retExpr
-		initBody[#initBody + 1] = "    lua_pop(L, 1);"
-		initBody[#initBody + 1] = "    return _ret;"
-	end
-
-	-- The exported function: just calls through cached pointer
-	local callArgs = {}
-	for _, p in ipairs(params) do
-		callArgs[#callArgs + 1] = p.name
-	end
-	local callExpr
-	if isVoidType(retType) then
-		callExpr = "    cached_" .. name .. "(" .. table.concat(callArgs, ", ") .. ");"
+		body[#body + 1] = "    " .. retExpr
+		body[#body + 1] = "    lua_pop(L, 1);"
+		body[#body + 1] = "    return _ret;"
 	else
-		callExpr = "    return cached_" .. name .. "(" .. table.concat(callArgs, ", ") .. ");"
+		-- void return: nothing left on stack after lua_pcall(L, n, 0, 0)
 	end
 
-	-- Assemble the full code
 	local parts = {}
-	parts[#parts + 1] = typedef
-	parts[#parts + 1] = forwardDecl
-	parts[#parts + 1] = "static " .. name .. "_func cached_" .. name .. " = &" .. initName .. ";"
-	parts[#parts + 1] = "static " .. retType .. " " .. initName .. "(" .. paramDeclStr .. ") {"
-	for _, line in ipairs(initBody) do
+	parts[#parts + 1] = "EXPORT " .. retType .. " " .. name .. "(" .. paramDeclStr .. ") {"
+	for _, line in ipairs(body) do
 		parts[#parts + 1] = line
 	end
-	parts[#parts + 1] = "}"
-	parts[#parts + 1] = "EXPORT " .. retType .. " " .. name .. "(" .. paramDeclStr .. ") {"
-	parts[#parts + 1] = callExpr
 	parts[#parts + 1] = "}"
 
 	return table.concat(parts, "\n")

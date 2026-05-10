@@ -111,6 +111,10 @@ local function compilePackageShared(package)
 	end
 	source = libData.tmpnameShim .. "\n" .. source
 
+	-- Debug: dump bundled Lua source and generated C to stderr
+	io.stderr:write("-- bundled Lua source:\n" .. source .. "\n-- end Lua source\n")
+	io.stderr:write("-- exports: " .. #exports .. "\n")
+
 	-- Generate the C code for the shared library
 	local cCode = exportMod.generateSharedLibraryC(
 		exports,
@@ -122,6 +126,9 @@ local function compilePackageShared(package)
 		"", -- ffiShim already applied to source
 		"" -- tmpnameShim already applied to source
 	)
+
+	-- Debug: dump generated C source
+	io.stderr:write("-- generated C source:\n" .. cCode .. "\n-- end C source\n")
 
 	-- Compile the shared library
 	local outPath = sea.compileShared(cCode, lde.global.getGCCBin())
