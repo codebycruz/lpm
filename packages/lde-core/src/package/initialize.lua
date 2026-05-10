@@ -3,11 +3,208 @@ local fs = require("fs")
 local util = require("util")
 local ansi = require("ansi")
 local git2 = require("git2-sys")
+local process = require("process")
 
 local Package = require("lde-core.package")
 
 local function hasGit()
 	return true
+end
+
+---@type string
+local AGENT_TEMPLATE = util.dedent([[
+# Building Projects with lde
+
+`lde` is a package manager and toolkit for Lua (LuaJIT). It manages project-local dependencies, runs Lua programs, runs tests, and compiles projects into single executables.
+
+## Quick Reference
+
+```sh
+lde run                     # build + install deps + run entry point (src/init.lua)
+lde test                    # run all **/*.test.lua files
+lde compile                 # compile to a single native executable
+lde bundle                  # bundle into a single .lua file
+lde -e "<code>"             # run a one-liner with project deps available
+lde ./path/to/file.lua      # run an arbitrary file with project deps available
+
+lde add <alias> --path ../pkg       # add a local path dependency
+lde add <alias> --git <url>         # add a git dependency (commit auto-pinned)
+lde add <alias>@<version>           # add a registry dependency
+lde remove <alias>                  # remove a dependency
+```
+
+**Always use `lde add`/`lde remove`** — never edit `lde.json` by hand or the lockfile goes out of sync.
+
+Dependency installation happens automatically on `lde run`, `lde test`, and `lde compile`. If an external runtime (e.g. LOVE2D) runs your code, use `lde sync` to populate `target/`.
+
+## Project Structure
+
+```
+├── lde.json          # package manifest — dependencies, scripts, metadata
+├── lde.lock          # lockfile — commit this
+├── src/
+│   └── init.lua      # default entry point
+├── tests/            # test files (**/*.test.lua)
+├── build.lua         # (optional) custom build script
+└── target/           # build output — NEVER commit this
+```
+
+## The Manifest (`lde.json`)
+
+```jsonc
+{
+  "name": "my-package",
+  "version": "0.1.0",
+  "bin": "src/main.lua",          // optional entry point override (default: src/init.lua)
+  "engine": "lde",                // "lde" (default), "lua", or "luajit"
+  "scripts": {
+    "build": "echo building..."   // runnable via `lde run build`
+  },
+  "dependencies": {
+    "json":    { "path": "../json" },                           // local path
+    "hood":    { "git": "https://github.com/user/hood" },       // git
+    "semver":  { "version": "1.0.0" },                         // registry
+    "mylib":   { "luarocks": "luafilesystem" },                // LuaRocks
+    "winapi":  { "git": "...", "optional": true }              // optional (feature-gated)
+  },
+  "devDependencies": {
+    "lde-test": { "version": "1.0.0" }
+  },
+  "features": {
+    "windows": ["winapi"]
+  }
+}
+```
+
+Platform features (`windows`, `linux`, `macos`, `android`) are auto-detected. Optional deps listed under the current platform are installed automatically.
+
+`lde-test` and `lde-build` are included with the lde runtime — adding them to `devDependencies` is only needed for LSP typings.
+
+## How `require()` Resolution Works
+
+`lde run` and `lde test` set `package.path` / `package.cpath` to point at `target/`:
+
+```
+target/?.lua
+target/?/init.lua
+target/?.so       (or .dll / .dylib)
+```
+
+Dependencies are installed as symlinks at `target/<alias>`. **The require name is the key in `dependencies`, not the package's `name` field.** This means you can alias packages by choosing a different key.
+
+During `lde test`, the project's `tests/` directory is exposed as `target/tests`, so test files can share helpers:
+
+```lua
+-- tests/foo.test.lua
+local helper = require("tests.lib.helper")  -- resolves to tests/lib/helper.lua
+```
+
+## Testing
+
+```sh
+lde test                    # run all **/*.test.lua in the package
+lde test -- path/to/test    # run a specific test file
+```
+
+Test files must match `**/*.test.lua`:
+
+```lua
+local test = require("lde-test")
+
+test.it("describes the test", function()
+  test.equal(actual, expected)
+  test.notEqual(a, b)
+  test.truthy(x)
+  test.falsy(x)
+  test.deepEqual(t1, t2)         -- recursive deep equality (including metatables)
+  test.match(actual, expected)    -- subset match (like jest toMatchObject)
+  test.includes(haystack, needle) -- string contains substring
+  test.greater(a, b)              -- a > b
+  test.less(a, b)                 -- a < b
+  test.greaterEqual(a, b)         -- a >= b
+  test.lessEqual(a, b)            -- a <= b
+  test.count(tbl)                 -- returns number of keys (via pairs)
+end)
+
+test.skip("pending test", function() ... end)
+test.skipIf(condition)("conditionally skipped", function() ... end)
+test.afterEach(function() ... end)  -- runs after each test
+test.afterAll(function() ... end)   -- runs once after all tests
+```
+
+Assertions take no message argument — the test name serves as the description.
+
+## Compiling
+
+```sh
+lde compile     # compile to a single native executable
+lde bundle      # bundle into a single .lua file (no embedded runtime)
+```
+
+`lde compile` produces a self-contained binary that bundles your code, all dependencies, and the LuaJIT runtime.
+
+## Build Scripts (`build.lua`)
+
+If a package has a `build.lua` at its root, lde executes it instead of symlinking `src/`. **Always use the `lde-build` API** — it handles cross-platform behavior and provides fetch/extract without requiring any tools beyond lde on the user's machine.
+
+```lua
+local build = require("lde-build")
+
+-- Network (no curl/wget needed)
+local body = build:fetch(url)           -- HTTP GET, returns body string
+
+-- File I/O (all paths relative to output dir at target/<name>)
+build:write("filename.lua", content)    -- write file
+local content = build:read("f")         -- read file
+build:copy("src", "dst")                -- copy file or directory
+build:move("src", "dst")                -- move/rename
+build:delete("path")                    -- delete file or directory
+build:exists("path")                    -- returns bool
+build:extract("archive.zip", "dest/")   -- extract zip/tar (no tar/unzip needed)
+
+-- Shell
+build:sh("gcc -shared -o lib.o src.c") -- run command, asserts exit code 0
+```
+
+The env var `LDE_OUTPUT_DIR` is also set to the output path.
+
+## Useful Built-in Libraries
+
+| Package | Purpose |
+|---------|---------|
+| `fs` | Filesystem operations (read, write, copy, move, mkdir, scan, stat) |
+| `path` | Path manipulation (join, basename, dirname, resolve, relative) |
+| `env` | Environment (get/set vars, cwd, executable path) |
+| `process` | Subprocess execution |
+| `json` | JSON encode/decode |
+| `ansi` | Colored terminal output |
+| `clap` | CLI argument parsing |
+
+Add them with: `lde add <name> --git https://github.com/lde-org/<name>`
+
+## Lockfile
+
+`lde.lock` pins exact versions, commits, and hashes. **Always commit it.** `target/` is build output — **never commit it.**
+
+## Troubleshooting
+
+| Problem | Solution |
+|---------|----------|
+| `module 'x' not found` | Run `lde run` — it auto-installs deps. Verify the require name matches the key in `lde.json` `dependencies`. |
+| Stale dependencies / changes not taking effect | Delete `target/` and `lde.lock`, then re-run. |
+| Global cache may be corrupted | Delete `~/.lde/git` and/or `~/.lde/tar` to clear cached downloads. |
+| Build script failing | `build:sh()` asserts exit code 0 — wrap in `pcall` if failures are expected. |
+| Tests not found | Test files must match `**/*.test.lua`. They must be in the `tests/` directory. |
+]])
+
+--- Check whether a binary exists on PATH
+---@param name string
+local function hasBinary(name)
+	if process.platform == "win32" then
+		return process.exec("where", { name }) == 0
+	else
+		return process.exec("command", { "-v", name }) == 0
+	end
 end
 
 ---@param dir string
@@ -22,6 +219,7 @@ local function isInsideGitRepo(dir)
 		if parent == current then break end
 		current = parent
 	end
+
 	return false
 end
 
@@ -103,6 +301,13 @@ local function initPackage(dir)
 	if not fs.exists(src) then
 		fs.mkdir(src)
 		fs.write(path.join(src, "init.lua"), "print('Hello, world!')")
+	end
+
+	-- Write agent instructions if a known coding agent is present
+	if hasBinary("claude") then
+		fs.write(path.join(dir, "CLAUDE.md"), AGENT_TEMPLATE)
+	elseif hasBinary("opencode") then
+		fs.write(path.join(dir, "AGENTS.md"), AGENT_TEMPLATE)
 	end
 
 	return package
