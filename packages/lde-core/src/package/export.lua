@@ -111,7 +111,7 @@ end
 ---@return lde.Export?
 ---@return string? error
 local function parseExportLine(line)
-	local name, paramsStr, returnType = line:match("^%-%-%-@export%s+(%w+)%s+fun%((.*)%)%s*:%s*(.+)$")
+	local name, paramsStr, returnType = line:match("^%-%-%-@export%s+([%w_]+)%s+fun%((.*)%)%s*:%s*(.+)$")
 	if not name then
 		name, paramsStr, returnType = line:match("^%-%-%-@export%s+fun%((.*)%)%s*:%s*(.+)$")
 	end
@@ -160,9 +160,9 @@ end
 ---@return string|nil funcName
 local function findNextFunctionName(source, startPos)
 	local tail = source:sub(startPos)
-	local funcName = tail:match("^[\r\n%s]*local%s+function%s+(%w+)%s*%(")
-		or tail:match("^[\r\n%s]*function%s+(%w+)%s*%(")
-		or tail:match("^[\r\n%s]*local%s+(%w+)%s*=%s*function%s*%(")
+	local funcName = tail:match("^[\r\n%s]*local%s+function%s+([%w_]+)%s*%(")
+		or tail:match("^[\r\n%s]*function%s+([%w_]+)%s*%(")
+		or tail:match("^[\r\n%s]*local%s+([%w_]+)%s*=%s*function%s*%(")
 	return funcName
 end
 
@@ -287,10 +287,14 @@ local function processSourceWithExports(entrypointSource)
 
 		local funcEnd = findFunctionEnd(entrypointSource, funcStart)
 
-		-- Build injection code: store the raw function in a _G slot.
-		-- The C side calls it via lua_getglobal + lua_call.
-		local key = "C_EXPORTS_" .. exp.name
-		local injection = string.format(' _G.%s = %s', key, funcName)
+		-- Build injection code: create an FFI callback, store it to prevent GC,
+		-- and store tonumber(uintptr_t cast) so C can read the pointer via lua_tonumber.
+		local cbKey = "C_EXPORTS_CB_" .. exp.name
+		local ptrKey = "C_EXPORTS_" .. exp.name
+		local injection = string.format(
+			' do local _f=require("ffi"); _G.%s = _f.cast("%s", %s); _G.%s = tonumber(_f.cast("uintptr_t", _G.%s)) end',
+			cbKey, exp.ffiSignature, funcName, ptrKey, cbKey
+		)
 
 		injections[funcEnd] = (injections[funcEnd] or "") .. injection
 		exports[#exports + 1] = exp
@@ -313,43 +317,6 @@ local function processSourceWithExports(entrypointSource)
 	return result, exports
 end
 
----Generate the inline C code that pushes a C argument to the Lua stack.
----@param paramType string
----@param paramName string
----@return string
-local function genPushArg(paramType, paramName)
-	if isIntType(paramType) then
-		return "lua_pushinteger(L, (lua_Integer)" .. paramName .. ");"
-	elseif isFloatType(paramType) then
-		return "lua_pushnumber(L, (lua_Number)" .. paramName .. ");"
-	elseif isStringType(paramType) then
-		return "lua_pushstring(L, " .. paramName .. ");"
-	elseif isVoidType(paramType) then
-		return "/* void param */"
-	else
-		return "lua_pushlightuserdata(L, (void*)(uintptr_t)" .. paramName .. ");"
-	end
-end
-
----Generate the inline C code that retrieves a return value from the Lua stack.
----@param returnType string
----@return string
-local function genGetReturn(returnType)
-	if isVoidType(returnType) then
-		return ""
-	elseif isIntType(returnType) then
-		return returnType .. " _ret = (" .. returnType .. ")lua_tointeger(L, -1);"
-	elseif isFloatType(returnType) then
-		return returnType .. " _ret = (" .. returnType .. ")lua_tonumber(L, -1);"
-	elseif isStringType(returnType) then
-		return "const char *_ret = lua_tostring(L, -1);"
-	elseif isPointerReturn(returnType) then
-		return returnType .. " _ret = (" .. returnType .. ")(uintptr_t)lua_touserdata(L, -1);"
-	else
-		return returnType .. " _ret = (" .. returnType .. ")(uintptr_t)lua_touserdata(L, -1);"
-	end
-end
-
 ---Generate the C code for a single lazy-init exported function wrapper.
 ---@param exp lde.Export
 ---@return string funcDef
@@ -359,48 +326,41 @@ local function generateCExportWrapper(exp)
 	local params = exp.params
 
 	-- Build type strings
+	local paramTypes = {}
 	local paramDecls = {}
 	for _, p in ipairs(params) do
+		paramTypes[#paramTypes + 1] = p.type
 		paramDecls[#paramDecls + 1] = p.type .. " " .. p.name
 	end
+	local paramTypeStr = table.concat(paramTypes, ", ")
 	local paramDeclStr = table.concat(paramDecls, ", ")
 
-	-- Build the function body: lua_getglobal + push args + lua_call + get return
+	local typedef = "typedef " .. retType .. " (*" .. name .. "_func)(" .. paramTypeStr .. ");"
+	local initName = name .. "_ldein"
+
 	local body = {}
-	body[#body + 1] = "    lua_State *L = lde_get_state();"
-	body[#body + 1] = '    lua_getglobal(L, "C_EXPORTS_' .. name .. '");'
-	-- Push args
-	for _, p in ipairs(params) do
-		local push = genPushArg(p.type, p.name)
-		if push ~= "" and not push:match("^/") then
-			body[#body + 1] = "    " .. push
-		elseif push:match("^/") then
-			body[#body + 1] = "    " .. push
-		end
-	end
-	-- Call
-	local nret = isVoidType(retType) and "0" or "1"
-	body[#body + 1] = "    if (lua_pcall(L, " .. #params .. ", " .. nret .. ", 0) != LUA_OK) {"
-	body[#body + 1] = '        luaL_error(L, "' .. name .. ': %s", lua_tostring(L, -1));'
+	body[#body + 1] = typedef
+	body[#body + 1] = "static " .. name .. "_func cached_" .. name .. " = NULL;"
+	body[#body + 1] = "EXPORT " .. retType .. " " .. name .. "(" .. paramDeclStr .. ") {"
+	body[#body + 1] = "    if (cached_" .. name .. " == NULL) {"
+	body[#body + 1] = "        lua_State *L = lde_get_state();"
+	body[#body + 1] = '        lua_getglobal(L, "C_EXPORTS_' .. name .. '");'
+	body[#body + 1] = "        cached_" .. name .. " = (" .. name .. "_func)(uintptr_t)lua_tonumber(L, -1);"
+	body[#body + 1] = "        lua_pop(L, 1);"
 	body[#body + 1] = "    }"
-	-- Get return
-	local retExpr = genGetReturn(retType)
-	if retExpr ~= "" then
-		body[#body + 1] = "    " .. retExpr
-		body[#body + 1] = "    lua_pop(L, 1);"
-		body[#body + 1] = "    return _ret;"
+	-- Call through cached pointer
+	local callArgs = {}
+	for _, p in ipairs(params) do
+		callArgs[#callArgs + 1] = p.name
+	end
+	if isVoidType(retType) then
+		body[#body + 1] = "    cached_" .. name .. "(" .. table.concat(callArgs, ", ") .. ");"
 	else
-		-- void return: nothing left on stack after lua_pcall(L, n, 0, 0)
+		body[#body + 1] = "    return cached_" .. name .. "(" .. table.concat(callArgs, ", ") .. ");"
 	end
+	body[#body + 1] = "}"
 
-	local parts = {}
-	parts[#parts + 1] = "EXPORT " .. retType .. " " .. name .. "(" .. paramDeclStr .. ") {"
-	for _, line in ipairs(body) do
-		parts[#parts + 1] = line
-	end
-	parts[#parts + 1] = "}"
-
-	return table.concat(parts, "\n")
+	return table.concat(body, "\n")
 end
 
 ---Generate the complete C source for a shared library.
@@ -514,11 +474,5 @@ Export.parseExportLine = parseExportLine
 Export.generateCExportWrapper = generateCExportWrapper
 Export.generateSharedLibraryC = generateSharedLibraryC
 Export.processSourceWithExports = processSourceWithExports
-Export.isIntType = isIntType
-Export.isFloatType = isFloatType
-Export.isStringType = isStringType
-Export.isVoidType = isVoidType
-Export.isPointerReturn = isPointerReturn
-Export.CTypeMap = CTypeMap
 
 return Export
