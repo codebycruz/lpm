@@ -65,11 +65,12 @@ local function bundleDir(projectName, dir, files)
 end
 
 ---@param package lde.Package
----@param opts { bytecode: boolean? }?
+---@param opts { bytecode: boolean?, sourceOverrides: table<string,string>? }?
 ---@return string bundled source
 local function bundlePackage(package, opts)
 	opts = opts or {}
 	local useBytecode = opts.bytecode
+	local overrides = opts.sourceOverrides or {}
 
 	local files = {}
 	local modulesDir = package:getModulesDir()
@@ -79,12 +80,18 @@ local function bundlePackage(package, opts)
 		if fs.isdir(p) then
 			bundleDir(entry.name, p, files)
 		elseif entry.name:match("%.lua$") then
-			local content = fs.read(p)
+			local moduleName = entry.name:gsub("%.lua$", "")
+			-- Use override if provided, otherwise read from disk
+			local content = overrides[moduleName] or fs.read(p)
 			if content then
-				local moduleName = entry.name:gsub("%.lua$", "")
 				files[moduleName] = content
 			end
 		end
+	end
+
+	-- Apply overrides for directory-based modules too (e.g. some.dir.init -> some.dir)
+	for moduleName, content in pairs(overrides) do
+		files[moduleName] = content
 	end
 
 	local parts = {}

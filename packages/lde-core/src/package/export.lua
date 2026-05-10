@@ -160,9 +160,9 @@ end
 ---@return string|nil funcName
 local function findNextFunctionName(source, startPos)
 	local tail = source:sub(startPos)
-	local funcName = tail:match("^[^\r\n]*local%s+function%s+(%w+)%s*%(")
-		or tail:match("^[^\r\n]*function%s+(%w+)%s*%(")
-		or tail:match("^[^\r\n]*local%s+(%w+)%s*=%s*function%s*%(")
+	local funcName = tail:match("^[\r\n%s]*local%s+function%s+(%w+)%s*%(")
+		or tail:match("^[\r\n%s]*function%s+(%w+)%s*%(")
+		or tail:match("^[\r\n%s]*local%s+(%w+)%s*=%s*function%s*%(")
 	return funcName
 end
 
@@ -289,10 +289,11 @@ local function processSourceWithExports(entrypointSource)
 
 		-- Build injection code: safe variant that stores both the callback and a void* reference
 		-- The callback cdata is stored to prevent GC; the void* is what C reads.
+		-- Use require("ffi") since ffi may not be a global in the bundled environment.
 		local cbKey = "C_EXPORTS_CB_" .. exp.name
 		local ptrKey = "C_EXPORTS_" .. exp.name
 		local injection = string.format(
-			' _G.%s = ffi.cast("%s", %s); _G.%s = ffi.cast("void *", _G.%s)',
+			' do local _f=require("ffi"); _G.%s = _f.cast("%s", %s); _G.%s = _f.cast("void *", _G.%s) end',
 			cbKey, exp.ffiSignature, funcName, ptrKey, cbKey
 		)
 
@@ -364,19 +365,22 @@ local function generateCExportWrapper(exp)
 
 	-- Build type strings
 	local paramTypes = {}
-	local paramNames = {}
+	local paramDecls = {} -- type + name pairs: "uint32_t a"
 	for _, p in ipairs(params) do
 		paramTypes[#paramTypes + 1] = p.type
-		paramNames[#paramNames + 1] = p.name
+		paramDecls[#paramDecls + 1] = p.type .. " " .. p.name
 	end
 	local paramTypeStr = table.concat(paramTypes, ", ")
-	local paramNameStr = table.concat(paramNames, ", ")
+	local paramDeclStr = table.concat(paramDecls, ", ")
 
 	-- Typedef for function pointer
 	local typedef = "typedef " .. retType .. " (*" .. name .. "_func)(" .. paramTypeStr .. ");"
 
 	-- Cached function pointer initialized to the init function
 	local initName = name .. "_ldein"
+
+	-- Forward declaration of the init function (needed before cached pointer init)
+	local forwardDecl = "static " .. retType .. " " .. initName .. "(" .. paramDeclStr .. ");"
 
 	-- Init function body: gets the function pointer from Lua, caches it, and calls through
 	local initBody = {}
@@ -426,13 +430,14 @@ local function generateCExportWrapper(exp)
 	-- Assemble the full code
 	local parts = {}
 	parts[#parts + 1] = typedef
+	parts[#parts + 1] = forwardDecl
 	parts[#parts + 1] = "static " .. name .. "_func cached_" .. name .. " = &" .. initName .. ";"
-	parts[#parts + 1] = "static " .. retType .. " " .. initName .. "(" .. paramNameStr .. ") {"
+	parts[#parts + 1] = "static " .. retType .. " " .. initName .. "(" .. paramDeclStr .. ") {"
 	for _, line in ipairs(initBody) do
 		parts[#parts + 1] = line
 	end
 	parts[#parts + 1] = "}"
-	parts[#parts + 1] = "EXPORT " .. retType .. " " .. name .. "(" .. paramNameStr .. ") {"
+	parts[#parts + 1] = "EXPORT " .. retType .. " " .. name .. "(" .. paramDeclStr .. ") {"
 	parts[#parts + 1] = callExpr
 	parts[#parts + 1] = "}"
 
@@ -471,7 +476,7 @@ local function generateSharedLibraryC(exports, source, libDecls, libStartup, sha
 #include "lauxlib.h"
 #include "lualib.h"
 
-]] .. (libStartup:match("%S") and "#include <stdint.h>\n" or "") .. [[
+]] .. ((libStartup:match("%S") or #exports > 0) and "#include <stdint.h>\n" or "") .. [[
 
 #ifdef _WIN32
 #define EXPORT __declspec(dllexport)

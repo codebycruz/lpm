@@ -68,8 +68,9 @@ local function compilePackageShared(package)
 
 	local modulesDir = package:getModulesDir()
 	local config = package:readConfig()
+	local pkgName = package:getName()
 
-	-- Determine entrypoint file
+	-- Determine entrypoint file and its module name in the bundle
 	local entrypointRel = config.bin or "init.lua"
 	local entrypointPath = path.join(package:getTargetDir(), entrypointRel)
 
@@ -82,17 +83,23 @@ local function compilePackageShared(package)
 		error("Could not read entry point: " .. entrypointPath)
 	end
 
-	-- Parse ---@export annotations and inject export registration code
+	-- Parse ---@export annotations and inject export registration code in-memory
 	local modifiedSource, exports = exportMod.processSourceWithExports(originalSource)
 
-	-- Write the modified entrypoint back to target/ so bundling picks up the injections
-	local ok, writeErr = fs.write(entrypointPath, modifiedSource)
-	if not ok then
-		error("Failed to write modified entry point: " .. writeErr)
+	-- Determine the module name for the entrypoint in the bundle.
+	-- For default entrypoint (init.lua), the module name is the package name.
+	-- For custom bin (e.g. src/main.lua -> target/<name>/main.lua), module name is <name>.main
+	local entrypointModuleName
+	if entrypointRel == "init.lua" then
+		entrypointModuleName = pkgName
+	else
+		entrypointModuleName = pkgName .. "." .. entrypointRel:gsub("%.lua$", "")
 	end
 
-	-- Bundle the package (now includes export injection code)
-	local source = bundlePackage(package)
+	-- Bundle the package, injecting the modified entrypoint via sourceOverrides
+	local source = bundlePackage(package, {
+		sourceOverrides = { [entrypointModuleName] = modifiedSource }
+	})
 	local sharedLibs = collectSharedLibs(modulesDir)
 
 	-- Build shared library data (from sea)
@@ -118,9 +125,6 @@ local function compilePackageShared(package)
 
 	-- Compile the shared library
 	local outPath = sea.compileShared(cCode, lde.global.getGCCBin())
-
-	-- Restore the original entrypoint (don't leave modified source in target/)
-	fs.write(entrypointPath, originalSource)
 
 	return outPath
 end
