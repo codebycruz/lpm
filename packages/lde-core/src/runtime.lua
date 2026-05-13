@@ -1,11 +1,11 @@
 local env = require("env")
 local ffi = require("ffi")
-local ffix = require("ffix")
 local profile = require("jit.profile")
 local ansi = require("ansi")
 local lde = require("lde-core")
 
 local PROFILER_MS_PER_SAMPLE = 1
+local ffiCtxCounter = 0
 
 local builtinModules = {
 	package = true,
@@ -273,23 +273,27 @@ local function executeWith(compile, opts, scriptName)
 		end
 	end
 
-	-- Per-execution ffi isolation: route all ffi.cdef / ffi.new / etc. through
-	-- an ffix context so type names are prefixed and can't clash with lde's own defs.
-	local ffixCtx = ffix.context()
+	-- Per-execution ffi isolation: use ffi.context() so type names are
+	-- prefixed and can't clash with lde's own defs. The prefix combines
+	-- os.clock() and a counter for a small, unique-per-invocation value.
+	ffiCtxCounter = ffiCtxCounter + 1
+	local prefix = string.format("x%x", (math.floor(os.clock() * 1e6) + ffiCtxCounter) % 0x100000)
+	local ffiCtx = ffi.context(prefix)
 	local ffiProxy = setmetatable({
-		cdef     = function(def) ffixCtx:cdef(def) end,
-		new      = function(t, ...) return ffixCtx:new(t, ...) end,
-		cast     = function(t, ...) return ffixCtx:cast(t, ...) end,
-		typeof   = function(t, ...) return ffixCtx:typeof(t, ...) end,
-		sizeof   = function(t, ...) return ffixCtx:sizeof(t, ...) end,
-		alignof  = function(t) return ffixCtx:alignof(t) end,
-		offsetof = function(t, field) return ffixCtx:offsetof(t, field) end,
-		metatype = function(t, mt) return ffixCtx:metatype(t, mt) end,
-		istype   = function(t, obj) return ffixCtx:istype(t, obj) end,
-		load     = function(lib, ...) return ffixCtx:load(lib, ...) end,
-		C        = ffixCtx.C
+		cdef     = function(def) ffiCtx:cdef(def) end,
+		new      = function(t, ...) return ffiCtx:new(t, ...) end,
+		cast     = function(t, ...) return ffiCtx:cast(t, ...) end,
+		typeof   = function(t, ...) return ffiCtx:typeof(t, ...) end,
+		sizeof   = function(t, ...) return ffiCtx:sizeof(t, ...) end,
+		alignof  = function(t) return ffiCtx:alignof(t) end,
+		offsetof = function(t, field) return ffiCtx:offsetof(t, field) end,
+		metatype = function(t, mt) return ffiCtx:metatype(t, mt) end,
+		istype   = function(t, obj) return ffiCtx:istype(t, obj) end,
+		load     = function(lib, ...) return ffiCtx:load(lib, ...) end,
+		C        = ffiCtx.C
 	}, { __index = ffi })
 	package.loaded.ffi = ffiProxy
+	debug.getregistry()._LOADED.ffi = ffiProxy
 
 	local newG = setmetatable({ ffi = ffiProxy }, { __index = _G })
 	setfenv(chunk, newG)
@@ -308,9 +312,6 @@ local function executeWith(compile, opts, scriptName)
 	end
 	package.loaders = freshLoaders
 
-	local originalTmpname = os.tmpname
-	os.tmpname = env.tmpfile
-
 	package.path = opts.packagePath or oldPath
 	package.cpath = opts.packageCPath or oldCPath
 
@@ -321,11 +322,11 @@ local function executeWith(compile, opts, scriptName)
 		if not stopProfiler then
 			for k, v in pairs(oldEnvVars) do env.set(k, v) end
 			if oldCwd then env.chdir(oldCwd) end
-			os.tmpname = originalTmpname
 			restore(package.loaded, savedLoaded)
 			restore(package.preload, savedPreload)
 			package.loaders = oldLoaders
 			package.path, package.cpath = oldPath, oldCPath
+			debug.getregistry()._LOADED.ffi = nil
 			return false, "Failed to start profiler: " .. tostring(profilerErr)
 		end
 	end
@@ -370,11 +371,11 @@ local function executeWith(compile, opts, scriptName)
 	for k, v in pairs(oldEnvVars) do env.set(k, v) end
 	if oldCwd then env.chdir(oldCwd) end
 
-	os.tmpname = originalTmpname
 	restore(package.loaded, savedLoaded)
 	restore(package.preload, savedPreload)
 	package.loaders = oldLoaders
 	package.path, package.cpath = oldPath, oldCPath
+	debug.getregistry()._LOADED.ffi = nil
 
 	return ok, a, b, c, d, e, f
 end

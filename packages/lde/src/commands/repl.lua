@@ -1,7 +1,6 @@
 local ansi      = require("ansi")
 local readline  = require("readline")
 local highlight = require("readline.highlight")
-local env       = require("env")
 
 local lde       = require("lde-core")
 local run       = require("lde-core.package.run")
@@ -14,10 +13,22 @@ local function repl(_args)
 	local savedPath, savedCPath = package.path, package.cpath
 
 	local builtinModules = {
-		package = true, string = true, table = true, math = true, io = true,
-		os = true, debug = true, coroutine = true, bit = true, jit = true,
-		ffi = true, ["jit.opt"] = true, ["jit.util"] = true,
-		["jit.p"] = true, ["jit.profile"] = true, ["string.buffer"] = true
+		package = true,
+		string = true,
+		table = true,
+		math = true,
+		io = true,
+		os = true,
+		debug = true,
+		coroutine = true,
+		bit = true,
+		jit = true,
+		ffi = true,
+		["jit.opt"] = true,
+		["jit.util"] = true,
+		["jit.p"] = true,
+		["jit.profile"] = true,
+		["string.buffer"] = true
 	}
 
 	local function clearNonBuiltins(t)
@@ -37,7 +48,7 @@ local function repl(_args)
 	local savedLoaded  = clearNonBuiltins(package.loaded)
 	local savedPreload = clearNonBuiltins(package.preload)
 
-	local pkg = lde.Package.open()
+	local pkg          = lde.Package.open()
 	if pkg then
 		pkg:build()
 		pkg:installDependencies()
@@ -51,9 +62,6 @@ local function repl(_args)
 	end
 
 	local buffer = ""
-
-	local originalTmpname = os.tmpname
-	os.tmpname = env.tmpfile
 
 	local G = setmetatable({}, { __index = _G })
 	G._ENV = G
@@ -170,7 +178,6 @@ local function repl(_args)
 
 	package.path = savedPath
 	package.cpath = savedCPath
-	os.tmpname = originalTmpname
 	restoreTable(package.loaded, savedLoaded)
 	restoreTable(package.preload, savedPreload)
 end
