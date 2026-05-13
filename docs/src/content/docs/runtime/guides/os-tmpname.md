@@ -1,21 +1,10 @@
 ---
-title: os.tmpname() Override
+title: os.tmpname()
 order: 3
 ---
 
-# os.tmpname() Override
+# os.tmpname()
 
-LDE overrides `os.tmpname()` with a safe cross-platform replacement in both the runtime and compiled binaries.
+LDE's LuaJIT fork includes a built-in cross-platform fix for `os.tmpname()`, so no runtime override is needed.
 
-This is needed for Termux/Android, where the default `os.tmpname()` returns paths that don't exist.
-
-The replacement generates paths under the system temp directory (`TMPDIR` / `TEMP` / `TMP`) in the form:
-
-```text
-<tmpdir>/lde_<timestamp>_<counter>.tmp
-```
-
-The override is active in:
-
-- `lde run` / `lde test`: applied for the duration of script execution, then restored.
-- `lde compile`: patched into the compiled binary so it is always in effect.
+This ensures `os.tmpname()` works correctly on Termux/Android and other platforms where the default implementation may return non-existent paths.

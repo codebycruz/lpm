@@ -11,7 +11,7 @@ local ansi = require("ansi")
 
 local util = require("util")
 
-local ljDistRepo = "lde-org/lj-dist"
+local ljDistRepo = "lde-org/luajit"
 local ljDistTag = "latest"
 
 local function getPlatformArch()
@@ -254,18 +254,6 @@ char lde_tmpdir[4096];
 	local libStartupStr  = libTmpDirInit .. table.concat(libStartup, "\n")
 	local libPreloadsStr = table.concat(libPreloads, "\n")
 
-	local tmpnameShim    = util.dedent([[
-		do
-			local _ctr = 0
-			local _tmpdir = os.getenv("TMPDIR") or os.getenv("TEMP") or os.getenv("TMP") or "/tmp"
-			_tmpdir = _tmpdir:gsub("[\\/]+$", "")
-			os.tmpname = function()
-				_ctr = _ctr + 1
-				return _tmpdir .. "/lde_" .. tostring(os.clock() * 1000):gsub("%.", "") .. "_" .. _ctr .. ".tmp"
-			end
-		end
-	]])
-
 	if #ffiShimEntries > 0 then
 		source = util.dedent(string.format([[
 			do
@@ -289,8 +277,6 @@ char lde_tmpdir[4096];
 		]], table.concat(ffiShimEntries, ", "))) .. "\n" .. source
 	end
 
-	source              = tmpnameShim .. "\n" .. source
-
 	filePreloads        = {
 		('luaL_loadbuffer(L, "%s", %d, "%s"); lua_setfield(L, -2, "%s");')
 			:format(
@@ -301,7 +287,8 @@ char lde_tmpdir[4096];
 			)
 	}
 
-	local stdintInclude = (hasLibs and "#include <stdint.h>\n#include <string.h>\n#include <stdlib.h>\n" or "") .. "#ifdef __ANDROID__\n#include <unistd.h>\n#endif\n"
+	local stdintInclude = (hasLibs and "#include <stdint.h>\n#include <string.h>\n#include <stdlib.h>\n" or "") ..
+		"#ifdef __ANDROID__\n#include <unistd.h>\n#endif\n"
 
 	-- lde_loadlib_loader: a C closure that calls package.loadlib(upvalue1, "*").
 	-- Only emitted when there are shared libs to avoid dead-code warnings.
